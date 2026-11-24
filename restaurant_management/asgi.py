@@ -17,3 +17,10 @@ application = ProtocolTypeRouter({
         )
     ),
 })
+
+# Automatically ensure database migrations and superadmin are ready
+try:
+    from restaurant_management.db_bootstrap import ensure_database_ready
+    ensure_database_ready()
+except Exception as e:
+    print(f"[ASGI INIT NOTICE] {e}")
