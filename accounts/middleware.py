@@ -21,19 +21,39 @@ class TenantContextMiddleware:
 
         user = getattr(request, 'user', None)
 
-        # Enforce restaurant suspension policy for non-superadmins
+        # Enforce user active & suspension policy for non-superadmins
         if user and user.is_authenticated and not user.is_superuser:
-            if restaurant and restaurant.status == Restaurant.RestaurantStatus.SUSPENDED:
-                exempt_prefixes = [
-                    '/accounts/logout/',
-                    '/logout/',
-                    '/static/',
-                    '/media/',
-                ]
-                if not any(request.path.startswith(prefix) for prefix in exempt_prefixes):
+            exempt_prefixes = [
+                '/accounts/logout/',
+                '/logout/',
+                '/static/',
+                '/media/',
+            ]
+            if not any(request.path.startswith(prefix) for prefix in exempt_prefixes):
+                if not user.is_active or user.is_suspended:
+                    from django.contrib.auth import logout as auth_logout
+                    from django.contrib import messages
+                    from django.http import JsonResponse
+
+                    auth_logout(request)
+                    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.path.startswith('/api/'):
+                        return JsonResponse({
+                            'error': 'Your account has been deactivated or suspended. Please contact your administrator.',
+                            'status': 'forbidden'
+                        }, status=403)
+                    messages.error(request, "Your account has been deactivated or suspended. Please contact your administrator.")
+                    return redirect('accounts:login')
+
+                # Enforce restaurant suspension & inactive policy for non-superadmins
+                if restaurant and restaurant.status == Restaurant.RestaurantStatus.SUSPENDED:
                     return render(request, 'accounts/tenant_suspended.html', {
                         'restaurant': restaurant,
                         'reason': restaurant.suspension_reason or "Account suspended by Super Administrator."
+                    }, status=403)
+                elif restaurant and restaurant.status == Restaurant.RestaurantStatus.INACTIVE:
+                    return render(request, 'accounts/tenant_suspended.html', {
+                        'restaurant': restaurant,
+                        'reason': "This restaurant account is currently inactive. Please contact the administrator."
                     }, status=403)
 
         response = self.get_response(request)

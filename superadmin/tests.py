@@ -199,3 +199,222 @@ class CompanyLogoManagementTests(TestCase):
         self.assertIsNone(res.context['RESTAURANT_LOGO_URL'])
         self.assertContains(res, 'brand-logo-placeholder')
         self.assertContains(res, 'No Logo Diner')
+
+
+class SuperAdminAddAdminAndCascadeDeactivationTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.superadmin = User.objects.create_superuser(
+            username='tamil_super',
+            email='tamil_super@saas.com',
+            password='SuperPassword123!',
+            first_name='Tamil',
+            last_name='Selvan'
+        )
+
+    def test_add_admin_creates_restaurant_and_admin_successfully(self):
+        self.client.force_login(self.superadmin)
+        post_data = {
+            'restaurant_name': 'Green Orchard Fine Dining',
+            'restaurant_address': '789 Orchard Blvd, Suite 100',
+            'restaurant_phone': '+1 555-4321',
+            'restaurant_email': 'info@greenorchard.com',
+            'restaurant_status': 'ACTIVE',
+            'restaurant_plan': 'STARTER',
+            'first_name': 'Tamil',
+            'last_name': 'Selvan',
+            'username': 'tamil',
+            'email': 'tamilselvan2003s@gmail.com',
+            'phone_number': '+91 9876543210',
+            'role': User.Role.ADMIN,
+            'job_title': 'Managing Director',
+            'admin_access_level': User.AdminAccessLevel.FULL,
+            'is_active': 'on',
+            'can_manage_staff': 'on',
+            'can_manage_discounts': 'on',
+            'can_view_financials': 'on',
+            'can_edit_menu': 'on',
+            'password1': '23MCA093@t',
+            'password2': '23MCA093@t',
+        }
+
+        response = self.client.post(reverse('superadmin:admin_create'), post_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        # Verify success message
+        messages_list = list(response.context['messages'])
+        self.assertTrue(any("Restaurant Admin created successfully." in str(m) for m in messages_list))
+
+        # Verify Restaurant record created
+        restaurant = Restaurant.objects.filter(name='Green Orchard Fine Dining').first()
+        self.assertIsNotNone(restaurant)
+        self.assertEqual(restaurant.status, Restaurant.RestaurantStatus.ACTIVE)
+        self.assertEqual(restaurant.phone, '+1 555-4321')
+        self.assertEqual(restaurant.email, 'info@greenorchard.com')
+
+        # Verify User record created and linked
+        admin_user = User.objects.filter(username='tamil').first()
+        self.assertIsNotNone(admin_user)
+        self.assertEqual(admin_user.restaurant, restaurant)
+        self.assertEqual(admin_user.email, 'tamilselvan2003s@gmail.com')
+        self.assertEqual(admin_user.role, User.Role.ADMIN)
+        self.assertTrue(admin_user.is_active)
+        self.assertTrue(admin_user.is_staff)
+        self.assertFalse(admin_user.is_superuser)
+        self.assertTrue(admin_user.check_password('23MCA093@t'))
+
+    def test_add_admin_rejects_duplicate_username_and_email(self):
+        self.client.force_login(self.superadmin)
+        rest = Restaurant.objects.create(name='Existing Bistro')
+        User.objects.create_user(
+            username='tamil_existing',
+            email='duplicate@bistro.com',
+            password='Password123!',
+            restaurant=rest
+        )
+
+        post_data = {
+            'restaurant_name': 'Another Bistro',
+            'first_name': 'Tamil',
+            'last_name': 'S',
+            'username': 'tamil_existing',
+            'email': 'duplicate@bistro.com',
+            'password1': 'Password123!',
+            'password2': 'Password123!',
+        }
+        response = self.client.post(reverse('superadmin:admin_create'), post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context['form'], 'email', 'This email address is already in use by another account.')
+
+    def test_cascade_employee_deactivation_when_admin_deactivated(self):
+        self.client.force_login(self.superadmin)
+
+        # Setup Restaurant A with Admin A and 4 employees
+        rest_a = Restaurant.objects.create(name='Restaurant Alpha', status=Restaurant.RestaurantStatus.ACTIVE)
+        admin_a = User.objects.create_user(
+            username='admin_alpha',
+            email='admin@alpha.com',
+            password='Password123!',
+            role=User.Role.ADMIN,
+            restaurant=rest_a,
+            is_active=True
+        )
+        cashier_a1 = User.objects.create_user(
+            username='cashier_a1', email='cashier1@alpha.com', password='Password123!',
+            role=User.Role.CASHIER, restaurant=rest_a, is_active=True
+        )
+        cashier_a2 = User.objects.create_user(
+            username='cashier_a2', email='cashier2@alpha.com', password='Password123!',
+            role=User.Role.CASHIER, restaurant=rest_a, is_active=True
+        )
+        waiter_a1 = User.objects.create_user(
+            username='waiter_a1', email='waiter1@alpha.com', password='Password123!',
+            role=User.Role.WAITER, restaurant=rest_a, is_active=True
+        )
+        already_inactive_a = User.objects.create_user(
+            username='inactive_emp_a', email='inactive@alpha.com', password='Password123!',
+            role=User.Role.KITCHEN, restaurant=rest_a, is_active=False
+        )
+
+        # Setup Restaurant B with Admin B and employees (Tenant Isolation Check)
+        rest_b = Restaurant.objects.create(name='Restaurant Beta', status=Restaurant.RestaurantStatus.ACTIVE)
+        admin_b = User.objects.create_user(
+            username='admin_beta', email='admin@beta.com', password='Password123!',
+            role=User.Role.ADMIN, restaurant=rest_b, is_active=True
+        )
+        waiter_b1 = User.objects.create_user(
+            username='waiter_b1', email='waiter1@beta.com', password='Password123!',
+            role=User.Role.WAITER, restaurant=rest_b, is_active=True
+        )
+        chef_b1 = User.objects.create_user(
+            username='chef_b1', email='chef1@beta.com', password='Password123!',
+            role=User.Role.KITCHEN, restaurant=rest_b, is_active=True
+        )
+
+        # Trigger deactivation of Admin Alpha
+        toggle_url = reverse('superadmin:admin_toggle_status', args=[admin_a.id])
+        deact_res = self.client.post(toggle_url, {
+            'action': 'deactivate',
+            'reason': 'Audit review policy violation'
+        }, follow=True)
+        self.assertEqual(deact_res.status_code, 200)
+
+        # 1. Verify Admin Alpha is deactivated
+        admin_a.refresh_from_db()
+        self.assertFalse(admin_a.is_active)
+
+        # 2. Verify Restaurant Alpha status is set to Inactive
+        rest_a.refresh_from_db()
+        self.assertEqual(rest_a.status, Restaurant.RestaurantStatus.INACTIVE)
+
+        # 3. Verify all active employees under Restaurant Alpha are now deactivated
+        cashier_a1.refresh_from_db()
+        cashier_a2.refresh_from_db()
+        waiter_a1.refresh_from_db()
+        already_inactive_a.refresh_from_db()
+
+        self.assertFalse(cashier_a1.is_active)
+        self.assertFalse(cashier_a2.is_active)
+        self.assertFalse(waiter_a1.is_active)
+        self.assertFalse(already_inactive_a.is_active)
+
+        # 4. Verify Multi-Tenant Isolation: Restaurant B and its employees are UNTOUCHED
+        admin_b.refresh_from_db()
+        rest_b.refresh_from_db()
+        waiter_b1.refresh_from_db()
+        chef_b1.refresh_from_db()
+
+        self.assertTrue(admin_b.is_active)
+        self.assertEqual(rest_b.status, Restaurant.RestaurantStatus.ACTIVE)
+        self.assertTrue(waiter_b1.is_active)
+        self.assertTrue(chef_b1.is_active)
+
+        # 5. Verify AccountStatusAuditLog
+        from superadmin.models import AccountStatusAuditLog
+        log = AccountStatusAuditLog.objects.filter(target_user=admin_a, action='CASCADE_DEACTIVATE').first()
+        self.assertIsNotNone(log)
+        self.assertEqual(log.affected_count, 3)  # Exactly 3 active employees cascade-deactivated
+        self.assertIn(cashier_a1.id, log.affected_employee_ids)
+        self.assertIn(cashier_a2.id, log.affected_employee_ids)
+        self.assertIn(waiter_a1.id, log.affected_employee_ids)
+        self.assertNotIn(already_inactive_a.id, log.affected_employee_ids)
+
+        # 6. Verify Safe Reactivation: Reactivating Admin A restores Admin A & Restaurant A, but keeps employees inactive
+        react_res = self.client.post(toggle_url, {'action': 'activate'}, follow=True)
+        self.assertEqual(react_res.status_code, 200)
+
+        admin_a.refresh_from_db()
+        rest_a.refresh_from_db()
+        self.assertTrue(admin_a.is_active)
+        self.assertEqual(rest_a.status, Restaurant.RestaurantStatus.ACTIVE)
+
+        # Employees MUST still be inactive (Safe Reactivation Principle)
+        cashier_a1.refresh_from_db()
+        cashier_a2.refresh_from_db()
+        waiter_a1.refresh_from_db()
+        self.assertFalse(cashier_a1.is_active)
+        self.assertFalse(cashier_a2.is_active)
+        self.assertFalse(waiter_a1.is_active)
+
+    def test_inactive_employee_session_blocked_by_middleware(self):
+        rest = Restaurant.objects.create(name='Cafe Bistro', status=Restaurant.RestaurantStatus.ACTIVE)
+        emp = User.objects.create_user(
+            username='waiter_joe', email='joe@cafe.com', password='Password123!',
+            role=User.Role.WAITER, restaurant=rest, is_active=False
+        )
+
+        self.client.force_login(emp)
+        # Attempt to access protected endpoint
+        res = self.client.get(reverse('orders:list'))
+        # Both Django auth backend and middleware ensure deactivated accounts cannot access and are redirected to login
+        expected_url = f"{reverse('accounts:login')}?next={reverse('orders:list')}"
+        self.assertRedirects(res, expected_url)
+
+        # Also verify suspended user is caught and blocked by TenantContextMiddleware
+        active_emp = User.objects.create_user(
+            username='waiter_active', email='active@cafe.com', password='Password123!',
+            role=User.Role.WAITER, restaurant=rest, is_active=True, is_suspended=True
+        )
+        self.client.force_login(active_emp)
+        res_suspended = self.client.get(reverse('orders:list'))
+        self.assertRedirects(res_suspended, reverse('accounts:login'))

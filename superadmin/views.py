@@ -74,6 +74,31 @@ def admin_list(request):
     elif status_filter == 'suspended':
         admins = admins.filter(is_suspended=True)
 
+    # Convert to list and compute per-admin staff statistics & cascade impact
+    admins_list = list(admins)
+    for a in admins_list:
+        if a.restaurant:
+            emp_qs = User.objects.filter(restaurant=a.restaurant).exclude(pk=a.pk).exclude(is_superuser=True)
+            a.total_employees_count = emp_qs.count()
+            a.active_employees_count = emp_qs.filter(is_active=True).count()
+            a.inactive_employees_count = emp_qs.filter(is_active=False).count()
+
+            latest_cascade = AccountStatusAuditLog.objects.filter(
+                target_user=a,
+                action__in=[AccountStatusAuditLog.Action.CASCADE_DEACTIVATE, AccountStatusAuditLog.Action.ADMIN_DEACTIVATE]
+            ).order_by('-created_at').first()
+            a.affected_employees_count = latest_cascade.affected_count if latest_cascade else a.inactive_employees_count
+        else:
+            a.total_employees_count = 0
+            a.active_employees_count = 0
+            a.inactive_employees_count = 0
+            a.affected_employees_count = 0
+
+    # Recent Audit Logs for quick reference modal
+    recent_audit_logs = AccountStatusAuditLog.objects.select_related(
+        'target_user', 'restaurant', 'performed_by'
+    ).all().order_by('-created_at')[:20]
+
     # Global SaaS metrics computed from real database records across all restaurants
     total_restaurants = Restaurant.objects.count()
     active_restaurants = Restaurant.objects.filter(status=Restaurant.RestaurantStatus.ACTIVE).count()
@@ -96,7 +121,8 @@ def admin_list(request):
     }
 
     context = {
-        'admins': admins,
+        'admins': admins_list,
+        'recent_audit_logs': recent_audit_logs,
         'status_filter': status_filter,
         'total_admins': total_admins,
         'active_count': active_count,
@@ -120,14 +146,16 @@ def admin_create(request):
     if request.method == 'POST':
         form = AdminCreationForm(request.POST, request.FILES)
         if form.is_valid():
-            new_admin = form.save()
-            rest_code = new_admin.restaurant.code if new_admin.restaurant else 'N/A'
-            rest_name = new_admin.restaurant.name if new_admin.restaurant else 'N/A'
-            messages.success(
-                request,
-                f"Restaurant Admin '{new_admin.username}' created successfully for {rest_name} (ID: {rest_code})."
-            )
-            return redirect('superadmin:admin_list')
+            try:
+                with transaction.atomic():
+                    new_admin = form.save()
+                messages.success(request, "Restaurant Admin created successfully.")
+                return redirect('superadmin:admin_list')
+            except Exception as e:
+                logger.exception("Failed to create restaurant admin: %s", e)
+                messages.error(request, f"Failed to create restaurant admin: {e}")
+        else:
+            messages.error(request, "Please correct the errors indicated below.")
     else:
         form = AdminCreationForm()
 
@@ -179,26 +207,180 @@ def admin_toggle_status(request, user_id):
         return redirect('superadmin:admin_list')
 
     action = request.POST.get('action')
+    reason = request.POST.get('reason', '').strip()
+
     if action == 'suspend':
         admin_user.is_suspended = True
-        admin_user.suspension_reason = request.POST.get('reason', 'Suspended by Super Admin')
+        admin_user.suspension_reason = reason or 'Suspended by Super Admin'
         admin_user.save(update_fields=['is_suspended', 'suspension_reason'])
+        AccountStatusAuditLog.objects.create(
+            target_user=admin_user,
+            restaurant=admin_user.restaurant,
+            action=AccountStatusAuditLog.Action.ADMIN_SUSPEND,
+            performed_by=request.user,
+            reason=admin_user.suspension_reason
+        )
+        invalidate_user_sessions([admin_user.id])
         messages.warning(request, f"Admin '{admin_user.username}' has been suspended.")
+
     elif action == 'unsuspend':
         admin_user.is_suspended = False
         admin_user.suspension_reason = ''
         admin_user.save(update_fields=['is_suspended', 'suspension_reason'])
+        AccountStatusAuditLog.objects.create(
+            target_user=admin_user,
+            restaurant=admin_user.restaurant,
+            action=AccountStatusAuditLog.Action.ADMIN_UNSUSPEND,
+            performed_by=request.user,
+            reason="Suspension lifted by Super Admin"
+        )
         messages.success(request, f"Admin '{admin_user.username}' suspension removed.")
+
     elif action == 'deactivate':
-        admin_user.is_active = False
-        admin_user.save(update_fields=['is_active'])
-        messages.info(request, f"Admin '{admin_user.username}' deactivated.")
+        with transaction.atomic():
+            admin_user.is_active = False
+            admin_user.save(update_fields=['is_active'])
+
+            restaurant = admin_user.restaurant
+            affected_count = 0
+            affected_ids = []
+
+            if restaurant:
+                # Deactivate restaurant status to Inactive
+                restaurant.status = Restaurant.RestaurantStatus.INACTIVE
+                restaurant.save(update_fields=['status'])
+
+                # Cascade deactivate all employees of this restaurant across all roles
+                employees = User.objects.filter(
+                    restaurant=restaurant
+                ).exclude(pk=admin_user.pk).exclude(is_superuser=True)
+
+                active_employees = employees.filter(is_active=True)
+                affected_ids = list(active_employees.values_list('id', flat=True))
+                affected_count = len(affected_ids)
+
+                active_employees.update(is_active=False)
+
+            # Record audit log
+            AccountStatusAuditLog.objects.create(
+                target_user=admin_user,
+                restaurant=restaurant,
+                action=AccountStatusAuditLog.Action.CASCADE_DEACTIVATE,
+                performed_by=request.user,
+                affected_count=affected_count,
+                affected_employee_ids=affected_ids,
+                reason=reason or f"Cascade deactivation: Admin deactivated and {affected_count} employee accounts deactivated."
+            )
+
+            # Invalidate sessions for Admin and all affected employees
+            invalidate_user_sessions([admin_user.id] + affected_ids)
+
+        if affected_count > 0:
+            messages.success(
+                request,
+                f"Admin {admin_user.username} and {affected_count} associated employee accounts have been deactivated successfully."
+            )
+        else:
+            messages.success(
+                request,
+                f"Admin {admin_user.username} has been deactivated successfully."
+            )
+
     elif action == 'activate':
-        admin_user.is_active = True
-        admin_user.save(update_fields=['is_active'])
-        messages.success(request, f"Admin '{admin_user.username}' activated.")
+        with transaction.atomic():
+            admin_user.is_active = True
+            admin_user.save(update_fields=['is_active'])
+
+            if admin_user.restaurant:
+                admin_user.restaurant.status = Restaurant.RestaurantStatus.ACTIVE
+                admin_user.restaurant.save(update_fields=['status'])
+
+            AccountStatusAuditLog.objects.create(
+                target_user=admin_user,
+                restaurant=admin_user.restaurant,
+                action=AccountStatusAuditLog.Action.ADMIN_REACTIVATE,
+                performed_by=request.user,
+                reason="Admin reactivated. Associated employee accounts preserved inactive for security and review."
+            )
+
+        messages.success(
+            request,
+            f"Admin {admin_user.username} has been reactivated successfully. Employee accounts remain inactive for security and require individual review/reactivation."
+        )
 
     return redirect('superadmin:admin_list')
+
+
+@super_admin_required
+def admin_employees(request, user_id):
+    """View and manage employees belonging to a specific restaurant admin."""
+    admin_user = get_object_or_404(User, id=user_id, is_superuser=False)
+    restaurant = admin_user.restaurant
+    if not restaurant:
+        messages.warning(request, f"Admin '{admin_user.username}' has no restaurant assigned.")
+        return redirect('superadmin:admin_list')
+
+    employees = User.objects.filter(
+        restaurant=restaurant
+    ).exclude(pk=admin_user.pk).exclude(is_superuser=True).order_by('role', 'employee_id', 'username')
+
+    return render(request, 'superadmin/admin_employees.html', {
+        'admin_user': admin_user,
+        'restaurant': restaurant,
+        'employees': employees,
+        'total_count': employees.count(),
+        'active_count': employees.filter(is_active=True).count(),
+        'inactive_count': employees.filter(is_active=False).count(),
+    })
+
+
+@super_admin_required
+def employee_toggle_status(request, user_id):
+    """Allows Super Admin to individually reactivate or deactivate an employee."""
+    employee = get_object_or_404(User, id=user_id, is_superuser=False)
+    action = request.POST.get('action')
+    return_admin_id = request.POST.get('admin_id')
+
+    if action == 'activate':
+        employee.is_active = True
+        employee.save(update_fields=['is_active'])
+        AccountStatusAuditLog.objects.create(
+            target_user=employee,
+            restaurant=employee.restaurant,
+            action=AccountStatusAuditLog.Action.EMPLOYEE_REACTIVATE,
+            performed_by=request.user,
+            reason="Individual employee reactivation"
+        )
+        messages.success(request, f"Employee '{employee.username}' [{employee.get_role_display()}] activated successfully.")
+    elif action == 'deactivate':
+        employee.is_active = False
+        employee.save(update_fields=['is_active'])
+        AccountStatusAuditLog.objects.create(
+            target_user=employee,
+            restaurant=employee.restaurant,
+            action=AccountStatusAuditLog.Action.EMPLOYEE_DEACTIVATE,
+            performed_by=request.user,
+            reason="Individual employee deactivation"
+        )
+        invalidate_user_sessions([employee.id])
+        messages.warning(request, f"Employee '{employee.username}' [{employee.get_role_display()}] deactivated.")
+
+    if return_admin_id:
+        return redirect('superadmin:admin_employees', user_id=return_admin_id)
+    return redirect('superadmin:admin_list')
+
+
+@super_admin_required
+def audit_history(request):
+    """View full system audit log of account status and cascade operations."""
+    logs = AccountStatusAuditLog.objects.select_related(
+        'target_user', 'restaurant', 'performed_by'
+    ).all().order_by('-created_at')
+
+    return render(request, 'superadmin/audit_history.html', {
+        'logs': logs,
+        'total_logs': logs.count(),
+    })
 
 
 # ==========================================

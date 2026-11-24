@@ -23,8 +23,23 @@
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
 
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% if form.errors %}
+                        <div class="alert alert-danger d-flex align-items-start gap-2 mb-4">
+                            <i class="bi bi-exclamation-triangle-fill fs-5 mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <strong>Please correct the errors below:</strong>
+                                <ul class="mb-0 mt-1 ps-3">
+                                    {% for field in form %}
+                                        {% for error in field.errors %}
+                                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
                     {% endif %}
 
                     <!-- 1. Company / Restaurant Identity & Branding -->
@@ -62,6 +77,22 @@
                                 {{ form.restaurant_address }}
                                 {% if form.restaurant_address.errors %}<div class="text-danger small mt-1">{{ form.restaurant_address.errors|striptags }}</div>{% endif %}
                             </div>
+
+                            {% if form.restaurant_status %}
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Restaurant Status</label>
+                                {{ form.restaurant_status }}
+                                {% if form.restaurant_status.errors %}<div class="text-danger small mt-1">{{ form.restaurant_status.errors|striptags }}</div>{% endif %}
+                            </div>
+                            {% endif %}
+
+                            {% if form.restaurant_plan %}
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Subscription Plan Tier</label>
+                                {{ form.restaurant_plan }}
+                                {% if form.restaurant_plan.errors %}<div class="text-danger small mt-1">{{ form.restaurant_plan.errors|striptags }}</div>{% endif %}
+                            </div>
+                            {% endif %}
 
                             <!-- Logo Upload & Live Preview Area -->
                             <div class="col-12 mt-3 pt-3 border-top">

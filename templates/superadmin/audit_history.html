@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Account Status Audit History{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-clock-history me-2 text-primary"></i> Account Status Audit Logs</h3>
+        <p class="text-muted small mb-0">Complete audit trail of admin status toggles, cascade deactivations, and reactivation events</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'superadmin:admin_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 shadow-xs">
+            <i class="bi bi-arrow-left me-1"></i> Back to Admins
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-body-tertiary py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-journal-text me-2 text-primary"></i> System Status Operation Log</h6>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ total_logs }} events recorded</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-uppercase small text-secondary">
+                <tr>
+                    <th class="ps-4">Timestamp</th>
+                    <th>Action</th>
+                    <th>Target Account</th>
+                    <th>Restaurant</th>
+                    <th>Performed By</th>
+                    <th>Cascade Impact</th>
+                    <th class="pe-4">Reason / Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td class="ps-4 small text-muted text-nowrap">
+                        <i class="bi bi-clock me-1 text-primary"></i> {{ log.created_at|date:"M d, Y H:i:s" }}
+                    </td>
+                    <td>
+                        {% if log.action == 'CASCADE_DEACTIVATE' or log.action == 'ADMIN_DEACTIVATE' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1">
+                                <i class="bi bi-person-x-fill me-1"></i> Cascade Deactivate
+                            </span>
+                        {% elif log.action == 'ADMIN_REACTIVATE' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
+                                <i class="bi bi-person-check-fill me-1"></i> Admin Reactivate
+                            </span>
+                        {% elif log.action == 'ADMIN_SUSPEND' %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1">
+                                <i class="bi bi-slash-circle-fill me-1"></i> Suspended
+                            </span>
+                        {% elif log.action == 'ADMIN_UNSUSPEND' %}
+                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2.5 py-1">
+                                <i class="bi bi-shield-check me-1"></i> Unsuspended
+                            </span>
+                        {% elif log.action == 'EMPLOYEE_REACTIVATE' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
+                                <i class="bi bi-person-check me-1"></i> Staff Reactivate
+                            </span>
+                        {% elif log.action == 'EMPLOYEE_DEACTIVATE' %}
+                            <span class="badge bg-secondary-subtle text-secondary border px-2.5 py-1">
+                                <i class="bi bi-person-dash me-1"></i> Staff Deactivate
+                            </span>
+                        {% else %}
+                            <span class="badge bg-light text-body border px-2.5 py-1">{{ log.get_action_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-body">{{ log.target_user.get_full_name|default:log.target_user.username }}</div>
+                        <div class="small text-muted">@{{ log.target_user.username }} ({{ log.target_user.get_role_display }})</div>
+                    </td>
+                    <td>
+                        {% if log.restaurant %}
+                            <span class="fw-medium text-body">{{ log.restaurant.name }}</span>
+                            <div class="small text-muted">ID: <code>{{ log.restaurant.code }}</code></div>
+                        {% else %}
+                            <span class="text-muted small">None</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.performed_by %}
+                            <span class="badge bg-dark-subtle text-body border px-2 py-1">
+                                <i class="bi bi-shield-lock me-1"></i> {{ log.performed_by.username }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted small">System</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.affected_count > 0 %}
+                            <span class="badge bg-danger text-white px-2 py-1">
+                                <i class="bi bi-people-fill me-1"></i> {{ log.affected_count }} staff deactivated
+                            </span>
+                        {% else %}
+                            <span class="text-muted small">0 staff</span>
+                        {% endif %}
+                    </td>
+                    <td class="pe-4 small text-muted">
+                        {{ log.reason|default:"-" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-journal-x fs-1 text-secondary mb-2"></i>
+                        <h6>No audit logs recorded yet</h6>
+                        <p class="small mb-0">Status changes and deactivation events will be recorded here automatically.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

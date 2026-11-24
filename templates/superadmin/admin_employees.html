@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}Restaurant Staff - {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-people-fill me-2 text-primary"></i> Staff Members: {{ restaurant.name }}</h3>
+        <p class="text-muted small mb-0">
+            Admin: <strong>{{ admin_user.get_full_name|default:admin_user.username }}</strong> (@{{ admin_user.username }}) &bull; Restaurant ID: <code>{{ restaurant.code }}</code>
+        </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'superadmin:admin_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 shadow-xs">
+            <i class="bi bi-arrow-left me-1"></i> Back to Admins
+        </a>
+    </div>
+</div>
+
+<!-- Staff Summary KPI -->
+<div class="row g-3 mb-4">
+    <div class="col-4">
+        <div class="card p-3 border-start border-4 border-primary shadow-xs">
+            <div class="text-secondary small fw-bold text-uppercase">Total Employees</div>
+            <h4 class="fw-bold mb-0 text-body fs-3">{{ total_count }}</h4>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card p-3 border-start border-4 border-success shadow-xs">
+            <div class="text-secondary small fw-bold text-uppercase">Active Staff</div>
+            <h4 class="fw-bold mb-0 text-success fs-3">{{ active_count }}</h4>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card p-3 border-start border-4 border-secondary shadow-xs">
+            <div class="text-secondary small fw-bold text-uppercase">Inactive Staff</div>
+            <h4 class="fw-bold mb-0 text-secondary fs-3">{{ inactive_count }}</h4>
+        </div>
+    </div>
+</div>
+
+<!-- Employees Table -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-body-tertiary py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-card-list me-2 text-primary"></i> Registered Employees under {{ restaurant.name }}</h6>
+        <span class="badge bg-secondary-subtle text-secondary border">{{ employees.count }} records</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-uppercase small text-secondary">
+                <tr>
+                    <th class="ps-4">Employee</th>
+                    <th>Role</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th class="text-end pe-4">Individual Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold shadow-xs" style="width: 38px; height: 38px; font-size: 0.95rem; background: linear-gradient(135deg, var(--rms-primary, #ea580c) 0%, #c2410c 100%);">
+                                {{ emp.first_name|default:emp.username|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <div class="fw-bold text-body">{{ emp.get_full_name|default:emp.username }}</div>
+                                <div class="text-muted small">@{{ emp.username }} {% if emp.employee_id %}&bull; ID: <code>{{ emp.employee_id }}</code>{% endif %}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-dark-subtle text-body border px-2.5 py-1">{{ emp.get_role_display }}</span>
+                    </td>
+                    <td>
+                        <div class="small">
+                            {% if emp.email %}<div><i class="bi bi-envelope text-primary me-1"></i>{{ emp.email }}</div>{% endif %}
+                            {% if emp.phone_number %}<div><i class="bi bi-telephone text-primary me-1"></i>{{ emp.phone_number }}</div>{% endif %}
+                            {% if not emp.email and not emp.phone_number %}<span class="text-muted">No contact info</span>{% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if emp.is_active %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
+                                <i class="bi bi-check-circle me-1"></i> Active
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border px-2.5 py-1">
+                                <i class="bi bi-dash-circle me-1"></i> Inactive
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted">
+                        {{ emp.date_joined|date:"M d, Y" }}
+                    </td>
+                    <td class="text-end pe-4">
+                        {% if emp.is_active %}
+                            <form method="post" action="{% url 'superadmin:employee_toggle_status' emp.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="deactivate">
+                                <input type="hidden" name="admin_id" value="{{ admin_user.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Deactivate this employee">
+                                    <i class="bi bi-person-x me-1"></i> Deactivate
+                                </button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{% url 'superadmin:employee_toggle_status' emp.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="activate">
+                                <input type="hidden" name="admin_id" value="{{ admin_user.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-success" title="Reactivate this employee">
+                                    <i class="bi bi-person-check me-1"></i> Reactivate
+                                </button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-people fs-1 text-secondary mb-2"></i>
+                        <h6>No employees found</h6>
+                        <p class="small mb-0">No staff members have been registered under this restaurant yet.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
