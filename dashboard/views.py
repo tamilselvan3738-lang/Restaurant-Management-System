@@ -148,6 +148,53 @@ def index(request):
         'recent_orders': recent_orders,
         'tables_summary': tables_summary,
     }
+
+    if user.is_superuser:
+        # Multi-Tenant & Super Admin metrics: Total & status of created admins
+        all_admins = User.objects.filter(
+            role__in=[User.Role.ADMIN, User.Role.MANAGER],
+            is_superuser=False
+        ).select_related('restaurant').order_by('-date_joined')
+
+        total_admins = all_admins.count()
+        active_admins = all_admins.filter(is_active=True, is_suspended=False).count()
+        inactive_admins = all_admins.filter(is_active=False).count()
+        suspended_admins = all_admins.filter(is_suspended=True).count()
+        admins_created_today = all_admins.filter(date_joined__date=today).count()
+        admins_created_this_month = all_admins.filter(date_joined__year=today.year, date_joined__month=today.month).count()
+
+        total_restaurants = Restaurant.objects.count()
+        active_restaurants = Restaurant.objects.filter(status=Restaurant.RestaurantStatus.ACTIVE).count()
+        suspended_restaurants = Restaurant.objects.filter(status=Restaurant.RestaurantStatus.SUSPENDED).count()
+
+        recent_admins = all_admins[:10]
+        recent_restaurants = Restaurant.objects.order_by('-created_at')[:6]
+
+        total_employees = User.objects.exclude(
+            role__in=[User.Role.ADMIN, User.Role.CUSTOMER]
+        ).exclude(is_superuser=True).count()
+
+        total_platform_orders = Order.objects.count()
+        total_platform_revenue = Payment.objects.filter(status='COMPLETED').aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+        context.update({
+            'is_superuser_dashboard': True,
+            'total_admins': total_admins,
+            'active_admins': active_admins,
+            'inactive_admins': inactive_admins,
+            'suspended_admins': suspended_admins,
+            'admins_created_today': admins_created_today,
+            'admins_created_this_month': admins_created_this_month,
+            'total_restaurants': total_restaurants,
+            'active_restaurants': active_restaurants,
+            'suspended_restaurants': suspended_restaurants,
+            'recent_admins': recent_admins,
+            'recent_restaurants': recent_restaurants,
+            'total_employees': total_employees,
+            'total_platform_orders': total_platform_orders,
+            'total_platform_revenue': total_platform_revenue,
+        })
+
     return render(request, 'dashboard/index.html', context)
 
 

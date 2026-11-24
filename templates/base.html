@@ -771,6 +771,7 @@
         <ul class="sidebar-menu">
             {% if user.is_superuser or user.role == 'ADMIN' %}
                 <!-- ================= 22 ADMIN DASHBOARD MODULES ================= -->
+                {% if not user.is_superuser %}
                 <li class="menu-header">Operations & Ordering</li>
                 <li>
                     <a href="{% url 'dashboard:index' %}" class="{% if request.resolver_match.app_name == 'dashboard' and request.resolver_match.url_name == 'index' %}active{% endif %}">
@@ -837,7 +838,6 @@
                     </a>
                 </li>
 
-                {% if not user.is_superuser %}
                 <li class="menu-header">Billing & Settlement</li>
                 <li>
                     <a href="{% url 'billing:bill_request_list' %}" class="sidebar-bill-request-btn {% if 'bill_request' in request.resolver_match.url_name %}active{% endif %} {% if pending_bill_requests_count > 0 and 'bill_request' not in request.resolver_match.url_name %}has-pending{% endif %}" title="{% if pending_bill_request_table and pending_bill_requests_count > 0 %}Table {{ pending_bill_request_table }} requested bill{% else %}Customer Bill Requests{% endif %}" onclick="document.querySelectorAll('.pending-bill-requests-badge').forEach(b => { b.textContent = ''; b.classList.add('d-none'); b.style.setProperty('display', 'none', 'important'); }); document.querySelectorAll('.sidebar-bill-request-btn').forEach(btn => btn.classList.remove('has-pending'));">
