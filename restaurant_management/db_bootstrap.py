@@ -54,15 +54,41 @@ def ensure_database_ready():
 
         # 3. Provision Default Restaurant if none exists
         from accounts.models import Restaurant
-        if not Restaurant.objects.exists():
-            Restaurant.objects.create(
-                name='Growwpark',
-                code='REST-0001',
-                status=Restaurant.RestaurantStatus.ACTIVE,
-                plan=Restaurant.SubscriptionPlan.ENTERPRISE,
+        restaurant, _ = Restaurant.objects.get_or_create(
+            name='Growwpark',
+            defaults={
+                'code': 'REST-0001',
+                'status': Restaurant.RestaurantStatus.ACTIVE,
+                'plan': Restaurant.SubscriptionPlan.ENTERPRISE,
+            }
+        )
+
+        # 4. Provision Restaurant Admin 'tamil'
+        t_user = User.objects.filter(normalized_username='tamil', restaurant=restaurant).first()
+        if not t_user:
+            t_user = User.objects.filter(normalized_username='tamil').first()
+        if not t_user:
+            t_user = User(
+                username='tamil',
+                email='tamilselvan3738@gmail.com',
+                first_name='Tamil',
+                last_name='S',
+                restaurant=restaurant,
+                role='ADMIN',
+                is_staff=True,
+                is_active=True,
+                employee_id='EMP-1001',
             )
+        else:
+            if not t_user.restaurant:
+                t_user.restaurant = restaurant
+        t_user.set_password('23MCA095@t')
+        t_user.role = 'ADMIN'
+        t_user.is_staff = True
+        t_user.is_active = True
+        t_user.save()
 
         _INITIALIZED = True
-        print(f"[BOOTSTRAP] Database initialized and Superadmin '{username}' ready.")
+        print(f"[BOOTSTRAP] Database initialized: Superadmin '{username}' and Admin 'tamil' ready.")
     except Exception as exc:
         print(f"[BOOTSTRAP NOTICE] Database setup: {exc}")
