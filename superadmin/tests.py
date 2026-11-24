@@ -30,6 +30,8 @@ class CompanyLogoManagementTests(TestCase):
 
         post_data = {
             'restaurant_name': 'Bella Italia Bistro',
+            'restaurant_status': 'ACTIVE',
+            'restaurant_plan': 'STARTER',
             'restaurant_logo': logo_file,
             'restaurant_address': '101 Pasta Lane',
             'restaurant_phone': '+1 555-1234',
@@ -148,6 +150,8 @@ class CompanyLogoManagementTests(TestCase):
         new_logo = SimpleUploadedFile('replaced.png', create_test_image(color='purple'), content_type='image/png')
         edit_data = {
             'restaurant_name': 'Cafe Parisian Deluxe',
+            'restaurant_status': 'ACTIVE',
+            'restaurant_plan': 'STARTER',
             'restaurant_logo': new_logo,
             'restaurant_address': '456 Champs-Elysees',
             'restaurant_phone': '+33 1 23 45 67 89',

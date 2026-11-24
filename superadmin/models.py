@@ -152,3 +152,40 @@ class SystemSetting(models.Model):
 
     def __str__(self):
         return "System Settings"
+
+
+class AccountStatusAuditLog(models.Model):
+    class Action(models.TextChoices):
+        CASCADE_DEACTIVATE = 'CASCADE_DEACTIVATE', 'Cascade Deactivation'
+        ADMIN_DEACTIVATE = 'ADMIN_DEACTIVATE', 'Admin Deactivation (Cascade)'
+        ADMIN_REACTIVATE = 'ADMIN_REACTIVATE', 'Admin Reactivation'
+        ADMIN_SUSPEND = 'ADMIN_SUSPEND', 'Admin Suspension'
+        ADMIN_UNSUSPEND = 'ADMIN_UNSUSPEND', 'Admin Unsuspension'
+        EMPLOYEE_BULK_DEACTIVATE = 'EMPLOYEE_BULK_DEACTIVATE', 'Employee Bulk Deactivation'
+        EMPLOYEE_REACTIVATE = 'EMPLOYEE_REACTIVATE', 'Individual Employee Reactivation'
+        EMPLOYEE_DEACTIVATE = 'EMPLOYEE_DEACTIVATE', 'Individual Employee Deactivation'
+
+    target_user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='status_audit_logs'
+    )
+    restaurant = models.ForeignKey(
+        'accounts.Restaurant', on_delete=models.CASCADE, null=True, blank=True, related_name='status_audit_logs'
+    )
+    action = models.CharField(max_length=40, choices=Action.choices)
+    performed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='performed_status_audits'
+    )
+    affected_count = models.PositiveIntegerField(default=0, help_text="Number of employees affected")
+    affected_employee_ids = models.JSONField(
+        default=list, blank=True, help_text="IDs of employees who were active and bulk-deactivated in cascade"
+    )
+    reason = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Account Status Audit Log'
+        verbose_name_plural = 'Account Status Audit Logs'
+
+    def __str__(self):
+        return f"[{self.get_action_display()}] on {self.target_user.username} by {self.performed_by} at {self.created_at}"

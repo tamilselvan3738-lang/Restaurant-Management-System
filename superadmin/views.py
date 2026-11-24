@@ -10,18 +10,38 @@ from django.conf import settings
 from django.utils import timezone
 from django.http import FileResponse, Http404
 from django.db.models import Sum, Count, Q
+from django.db import transaction
+from django.contrib.sessions.models import Session
+import logging
+
 from accounts.models import User, Restaurant
 from accounts.forms import UserProfileForm
 from tables.models import DiningTable, CustomerSession
 from orders.models import Order
 from billing.models import Payment, Invoice
-from .models import RestaurantConfig, AdminReport, SystemSetting
+from .models import RestaurantConfig, AdminReport, SystemSetting, AccountStatusAuditLog
 from .forms import (
     AdminCreationForm, AdminEditForm,
     RestaurantDetailsForm, RestaurantStatusForm,
     AdminReportForm, AdminReportReviewForm,
     GeneralSettingsForm, SecuritySettingsForm, BackupSettingsForm
 )
+
+logger = logging.getLogger(__name__)
+
+def invalidate_user_sessions(user_ids):
+    """Purges active sessions for given user IDs."""
+    if not user_ids:
+        return
+    user_id_strs = {str(uid) for uid in user_ids}
+    try:
+        active_sessions = Session.objects.filter(expire_date__gte=timezone.now())
+        for session in active_sessions:
+            data = session.get_decoded()
+            if str(data.get('_auth_user_id')) in user_id_strs:
+                session.delete()
+    except Exception as e:
+        logger.warning("Session invalidation failed: %s", e)
 
 def super_admin_check(user):
     return user.is_authenticated and user.is_superuser

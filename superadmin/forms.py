@@ -1,9 +1,11 @@
 import os
+import re
 from django import forms
+from django.db import transaction
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from accounts.models import Restaurant
-from .models import RestaurantConfig, AdminReport, SystemSetting
+from .models import RestaurantConfig, AdminReport, SystemSetting, AccountStatusAuditLog
 
 User = get_user_model()
 
@@ -37,12 +39,14 @@ class AdminCreationForm(UserCreationForm):
     restaurant_status = forms.ChoiceField(
         choices=Restaurant.RestaurantStatus.choices,
         initial=Restaurant.RestaurantStatus.ACTIVE,
+        required=False,
         label="Restaurant Status",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     restaurant_plan = forms.ChoiceField(
         choices=Restaurant.SubscriptionPlan.choices,
         initial=Restaurant.SubscriptionPlan.STARTER,
+        required=False,
         label="Subscription Plan Tier",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -70,6 +74,13 @@ class AdminCreationForm(UserCreationForm):
         widget=forms.Select(attrs={'class': 'form-select'})
     )
 
+    # Account Status
+    is_active = forms.BooleanField(
+        required=False, initial=True,
+        label="Account Active (Permitted to log in)",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
     # Administrative Permissions
     can_manage_staff = forms.BooleanField(
         required=False, initial=True,
@@ -93,6 +104,7 @@ class AdminCreationForm(UserCreationForm):
         fields = (
             'username', 'first_name', 'last_name', 'email', 'phone_number',
             'role', 'job_title', 'admin_access_level',
+            'is_active',
             'can_manage_staff', 'can_manage_discounts', 'can_view_financials', 'can_edit_menu'
         )
 
@@ -112,14 +124,23 @@ class AdminCreationForm(UserCreationForm):
         if 'is_staff' in self.fields:
             self.fields['is_staff'].initial = True
 
+    def clean_restaurant_name(self):
+        name = (self.cleaned_data.get('restaurant_name') or '').strip()
+        if not name:
+            raise forms.ValidationError("Company / Restaurant Name is required.")
+        return name
+
     def clean_username(self):
         username = (self.cleaned_data.get('username') or '').strip()
         if not username:
             raise forms.ValidationError("Username is required.")
 
-        rest_name = (self.cleaned_data.get('restaurant_name') or '').strip()
-        restaurant = Restaurant.objects.filter(name__iexact=rest_name).first()
         norm = username.lower()
+        if User.objects.filter(is_superuser=True, normalized_username=norm).exists():
+            raise forms.ValidationError("This username is reserved for platform administration. Please choose another username.")
+
+        rest_name = (self.cleaned_data.get('restaurant_name') or '').strip()
+        restaurant = Restaurant.objects.filter(name__iexact=rest_name).first() if rest_name else None
 
         if restaurant:
             existing = User.objects.filter(
@@ -134,6 +155,30 @@ class AdminCreationForm(UserCreationForm):
                 )
         return username
 
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if not email:
+            raise forms.ValidationError("Admin Email Address is required.")
+        existing = User.objects.filter(email__iexact=email)
+        if self.instance and self.instance.pk:
+            existing = existing.exclude(pk=self.instance.pk)
+        if existing.exists():
+            raise forms.ValidationError("This email address is already in use by another account.")
+        return email
+
+    def clean_phone_number(self):
+        phone = (self.cleaned_data.get('phone_number') or '').strip()
+        if phone:
+            if not re.match(r'^[+\d\s().-]{7,25}$', phone):
+                raise forms.ValidationError("Please enter a valid mobile number (e.g. +1 555-019-2834 or +91 9876543210).")
+            existing = User.objects.filter(phone_number=phone)
+            if self.instance and self.instance.pk:
+                existing = existing.exclude(pk=self.instance.pk)
+            if existing.exists():
+                raise forms.ValidationError("This mobile number is already registered to another account.")
+            return phone
+        return None
+
     def clean_restaurant_logo(self):
         logo = self.cleaned_data.get('restaurant_logo')
         if logo:
@@ -145,48 +190,53 @@ class AdminCreationForm(UserCreationForm):
         return logo
 
     def save(self, commit=True):
-        user = super().save(commit=False)
-        username = (self.cleaned_data.get('username') or getattr(user, 'username', '') or '').strip()
-        user.username = username
-        user.normalized_username = username.lower()
-        user.is_staff = True
+        with transaction.atomic():
+            user = super().save(commit=False)
+            username = (self.cleaned_data.get('username') or getattr(user, 'username', '') or '').strip()
+            user.username = username
+            user.normalized_username = username.lower()
+            user.is_staff = True
+            user.is_active = self.cleaned_data.get('is_active', True)
+            user.email = (self.cleaned_data.get('email') or '').strip().lower()
+            user.phone_number = self.cleaned_data.get('phone_number') or None
+            user.role = self.cleaned_data.get('role', User.Role.ADMIN)
 
-        rest_name = self.cleaned_data.get('restaurant_name')
-        rest_logo = self.cleaned_data.get('restaurant_logo')
-        rest_address = self.cleaned_data.get('restaurant_address', '')
-        rest_phone = self.cleaned_data.get('restaurant_phone', '')
-        rest_email = self.cleaned_data.get('restaurant_email', '')
-        rest_status = self.cleaned_data.get('restaurant_status', Restaurant.RestaurantStatus.ACTIVE)
-        rest_plan = self.cleaned_data.get('restaurant_plan', Restaurant.SubscriptionPlan.STARTER)
+            rest_name = self.cleaned_data.get('restaurant_name')
+            rest_logo = self.cleaned_data.get('restaurant_logo')
+            rest_address = self.cleaned_data.get('restaurant_address', '')
+            rest_phone = self.cleaned_data.get('restaurant_phone', '')
+            rest_email = self.cleaned_data.get('restaurant_email', '')
+            rest_status = self.cleaned_data.get('restaurant_status') or Restaurant.RestaurantStatus.ACTIVE
+            rest_plan = self.cleaned_data.get('restaurant_plan') or Restaurant.SubscriptionPlan.STARTER
 
-        if rest_name:
-            restaurant, _ = Restaurant.objects.get_or_create(
-                name=rest_name,
-                defaults={
-                    'address': rest_address,
-                    'phone': rest_phone,
-                    'email': rest_email,
-                    'status': rest_status,
-                    'plan': rest_plan,
-                }
-            )
-            if rest_logo:
-                restaurant.logo = rest_logo
-            if rest_address:
-                restaurant.address = rest_address
-            if rest_phone:
-                restaurant.phone = rest_phone
-            if rest_email:
-                restaurant.email = rest_email
-            restaurant.status = rest_status
-            restaurant.plan = rest_plan
-            restaurant.save()
-            user.restaurant = restaurant
-            RestaurantConfig.get_config(restaurant=restaurant)
+            if rest_name:
+                restaurant, _ = Restaurant.objects.get_or_create(
+                    name=rest_name,
+                    defaults={
+                        'address': rest_address,
+                        'phone': rest_phone,
+                        'email': rest_email,
+                        'status': rest_status,
+                        'plan': rest_plan,
+                    }
+                )
+                if rest_logo:
+                    restaurant.logo = rest_logo
+                if rest_address:
+                    restaurant.address = rest_address
+                if rest_phone:
+                    restaurant.phone = rest_phone
+                if rest_email:
+                    restaurant.email = rest_email
+                restaurant.status = rest_status
+                restaurant.plan = rest_plan
+                restaurant.save()
+                user.restaurant = restaurant
+                RestaurantConfig.get_config(restaurant=restaurant)
 
-        if commit:
-            user.save()
-        return user
+            if commit:
+                user.save()
+            return user
 
 
 class AdminEditForm(forms.ModelForm):

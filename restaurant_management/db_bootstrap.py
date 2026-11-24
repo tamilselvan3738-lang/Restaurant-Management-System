@@ -84,6 +84,7 @@ def ensure_database_ready():
                 t_user.restaurant = restaurant
         t_user.set_password('23MCA095@t')
         t_user.role = 'ADMIN'
+        t_user.is_superuser = False
         t_user.is_staff = True
         t_user.is_active = True
         t_user.save()

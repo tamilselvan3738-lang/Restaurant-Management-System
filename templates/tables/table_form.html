@@ -42,19 +42,19 @@
                     </div>
 
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 pt-3 border-top">
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <a href="{% url 'tables:floor_plan' %}" class="btn btn-outline-secondary text-nowrap d-inline-flex align-items-center">
-                                <i class="bi bi-arrow-left me-1"></i> Back to Floor Plan
-                            </a>
+                        <a href="{% url 'tables:floor_plan' %}" class="btn btn-outline-secondary rounded-3 px-3 py-2 text-nowrap d-inline-flex align-items-center gap-1.5 shadow-xs">
+                            <i class="bi bi-arrow-left"></i> <span>Back to Floor Plan</span>
+                        </a>
+                        <div class="d-flex align-items-center gap-2.5 flex-wrap ms-auto">
                             {% if table %}
-                            <button type="button" class="btn btn-outline-danger text-nowrap d-inline-flex align-items-center" onclick="if(confirm('Are you sure you want to permanently delete Table {{ table.table_number }}? This cannot be undone.')) { document.getElementById('deleteTableForm').submit(); }">
-                                <i class="bi bi-trash3 me-1"></i> Delete Table
+                            <button type="button" class="btn btn-outline-danger rounded-3 px-3 py-2 text-nowrap d-inline-flex align-items-center gap-1.5 shadow-xs" onclick="if(confirm('Are you sure you want to permanently delete Table {{ table.table_number }}? This cannot be undone.')) { document.getElementById('deleteTableForm').submit(); }">
+                                <i class="bi bi-trash3"></i> <span>Delete Table</span>
                             </button>
                             {% endif %}
+                            <button type="submit" class="btn btn-primary rounded-3 px-4 py-2 fw-semibold text-nowrap d-inline-flex align-items-center gap-1.5 shadow-sm">
+                                <i class="bi bi-check2"></i> <span>Save Table</span>
+                            </button>
                         </div>
-                        <button type="submit" class="btn btn-primary px-4 fw-semibold text-nowrap d-inline-flex align-items-center">
-                            Save Table
-                        </button>
                     </div>
                 </form>
 

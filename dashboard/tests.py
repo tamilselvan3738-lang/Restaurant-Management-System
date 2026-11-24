@@ -72,3 +72,53 @@ class NotificationsViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Real-Time Notifications")
 
+    def test_superuser_dashboard_shows_admin_tracking_and_hides_operational_sidebar(self):
+        client = Client()
+        client.force_login(self.user_without_restaurant)
+        response = client.get(reverse('dashboard:index'))
+        self.assertEqual(response.status_code, 200)
+
+        # Super Admin Control Center & Admin Tracking elements
+        self.assertContains(response, "Super Admin Control Center")
+        self.assertContains(response, "Total Admins Created")
+        self.assertContains(response, "Created Restaurant Administrators")
+
+        # Sidebar checks: Superuser should NOT see operational restaurant links
+        content = response.content.decode()
+        start = content.find('sidebar-menu')
+        end = content.find('</ul>', start)
+        sidebar_html = content[start:end]
+
+        self.assertNotIn("Order Management", sidebar_html)
+        self.assertNotIn("Cancelled Orders", sidebar_html)
+        self.assertNotIn("Extra Food Orders", sidebar_html)
+        self.assertNotIn("Table Management", sidebar_html)
+        self.assertNotIn("Service Requests", sidebar_html)
+        self.assertNotIn("Waiter Assignments", sidebar_html)
+        self.assertNotIn("Seat Occupancy", sidebar_html)
+        self.assertNotIn("QR Code Management", sidebar_html)
+
+        # Superuser SHOULD see SaaS management links
+        self.assertIn("Restaurant Admins", sidebar_html)
+        self.assertIn("Registered Restaurants", sidebar_html)
+        self.assertIn("Database Backup", sidebar_html)
+
+    def test_restaurant_admin_dashboard_shows_operations_and_operational_sidebar(self):
+        client = Client()
+        client.force_login(self.user_with_restaurant)
+        response = client.get(reverse('dashboard:index'))
+        self.assertEqual(response.status_code, 200)
+
+        # Restaurant Admin Dashboard elements
+        self.assertContains(response, "Floor Plan")
+
+        # Sidebar checks: Normal admin should see operational restaurant links
+        content = response.content.decode()
+        start = content.find('sidebar-menu')
+        end = content.find('</ul>', start)
+        sidebar_html = content[start:end]
+
+        self.assertIn("Order Management", sidebar_html)
+        self.assertIn("Table Management", sidebar_html)
+        self.assertNotIn("Restaurant Admins", sidebar_html)
+
