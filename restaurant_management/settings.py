@@ -6,6 +6,7 @@ Production-ready, highly secure configuration.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -14,17 +15,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env', override=True)
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-rms-production-key-change-in-env-please!')
+SECRET_KEY = os.environ.get("SECRET_KEY") or os.environ.get("DJANGO_SECRET_KEY", "django-insecure-rms-production-key-change-in-env-please!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
+DEBUG = (os.environ.get("DEBUG") or os.environ.get("DJANGO_DEBUG", "True")).lower() in ("true", "1", "yes")
 
-# Hosts
-hosts_env = os.getenv('DJANGO_ALLOWED_HOSTS', '*')
-if DEBUG:
-    ALLOWED_HOSTS = ['*']
-else:
-    ALLOWED_HOSTS = [host.strip() for host in hosts_env.split(',') if host.strip()]
+# Hosts Configuration
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
+
+render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+if render_hostname:
+    ALLOWED_HOSTS.append(render_hostname)
+
+# Support additional hosts configured via environment variable
+extra_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS")
+if extra_hosts:
+    if extra_hosts == "*":
+        ALLOWED_HOSTS = ["*"]
+    else:
+        for host in extra_hosts.split(","):
+            host = host.strip()
+            if host and host not in ALLOWED_HOSTS:
+                ALLOWED_HOSTS.append(host)
 
 
 # Application definition
@@ -64,6 +76,7 @@ CHANNEL_LAYERS = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -96,8 +109,17 @@ WSGI_APPLICATION = 'restaurant_management.wsgi.application'
 
 
 # Database
-# Supports PostgreSQL in production via environment variables with SQLite local fallback
-if os.getenv('POSTGRES_DB'):
+# Supports PostgreSQL in cloud deployments via DATABASE_URL or POSTGRES_* environment variables, with SQLite fallback
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+elif os.getenv('POSTGRES_DB'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -171,6 +193,18 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT.mkdir(parents=True, exist_ok=True)
+
+# Static files storage with WhiteNoise for production compression and caching
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+WHITENOISE_MANIFEST_STRICT = False
 
 # Media files (User uploaded images like food items, receipts)
 MEDIA_URL = '/media/'
@@ -243,6 +277,27 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_HTTPONLY = True
+
+# HTTPS, Proxy SSL & CSRF Configuration for Render & Production
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+if render_hostname:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{render_hostname}")
+
+# Support additional trusted origins via environment variable or default to *.onrender.com
+csrf_origins_env = os.environ.get("CSRF_TRUSTED_ORIGINS")
+if csrf_origins_env:
+    for origin in csrf_origins_env.split(","):
+        origin = origin.strip()
+        if origin and origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
+else:
+    CSRF_TRUSTED_ORIGINS.append("https://*.onrender.com")
 
 if not DEBUG:
     CSRF_COOKIE_SECURE = True
