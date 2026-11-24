@@ -24,10 +24,10 @@
                     {% csrf_token %}
 
                     {% if form.errors %}
-                        <div class="alert alert-danger d-flex align-items-start gap-2 mb-4">
+                        <div class="alert alert-danger d-flex align-items-start gap-2 mb-4 shadow-sm" id="formErrorSummary">
                             <i class="bi bi-exclamation-triangle-fill fs-5 mt-0.5 flex-shrink-0"></i>
                             <div>
-                                <strong>Please correct the errors below:</strong>
+                                <strong>Cannot save administrator. Please correct the errors below:</strong>
                                 <ul class="mb-0 mt-1 ps-3">
                                     {% for field in form %}
                                         {% for error in field.errors %}
@@ -105,8 +105,12 @@
 
                                 <div class="row align-items-center g-3">
                                     <div class="col-auto">
-                                        <!-- Logo Preview Container -->
-                                        <div id="logoPreviewContainer" class="border rounded-3 p-2 bg-white text-center position-relative shadow-sm" style="width: 90px; height: 90px; display: flex; align-items: center; justify-content: center;">
+                                        <!-- Logo Preview Container (Clickable single-click to open file browser) -->
+                                        <div id="logoPreviewContainer" 
+                                             class="border rounded-3 p-2 bg-white text-center position-relative shadow-sm" 
+                                             style="width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease-in-out;"
+                                             title="Single-click to open file browser and choose logo"
+                                             onclick="triggerLogoUpload()">
                                             {% if admin_user.restaurant.logo %}
                                                 <img id="logoPreview" src="{{ admin_user.restaurant.logo.url }}" data-initial="{{ admin_user.restaurant.logo.url }}" alt="Company Logo Preview" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                                                 <div id="logoPlaceholder" class="text-muted d-none">
@@ -119,6 +123,11 @@
                                                     <div style="font-size: 0.65rem;">No Logo</div>
                                                 </div>
                                             {% endif %}
+                                            <span class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center" 
+                                                  style="width: 24px; height: 24px; font-size: 0.72rem; transform: translate(15%, 15%); pointer-events: none;" 
+                                                  title="Click to browse folder">
+                                                <i class="bi bi-camera-fill"></i>
+                                            </span>
                                         </div>
                                     </div>
 
@@ -127,9 +136,9 @@
                                         <div class="d-flex align-items-center justify-content-between mt-2">
                                             <span id="fileInfoText" class="text-muted small">
                                                 {% if admin_user.restaurant.logo %}
-                                                    Current: {{ admin_user.restaurant.name }} logo (select a new file to replace)
+                                                    Current: {{ admin_user.restaurant.name }} logo (<a href="javascript:void(0)" onclick="triggerLogoUpload()" class="text-primary text-decoration-none fw-semibold">click here to replace</a>)
                                                 {% else %}
-                                                    Select an image file to preview before saving
+                                                    <a href="javascript:void(0)" onclick="triggerLogoUpload()" class="text-primary text-decoration-none fw-semibold"><i class="bi bi-folder2-open me-1"></i>Click here or the box</a> to select an image from your computer
                                                 {% endif %}
                                             </span>
                                             <button type="button" id="clearLogoBtn" class="btn btn-sm btn-outline-danger d-none" onclick="clearLogoInput()">
@@ -329,12 +338,21 @@
                     </div>
                     {% endif %}
 
-                    <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                    {% if form.errors %}
+                    <div class="alert alert-danger py-2.5 px-3 small d-flex align-items-center gap-2 mb-3 rounded-3 shadow-xs">
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-5 flex-shrink-0"></i>
+                        <div>
+                            <strong>Form could not be saved:</strong> Please review and correct the highlighted fields above before saving.
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <a href="{% url 'superadmin:admin_list' %}" class="btn btn-outline-secondary">
                             Cancel
                         </a>
-                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
-                            <i class="bi bi-check2-circle me-1"></i> Save Administrator
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm d-inline-flex align-items-center gap-2" id="saveAdminSubmitBtn">
+                            <i class="bi bi-check2-circle"></i> <span>Save Administrator</span>
                         </button>
                     </div>
                 </form>
@@ -343,13 +361,59 @@
     </div>
 </div>
 
+<style>
+#logoPreviewContainer:hover {
+    border-color: var(--bs-primary, #ea580c) !important;
+    background-color: rgba(234, 88, 12, 0.04) !important;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+</style>
+
 <script>
+function triggerLogoUpload() {
+    const logoInput = document.getElementById('logoInput');
+    if (logoInput) {
+        logoInput.click();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const logoInput = document.getElementById('logoInput');
     if (logoInput) {
         logoInput.addEventListener('change', function() {
             handleLogoPreview(this);
         });
+    }
+
+    const previewContainer = document.getElementById('logoPreviewContainer');
+    if (previewContainer) {
+        // Drag and drop support
+        ['dragenter', 'dragover'].forEach(eventName => {
+            previewContainer.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                previewContainer.classList.add('border-primary');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            previewContainer.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                previewContainer.classList.remove('border-primary');
+            }, false);
+        });
+
+        previewContainer.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0 && logoInput) {
+                logoInput.files = dt.files;
+                handleLogoPreview(logoInput);
+            }
+        }, false);
     }
 });
 
@@ -431,6 +495,65 @@ document.addEventListener("DOMContentLoaded", function () {
             ]
         });
     }
+
+    // Client-side Form Validation & Submission Feedback
+    const formEl = document.querySelector('form');
+    const submitBtn = document.getElementById('saveAdminSubmitBtn');
+    if (formEl) {
+        formEl.addEventListener('submit', function (e) {
+            if (p1 && p2) {
+                if (!p1.value.trim()) {
+                    e.preventDefault();
+                    alert("Please enter a password for the new administrator.");
+                    p1.focus();
+                    return false;
+                }
+                if (!p2.value.trim()) {
+                    e.preventDefault();
+                    alert("Please confirm the administrator password.");
+                    p2.focus();
+                    return false;
+                }
+                if (p1.value !== p2.value) {
+                    e.preventDefault();
+                    alert("Passwords do not match. Please verify that both password fields are identical.");
+                    p2.focus();
+                    return false;
+                }
+                if (p1.value.length < 8) {
+                    e.preventDefault();
+                    alert("Password must contain at least 8 characters.");
+                    p1.focus();
+                    return false;
+                }
+            }
+
+            // Visual feedback on click
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Saving Administrator...';
+                // Fallback in case submission takes long
+                setTimeout(function() {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-check2-circle"></i> <span>Save Administrator</span>';
+                    }
+                }, 10000);
+            }
+        });
+    }
+
+    // Auto-scroll to first error if form has errors
+    {% if form.errors %}
+    setTimeout(function () {
+        const errorSummary = document.getElementById('formErrorSummary');
+        const firstFieldErr = document.querySelector('.text-danger.small, .is-invalid');
+        const targetEl = errorSummary || firstFieldErr;
+        if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 150);
+    {% endif %}
 });
 </script>
 {% endblock %}

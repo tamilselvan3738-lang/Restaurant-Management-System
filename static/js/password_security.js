@@ -56,17 +56,23 @@ function initPasswordSecurity(config) {
     const matchText = document.getElementById(prefix + 'matchText');
     const matchIcon = document.getElementById(prefix + 'matchIcon');
 
-    function updateRule(el, isPassing) {
+    function updateRule(el, isPassing, hasText) {
         if (!el) return;
         const icon = el.querySelector('.req-icon');
-        if (isPassing) {
-            el.classList.remove('text-danger');
+        if (!hasText) {
+            el.classList.remove('text-success', 'text-danger');
+            el.classList.add('text-secondary');
+            if (icon) {
+                icon.className = 'bi bi-dash-circle flex-shrink-0 req-icon text-secondary';
+            }
+        } else if (isPassing) {
+            el.classList.remove('text-danger', 'text-secondary');
             el.classList.add('text-success');
             if (icon) {
                 icon.className = 'bi bi-check-circle-fill flex-shrink-0 req-icon text-success';
             }
         } else {
-            el.classList.remove('text-success');
+            el.classList.remove('text-success', 'text-secondary');
             el.classList.add('text-danger');
             if (icon) {
                 icon.className = 'bi bi-x-circle-fill flex-shrink-0 req-icon text-danger';
@@ -124,13 +130,13 @@ function initPasswordSecurity(config) {
         const passPersonal = hasText ? checkPersonalSimilarity(val) : false;
         const passCommon = hasText ? checkCommonAndNumeric(val) : false;
 
-        updateRule(reqLength, passLength);
-        updateRule(reqUpper, passUpper);
-        updateRule(reqLower, passLower);
-        updateRule(reqNumber, passNumber);
-        updateRule(reqSpecial, passSpecial);
-        updateRule(reqPersonal, passPersonal);
-        updateRule(reqCommon, passCommon);
+        updateRule(reqLength, passLength, hasText);
+        updateRule(reqUpper, passUpper, hasText);
+        updateRule(reqLower, passLower, hasText);
+        updateRule(reqNumber, passNumber, hasText);
+        updateRule(reqSpecial, passSpecial, hasText);
+        updateRule(reqPersonal, passPersonal, hasText);
+        updateRule(reqCommon, passCommon, hasText);
 
         // Calculate strength score (0 to 7)
         let score = 0;

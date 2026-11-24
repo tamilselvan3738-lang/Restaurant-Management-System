@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.http import FileResponse, Http404
 from django.db.models import Sum, Count, Q
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.contrib.sessions.models import Session
 import logging
 
@@ -149,10 +149,26 @@ def admin_create(request):
             try:
                 with transaction.atomic():
                     new_admin = form.save()
-                messages.success(request, "Restaurant Admin created successfully.")
+                messages.success(
+                    request,
+                    f"Restaurant Admin created successfully. Administrator '{new_admin.get_full_name() or new_admin.username}' is ready."
+                )
                 return redirect('superadmin:admin_list')
+            except IntegrityError as exc:
+                logger.exception("IntegrityError creating admin: %s", exc)
+                err_text = str(exc).lower()
+                if 'username' in err_text or 'normalized_username' in err_text:
+                    form.add_error('username', "An administrator or employee with this username already exists in this restaurant.")
+                elif 'email' in err_text:
+                    form.add_error('email', "This email address is already registered.")
+                elif 'phone' in err_text:
+                    form.add_error('phone_number', "This phone number is already registered.")
+                else:
+                    form.add_error(None, f"Database constraint violation: {exc}")
+                messages.error(request, "Failed to save administrator. Please review the highlighted errors below.")
             except Exception as e:
                 logger.exception("Failed to create restaurant admin: %s", e)
+                form.add_error(None, f"Failed to save administrator: {e}")
                 messages.error(request, f"Failed to create restaurant admin: {e}")
         else:
             messages.error(request, "Please correct the errors indicated below.")

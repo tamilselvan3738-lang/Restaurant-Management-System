@@ -139,7 +139,7 @@ class AdminCreationForm(UserCreationForm):
         if User.objects.filter(is_superuser=True, normalized_username=norm).exists():
             raise forms.ValidationError("This username is reserved for platform administration. Please choose another username.")
 
-        rest_name = (self.cleaned_data.get('restaurant_name') or '').strip()
+        rest_name = (self.cleaned_data.get('restaurant_name') or self.data.get('restaurant_name') or '').strip()
         restaurant = Restaurant.objects.filter(name__iexact=rest_name).first() if rest_name else None
 
         if restaurant:
@@ -151,7 +151,7 @@ class AdminCreationForm(UserCreationForm):
                 existing = existing.exclude(pk=self.instance.pk)
             if existing.exists():
                 raise forms.ValidationError(
-                    "This username is already registered in this organization. Please choose another username."
+                    f"An administrator or employee with username '{username}' already exists in '{restaurant.name}'. Please choose another username."
                 )
         return username
 
@@ -189,6 +189,38 @@ class AdminCreationForm(UserCreationForm):
                 raise forms.ValidationError("Unsupported file format. Please upload PNG, JPG, JPEG, WEBP or SVG.")
         return logo
 
+    def clean(self):
+        cleaned_data = super().clean()
+        username = (cleaned_data.get('username') or '').strip()
+        rest_name = (cleaned_data.get('restaurant_name') or self.data.get('restaurant_name') or '').strip()
+
+        if username and rest_name:
+            norm = username.lower()
+            restaurant = Restaurant.objects.filter(name__iexact=rest_name).first()
+            if restaurant:
+                existing = User.objects.filter(
+                    restaurant=restaurant,
+                    normalized_username=norm
+                )
+                if self.instance and self.instance.pk:
+                    existing = existing.exclude(pk=self.instance.pk)
+                if existing.exists():
+                    self.add_error(
+                        'username',
+                        f"An administrator or employee with username '{username}' already exists in '{restaurant.name}'. Please choose a unique username."
+                    )
+
+        # Cross-validate email
+        email = (cleaned_data.get('email') or '').strip().lower()
+        if email:
+            existing_email = User.objects.filter(email__iexact=email)
+            if self.instance and self.instance.pk:
+                existing_email = existing_email.exclude(pk=self.instance.pk)
+            if existing_email.exists():
+                self.add_error('email', f"The email address '{email}' is already in use by another account.")
+
+        return cleaned_data
+
     def save(self, commit=True):
         with transaction.atomic():
             user = super().save(commit=False)
@@ -196,6 +228,7 @@ class AdminCreationForm(UserCreationForm):
             user.username = username
             user.normalized_username = username.lower()
             user.is_staff = True
+            user.is_superuser = False
             user.is_active = self.cleaned_data.get('is_active', True)
             user.email = (self.cleaned_data.get('email') or '').strip().lower()
             user.phone_number = self.cleaned_data.get('phone_number') or None

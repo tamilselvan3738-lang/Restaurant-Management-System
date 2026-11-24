@@ -1676,9 +1676,9 @@
     window.addEventListener('orientationchange', updateTopNavbarHeight);
     document.addEventListener('DOMContentLoaded', updateTopNavbarHeight);
 
-    // Auto-dismiss notification popup alerts within 2 seconds
+    // Auto-dismiss notification popup alerts (only success/info alerts, NEVER error alerts)
     function autoDismissAlerts() {
-        const alerts = document.querySelectorAll('.alert.alert-dismissible, .messages .alert, [role="alert"].alert-dismissible, .alert:has(.btn-close)');
+        const alerts = document.querySelectorAll('.alert-success:not([data-keep]), .alert-info:not([data-keep])');
         alerts.forEach(function(alert) {
             if (alert.dataset.autoDismissAttached) return;
             alert.dataset.autoDismissAttached = "true";
@@ -1706,7 +1706,7 @@
                         }
                     }, 350);
                 }
-            }, 2000);
+            }, 4000);
         });
     }
 

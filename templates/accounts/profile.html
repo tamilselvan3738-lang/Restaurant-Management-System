@@ -205,11 +205,11 @@
                             </label>
                             <div class="d-flex flex-wrap align-items-center gap-3">
                                 {% if user.has_profile_picture and user.profile_picture_url %}
-                                    <div class="position-relative" id="currentPhotoWrapper">
+                                    <div class="position-relative" id="currentPhotoWrapper" style="cursor: pointer;" onclick="document.getElementById('id_profile_picture').click();" title="Single-click to open file browser & choose photo">
                                         <img id="currentPhotoImg" src="{{ user.profile_picture_url }}" alt="Current Photo" class="rounded-3 shadow-xs border" style="width: 48px; height: 48px; object-fit: cover;" onerror="document.getElementById('currentPhotoWrapper').style.display='none';">
                                     </div>
                                 {% else %}
-                                    <div class="position-relative" id="currentPhotoWrapper" style="display: none;">
+                                    <div class="position-relative" id="currentPhotoWrapper" style="display: none; cursor: pointer;" onclick="document.getElementById('id_profile_picture').click();" title="Single-click to open file browser & choose photo">
                                         <img id="currentPhotoImg" src="" alt="Photo Preview" class="rounded-3 shadow-xs border" style="width: 48px; height: 48px; object-fit: cover;">
                                     </div>
                                 {% endif %}
