@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-7 col-xl-6">
+        <div class="card">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="card-title mb-0 fw-bold">{{ title }}</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Table Number</label>
+                        {{ form.table_number }}
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Seating Capacity</label>
+                            {{ form.capacity }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Type of Table</label>
+                            {{ form.location }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Initial Status</label>
+                        {{ form.status }}
+                    </div>
+
+                    <div class="form-check mb-4">
+                        {{ form.is_active }}
+                        <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}">
+                            Active in Floor Plan
+                        </label>
+                    </div>
+
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 pt-3 border-top">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <a href="{% url 'tables:floor_plan' %}" class="btn btn-outline-secondary text-nowrap d-inline-flex align-items-center">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Floor Plan
+                            </a>
+                            {% if table %}
+                            <button type="button" class="btn btn-outline-danger text-nowrap d-inline-flex align-items-center" onclick="if(confirm('Are you sure you want to permanently delete Table {{ table.table_number }}? This cannot be undone.')) { document.getElementById('deleteTableForm').submit(); }">
+                                <i class="bi bi-trash3 me-1"></i> Delete Table
+                            </button>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold text-nowrap d-inline-flex align-items-center">
+                            Save Table
+                        </button>
+                    </div>
+                </form>
+
+                {% if table %}
+                <form id="deleteTableForm" method="post" action="{% url 'tables:table_delete' table.id %}" class="d-none">
+                    {% csrf_token %}
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

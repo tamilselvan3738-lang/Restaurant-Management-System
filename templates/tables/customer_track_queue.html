@@ -1,0 +1,290 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Token #{{ entry.queue_token }} &bull; Live Queue Status | {{ RESTAURANT_NAME|default:"Growwpark" }}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Culinary Theme -->
+    <link rel="stylesheet" href="{% static 'css/culinary-theme.css' %}?v=20261124a">
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+        [data-bs-theme="dark"] body {
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+        .track-card {
+            border-radius: 24px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: #ffffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+        }
+        [data-bs-theme="dark"] .track-card {
+            background-color: #151d2f;
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .token-display {
+            font-size: 3.2rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        .live-pulse-ring {
+            animation: pulseWave 2s infinite;
+        }
+        @keyframes pulseWave {
+            0% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.5); }
+            70% { box-shadow: 0 0 0 14px rgba(234, 88, 12, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0); }
+        }
+        .table-ready-box {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            border-radius: 20px;
+            padding: 24px 20px;
+            text-align: center;
+            box-shadow: 0 12px 28px rgba(16, 185, 129, 0.35);
+        }
+        .called-box {
+            background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+            color: #ffffff;
+            border-radius: 20px;
+            padding: 24px 20px;
+            text-align: center;
+            box-shadow: 0 12px 28px rgba(6, 182, 212, 0.35);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Bar -->
+    <div class="py-3 px-3 border-bottom bg-body d-flex justify-content-between align-items-center">
+        <a href="{% url 'tables:queue_public' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-chevron-left me-1"></i> Public Queue
+        </a>
+        <div class="fw-bold small text-body-secondary d-flex align-items-center gap-1.5">
+            <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 8px; height: 8px;"></span>
+            <span id="syncText">Live Updates</span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container py-4" style="max-width: 520px;">
+
+        <!-- Django Alerts -->
+        {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Status Hero Box -->
+        <div id="statusHeroContainer" class="mb-4">
+            {% if is_assigned %}
+            <div class="table-ready-box">
+                <div class="display-5 mb-2"><i class="bi bi-check-circle-fill"></i></div>
+                <h3 class="fw-bold mb-1">Your Table is Ready!</h3>
+                <p class="mb-3 opacity-90">Please proceed to <strong>Table {{ entry.assigned_table.table_number }}</strong>. Our host is ready to seat you.</p>
+                <div class="d-inline-block bg-white text-dark rounded-pill px-4 py-2 fw-bold shadow-sm fs-5">
+                    Table {{ entry.assigned_table.table_number }}
+                </div>
+            </div>
+            {% elif is_called %}
+            <div class="called-box">
+                <div class="display-5 mb-2"><i class="bi bi-megaphone-fill"></i></div>
+                <h3 class="fw-bold mb-1">You Are Being Called!</h3>
+                <p class="mb-0 opacity-90">Please head towards the reception desk or host station now.</p>
+            </div>
+            {% elif is_seated %}
+            <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-success bg-opacity-10 text-success">
+                <div class="display-5 mb-2"><i class="bi bi-emoji-smile-fill"></i></div>
+                <h4 class="fw-bold mb-1">Welcome! You Are Seated</h4>
+                <p class="small mb-0">Enjoy your meal at {{ RESTAURANT_NAME|default:"our restaurant" }}!</p>
+            </div>
+            {% elif is_cancelled %}
+            <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-secondary bg-opacity-10 text-body-secondary">
+                <div class="display-5 mb-2"><i class="bi bi-x-circle"></i></div>
+                <h4 class="fw-bold mb-1">Queue Ticket Concluded</h4>
+                <p class="small mb-0">This queue ticket has been cancelled or closed.</p>
+            </div>
+            {% else %}
+            <!-- Normal Waiting Box -->
+            <div class="card border-0 shadow-sm rounded-4 p-3.5 text-center bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold align-self-center mb-1">
+                    <i class="bi bi-hourglass-split me-1"></i> Waiting in Line
+                </span>
+                <p class="text-body-secondary small mb-0">We will notify you the moment a suitable table is ready!</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Token & Live Stats Card -->
+        <div class="track-card p-4 text-center mb-4">
+            <span class="text-body-secondary small fw-semibold text-uppercase tracking-wider">Your Queue Token</span>
+            <div class="my-1">
+                <span class="token-display">{{ entry.queue_token }}</span>
+            </div>
+
+            <div class="d-inline-flex align-items-center gap-1.5 badge {{ entry.badge_class }} rounded-pill px-3 py-1.5 fs-7 mb-4">
+                <span id="statusBadgeText">{{ entry.get_status_display }}</span>
+            </div>
+
+            <!-- Position & Wait Time Split -->
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="p-3 rounded-4 bg-body-tertiary border">
+                        <span class="text-body-secondary small d-block mb-1">Queue Position</span>
+                        <h2 class="fw-bold text-primary mb-0" id="queuePositionDisplay">
+                            {% if entry.status == 'WAITING' %}#{{ position }}{% elif is_called or is_assigned %}Next!{% else %}&mdash;{% endif %}
+                        </h2>
+                        <span class="text-muted" style="font-size: 0.72rem;" id="queuePositionSub">
+                            {% if entry.status == 'WAITING' %}{{ position|add:"-1" }} group(s) ahead{% else %}Table assignment{% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="p-3 rounded-4 bg-body-tertiary border">
+                        <span class="text-body-secondary small d-block mb-1">Estimated Wait</span>
+                        <h4 class="fw-bold text-dark mb-0 pt-1" id="waitTimeDisplay" style="color: var(--bs-body-color) !important;">
+                            {{ wait_display }}
+                        </h4>
+                        <span class="text-muted" style="font-size: 0.72rem;">Dynamic estimate</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guest Details Card -->
+        <div class="track-card p-3.5 mb-4">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle text-primary"></i> Registration Details
+            </h6>
+
+            <div class="d-flex justify-content-between py-2 border-bottom border-light-subtle small">
+                <span class="text-body-secondary">Guest Name</span>
+                <span class="fw-semibold">{{ entry.customer_name }}</span>
+            </div>
+
+            <div class="d-flex justify-content-between py-2 border-bottom border-light-subtle small">
+                <span class="text-body-secondary">Party Size</span>
+                <span class="fw-semibold">{{ entry.guest_count }} Person(s)</span>
+            </div>
+
+            <div class="d-flex justify-content-between py-2 border-bottom border-light-subtle small">
+                <span class="text-body-secondary">Registered Phone</span>
+                <span class="fw-semibold font-monospace">{{ entry.customer_phone }}</span>
+            </div>
+
+            <div class="d-flex justify-content-between py-2 border-bottom border-light-subtle small">
+                <span class="text-body-secondary">Joined Queue At</span>
+                <span class="fw-semibold">{{ entry.created_at|date:"g:i A" }}</span>
+            </div>
+
+            {% if entry.special_requirements %}
+            <div class="py-2 small">
+                <span class="text-body-secondary d-block mb-1">Special Notes:</span>
+                <span class="fst-italic bg-body-tertiary p-2 rounded-3 d-block">{{ entry.special_requirements }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Cancel Queue Action -->
+        {% if entry.status == 'WAITING' or entry.status == 'CALLED' %}
+        <form method="POST" action="{% url 'tables:queue_cancel' entry.queue_token %}" onsubmit="return confirm('Are you sure you want to leave the waiting queue?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger w-100 rounded-pill py-2.5 small fw-semibold">
+                <i class="bi bi-x-circle me-1"></i> Leave Waiting List
+            </button>
+        </form>
+        {% endif %}
+
+        <!-- Help Notice -->
+        <div class="text-center text-body-secondary small mt-4">
+            <p class="mb-1">Keep this screen open for live updates.</p>
+            <p class="text-muted" style="font-size: 0.75rem;">Your device will alert you when a table is assigned.</p>
+        </div>
+
+    </div>
+
+    <!-- Live Polling Script -->
+    <script>
+    const queueToken = "{{ entry.queue_token }}";
+    let isTableReadyAnnounced = false;
+
+    function playAlertChime() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.15); // E5
+            osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.3); // G5
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.65);
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+        } catch (e) {
+            console.debug('Chime error:', e);
+        }
+    }
+
+    setInterval(function() {
+        fetch(`/tables/queue/api/${queueToken}/status/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status) {
+                    const statusText = document.getElementById('statusBadgeText');
+                    if (statusText) statusText.innerText = data.status_display;
+
+                    const waitDisplay = document.getElementById('waitTimeDisplay');
+                    if (waitDisplay) waitDisplay.innerText = data.wait_display;
+
+                    const posDisplay = document.getElementById('queuePositionDisplay');
+                    const posSub = document.getElementById('queuePositionSub');
+
+                    if (data.status === 'WAITING') {
+                        if (posDisplay) posDisplay.innerText = '#' + data.position;
+                        if (posSub) posSub.innerText = Math.max(0, data.position - 1) + ' group(s) ahead';
+                    } else if (data.is_called || data.is_table_ready) {
+                        if (posDisplay) posDisplay.innerText = 'Next!';
+                        if (posSub) posSub.innerText = data.assigned_table ? 'Table ' + data.assigned_table : 'Please step up';
+                    }
+
+                    // If status transitioned to TABLE_ASSIGNED or CALLED, reload to show top banner!
+                    if ((data.is_table_ready || data.is_called) && !isTableReadyAnnounced) {
+                        isTableReadyAnnounced = true;
+                        playAlertChime();
+                        setTimeout(() => window.location.reload(), 1000);
+                    }
+                }
+            })
+            .catch(err => console.debug('Queue poll error:', err));
+    }, 5000);
+    </script>
+</body>
+</html>

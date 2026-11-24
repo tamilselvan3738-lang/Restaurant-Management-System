@@ -1,0 +1,913 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Chef Portal{% endblock %} | {{ restaurant.name|default:"Kitchen Operations" }}</title>
+    
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('rms-theme') || 'light';
+                document.documentElement.setAttribute('data-bs-theme', savedTheme);
+                const savedCulinary = localStorage.getItem('rms-culinary-theme') || 'saffron';
+                document.documentElement.setAttribute('data-culinary-theme', savedCulinary);
+            } catch (e) {}
+        })();
+    </script>
+
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/culinary-theme.css' %}?v=20261124a">
+
+    <style>
+        :root {
+            --chef-topbar-height: 68px;
+            --chef-primary: #ea580c;
+            --chef-primary-dark: #c2410c;
+            --chef-primary-light: #fff7ed;
+            --chef-sidebar-bg: #111827;
+            --chef-sidebar-hover: #1f2937;
+            --chef-sidebar-active: #ea580c;
+            --chef-body-bg: #f8fafc;
+            --chef-card-bg: #ffffff;
+            --chef-border: #e2e8f0;
+            --chef-text: #1e293b;
+            --chef-muted: #64748b;
+        }
+
+        [data-bs-theme="dark"] {
+            --chef-primary: #f97316;
+            --chef-primary-dark: #ea580c;
+            --chef-primary-light: #431407;
+            --chef-sidebar-bg: #090d16;
+            --chef-sidebar-hover: #151c28;
+            --chef-sidebar-active: #ea580c;
+            --chef-body-bg: #0b0f19;
+            --chef-card-bg: #131a26;
+            --chef-border: #212c3d;
+            --chef-text: #f1f5f9;
+            --chef-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--chef-body-bg);
+            color: var(--chef-text);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styling */
+        .chef-sidebar {
+            width: 270px;
+            background-color: var(--chef-sidebar-bg);
+            color: #e5e7eb;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1040;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.25) rgba(0, 0, 0, 0.2);
+        }
+
+        /* Entire Sidebar Full-Height Scrollbar */
+        .chef-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chef-sidebar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .chef-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 4px;
+        }
+        .chef-sidebar::-webkit-scrollbar-thumb:hover {
+            background: var(--chef-primary, #ea580c);
+        }
+
+        .chef-brand {
+            position: sticky;
+            top: 0;
+            background-color: var(--chef-sidebar-bg);
+            z-index: 10;
+            padding: 1.25rem 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+        .chef-brand-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #ea580c, #f97316);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.35rem;
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4);
+            flex-shrink: 0;
+        }
+        .chef-brand-logo-img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #ffffff;
+            padding: 3px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            flex-shrink: 0;
+        }
+        .chef-brand-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+        .chef-brand-sub {
+            font-size: 0.75rem;
+            color: #fdba74;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .chef-station-wrapper {
+            padding: 0.85rem 0.75rem 0.35rem;
+        }
+        .chef-station-card {
+            padding: 0.75rem 0.95rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            background: rgba(255, 255, 255, 0.03);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+            transition: all 0.2s ease;
+        }
+        .chef-station-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15) !important;
+        }
+        .chef-station-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+        }
+
+        .chef-nav {
+            padding: 0.85rem 0.75rem 1.5rem;
+            flex: 1;
+        }
+        .chef-nav-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #9ca3af;
+            padding: 0.65rem 0.85rem 0.35rem;
+            font-weight: 700;
+        }
+        .chef-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.7rem 0.95rem;
+            border-radius: 10px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+            margin-bottom: 0.2rem;
+            transition: all 0.2s ease;
+        }
+        .chef-nav-link:hover {
+            background-color: var(--chef-sidebar-hover);
+            color: #ffffff;
+            transform: translateX(3px);
+        }
+        .chef-nav-link.active {
+            background: linear-gradient(135deg, #ea580c, #c2410c);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+        }
+        .chef-nav-link i {
+            font-size: 1.15rem;
+            width: 22px;
+            text-align: center;
+        }
+        .chef-nav-link .badge {
+            margin-left: auto;
+            font-size: 0.72rem;
+            padding: 0.25rem 0.55rem;
+        }
+
+        /* Top Navbar */
+        .chef-main {
+            margin-left: 270px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.3s ease;
+        }
+
+        .chef-topbar {
+            height: 68px;
+            background-color: var(--chef-card-bg);
+            border-bottom: 1px solid var(--chef-border);
+            padding: 0 1.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+
+        .chef-content {
+            padding: 1.75rem;
+            flex: 1;
+        }
+
+        /* Sound Indicator Button */
+        .btn-sound-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.8rem;
+            border-radius: 50rem;
+            padding: 0.35rem 0.85rem;
+            background-color: var(--chef-body-bg);
+            border: 1px solid var(--chef-border);
+            color: var(--chef-text);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-sound-toggle.active {
+            border-color: #22c55e;
+            color: #16a34a;
+        }
+
+        @media (max-width: 991.98px) {
+            .chef-sidebar {
+                left: auto;
+                right: 0;
+                width: 290px;
+                max-width: 85vw;
+                transform: translateX(100%);
+                box-shadow: -4px 0 28px rgba(0, 0, 0, 0.45);
+            }
+            .chef-sidebar.show {
+                transform: translateX(0);
+            }
+            .chef-main {
+                margin-left: 0;
+            }
+            .chef-sidebar-backdrop {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.55);
+                backdrop-filter: blur(2px);
+                z-index: 1035;
+            }
+            .chef-sidebar-backdrop.show {
+                display: block;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- CHEF SIDEBAR BACKDROP OVERLAY FOR MOBILE & TABLET -->
+    <div class="chef-sidebar-backdrop d-lg-none" id="chefSidebarBackdrop" onclick="toggleChefSidebar()"></div>
+
+    <!-- CHEF SIDEBAR (STRICTLY 11 MENUS ONLY) -->
+    <aside class="chef-sidebar" id="chefSidebar">
+        <!-- Brand / Header -->
+        <div class="chef-brand">
+            {% if RESTAURANT_LOGO_URL %}
+                <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ restaurant.name|default:RESTAURANT_NAME }} Logo" class="chef-brand-logo-img">
+            {% elif restaurant and restaurant.logo_url %}
+                <img src="{{ restaurant.logo_url }}" alt="{{ restaurant.name }} Logo" class="chef-brand-logo-img">
+            {% elif restaurant and restaurant.logo %}
+                <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }} Logo" class="chef-brand-logo-img">
+            {% elif user.restaurant and user.restaurant.logo_url %}
+                <img src="{{ user.restaurant.logo_url }}" alt="{{ user.restaurant.name }} Logo" class="chef-brand-logo-img">
+            {% else %}
+                <div class="chef-brand-icon">
+                    <i class="bi bi-fire"></i>
+                </div>
+            {% endif %}
+            <div class="min-w-0 flex-grow-1">
+                <div class="chef-brand-title text-truncate">{{ restaurant.name|default:RESTAURANT_NAME|default:"Kitchen Portal" }}</div>
+                <div class="chef-brand-sub">Chef & Kitchen Staff</div>
+            </div>
+            <button class="btn btn-sm text-white-50 d-lg-none ms-auto flex-shrink-0" onclick="toggleChefSidebar()" aria-label="Close menu">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <!-- Mobile & Tablet Navbar Tools inside Drawer (d-lg-none) -->
+        <div class="d-lg-none border-bottom px-3 pt-3 pb-2.5" style="border-color: rgba(255, 255, 255, 0.08) !important; background: rgba(0, 0, 0, 0.18);">
+            <!-- User Profile Box -->
+            <div class="d-flex align-items-center gap-2.5 mb-2.5">
+                {% if user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" class="rounded-circle shadow-xs flex-shrink-0" style="width: 42px; height: 42px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-xs flex-shrink-0 fw-bold" style="width: 42px; height: 42px; font-size: 1.15rem;">
+                        {{ user.first_name|default:user.username|make_list|first|upper }}
+                    </div>
+                {% endif %}
+                <div class="min-w-0 flex-grow-1">
+                    <div class="text-white fw-bold small text-truncate">{{ user.get_full_name|default:user.username }}</div>
+                    <div class="text-white-50 font-monospace" style="font-size: 0.72rem;">@{{ user.username }}</div>
+                    <span class="badge bg-secondary badge-role text-uppercase mt-0.5" style="font-size: 0.65rem;">{{ profile.get_designation_display|default:"Kitchen Staff" }}</span>
+                </div>
+            </div>
+
+            <!-- User Quick Actions: Profile & Logout -->
+            <div class="d-flex gap-2 mb-2.5">
+                <a href="{% url 'chef:profile' %}" class="btn btn-sm btn-outline-light flex-grow-1 py-1 px-2 d-flex align-items-center justify-content-center gap-1 text-decoration-none" style="font-size: 0.76rem; border-radius: 6px;">
+                    <i class="bi bi-person"></i> <span>Profile</span>
+                </a>
+                <a href="{% url 'chef:logout' %}" class="btn btn-sm btn-outline-danger flex-grow-1 py-1 px-2 d-flex align-items-center justify-content-center gap-1 text-decoration-none" style="font-size: 0.76rem; border-radius: 6px;">
+                    <i class="bi bi-box-arrow-right"></i> <span>Log Out</span>
+                </a>
+            </div>
+
+            <!-- Mobile Live Clock Pill -->
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 rounded-3 border mb-2" style="border-color: rgba(255, 255, 255, 0.08) !important; background: rgba(255, 255, 255, 0.03); min-height: 40px;">
+                <div class="d-flex align-items-center gap-2 text-white text-opacity-75 flex-shrink-0" style="font-size: 0.78rem;">
+                    <i class="bi bi-clock-history text-primary"></i>
+                    <span>Time:</span>
+                </div>
+                <strong class="text-white font-monospace" style="font-size: 0.78rem;" id="chefClockMobile">--:-- --</strong>
+            </div>
+
+            <!-- Mobile Theme Toggle Pill -->
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 rounded-3 border" style="border-color: rgba(255, 255, 255, 0.08) !important; background: rgba(255, 255, 255, 0.03); min-height: 40px;">
+                <div class="d-flex align-items-center gap-2 text-white text-opacity-75 flex-shrink-0" style="font-size: 0.78rem;">
+                    <i class="bi bi-circle-half text-warning"></i>
+                    <span>Theme:</span>
+                    <strong class="text-white fw-semibold" id="chefThemeStatusMobile">Dark</strong>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0 d-inline-flex align-items-center gap-1.5 shadow-xs" onclick="toggleTheme()" aria-label="Toggle Theme" style="font-size: 0.74rem; font-weight: 600;">
+                    <i class="bi bi-sun-fill text-warning" id="chefThemeIconMobile"></i>
+                    <span id="chefThemeLabelMobile">Light</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Station / Duty pill -->
+        <div class="chef-station-wrapper">
+            <div class="chef-station-card">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="chef-station-label">STATION</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-2" style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em;">ON DUTY</span>
+                </div>
+                <div class="d-flex align-items-center gap-2 text-white fw-semibold small text-truncate">
+                    <i class="bi bi-diagram-3 text-warning fs-6 flex-shrink-0"></i>
+                    <span class="text-truncate" style="font-size: 0.85rem;" title="{{ profile.assigned_station.name|default:'All Kitchen Stations' }}">
+                        {{ profile.assigned_station.name|default:"All Kitchen Stations" }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authorized 11 Navigation Menus -->
+        <nav class="chef-nav">
+            <div class="chef-nav-label">Core Operations</div>
+            <!-- 1. Dashboard -->
+            <a href="{% url 'chef:dashboard' %}" class="chef-nav-link {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'dashboard_root' %}active{% endif %}">
+                <i class="bi bi-speedometer2"></i>
+                <span>1. Dashboard</span>
+            </a>
+
+            <!-- 2. Order Management -->
+            <a href="{% url 'chef:orders' %}" class="chef-nav-link {% if request.resolver_match.url_name == 'orders' and not request.resolver_match.kwargs.status_filter and not request.GET.status %}active{% endif %}">
+                <i class="bi bi-receipt-cutoff"></i>
+                <span>2. Order Management</span>
+            </a>
+
+            <div class="chef-nav-label mt-2">Kitchen Workflow</div>
+            <!-- 3. New Orders -->
+            <a href="{% url 'chef:orders_new' %}" class="chef-nav-link {% if request.resolver_match.url_name == 'orders_new' or request.GET.status == 'new' %}active{% endif %}">
+                <i class="bi bi-bell-fill text-warning"></i>
+                <span>3. New Orders</span>
+                <span class="badge bg-warning text-dark" id="navNewBadge">0</span>
+            </a>
+
+            <!-- 4. Preparing Orders -->
+            <a href="{% url 'chef:orders_preparing' %}" class="chef-nav-link {% if request.resolver_match.url_name == 'orders_preparing' or request.GET.status == 'preparing' %}active{% endif %}">
+                <i class="bi bi-fire text-primary"></i>
+                <span>4. Preparing Orders</span>
+                <span class="badge bg-primary" id="navPreparingBadge">0</span>
+            </a>
+
+            <!-- 5. Ready Orders -->
+            <a href="{% url 'chef:orders_ready' %}" class="chef-nav-link {% if request.resolver_match.url_name == 'orders_ready' or request.GET.status == 'ready' %}active{% endif %}">
+                <i class="bi bi-check2-circle text-success"></i>
+                <span>5. Ready Orders</span>
+                <span class="badge bg-success" id="navReadyBadge">0</span>
+            </a>
+
+            <!-- 6. Completed Orders -->
+            <a href="{% url 'chef:orders_completed' %}" class="chef-nav-link {% if request.resolver_match.url_name == 'orders_completed' or request.GET.status == 'completed' %}active{% endif %}">
+                <i class="bi bi-award-fill text-info"></i>
+                <span>6. Completed Orders</span>
+            </a>
+
+            <!-- 7. Cancelled Orders -->
+            <a href="{% url 'chef:orders_cancelled' %}" class="chef-nav-link {% if request.resolver_match.url_name == 'orders_cancelled' or request.GET.status == 'cancelled' %}active{% endif %}">
+                <i class="bi bi-x-octagon text-danger"></i>
+                <span>7. Cancelled Orders</span>
+            </a>
+
+            <div class="chef-nav-label mt-2">Support & Admin Requests</div>
+            <!-- Food Shortage / 86 Item quick link -->
+            <a href="{% url 'chef:report_unavailable' %}" class="chef-nav-link {% if request.resolver_match.url_name == 'report_unavailable' %}active{% endif %}">
+                <i class="bi bi-slash-circle text-warning"></i>
+                <span>Report 86 / Shortage</span>
+            </a>
+
+            <!-- 8. Notifications -->
+            <a href="{% url 'chef:notifications' %}" class="chef-nav-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+                <i class="bi bi-chat-left-dots"></i>
+                <span>8. Notifications</span>
+                <span class="badge bg-danger d-none" id="navNotifBadge">0</span>
+            </a>
+
+            <div class="chef-nav-label mt-2">Account</div>
+            <!-- 9. My Profile -->
+            <a href="{% url 'chef:profile' %}" class="chef-nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                <i class="bi bi-person-badge"></i>
+                <span>9. My Profile</span>
+            </a>
+
+            <!-- 10. Logout -->
+            <a href="{% url 'chef:logout' %}" class="chef-nav-link text-danger mt-1">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>10. Logout</span>
+            </a>
+        </nav>
+    </aside>
+    <!-- Early Chef Sidebar Scroll Position Restoration to Prevent Layout Jumps -->
+    <script>
+        (function() {
+            try {
+                var sb = document.getElementById('chefSidebar');
+                if (sb) {
+                    var saved = sessionStorage.getItem('rms_chef_sidebar_scroll');
+                    if (saved !== null && saved !== '') {
+                        sb.scrollTop = parseInt(saved, 10);
+                    }
+                }
+            } catch (e) {}
+        })();
+    </script>
+
+    <!-- MAIN CHEF CONTENT WRAPPER -->
+    <div class="chef-main">
+        <!-- TOPBAR -->
+        <header class="chef-topbar d-flex align-items-center justify-content-between">
+            <!-- Left: Mobile Brand Logo & Name (d-lg-none) & Desktop Live Clock (d-none d-lg-flex) -->
+            <div class="d-flex align-items-center gap-2.5">
+                <!-- Mobile & Tablet: Brand Logo and Portal Title at Left (d-lg-none) -->
+                <a href="{% url 'chef:dashboard' %}" class="d-flex align-items-center gap-2 text-decoration-none d-lg-none text-body" title="{{ restaurant.name|default:'Kitchen Portal' }}">
+                    {% if RESTAURANT_LOGO_URL %}
+                        <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ restaurant.name|default:RESTAURANT_NAME }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;">
+                    {% elif restaurant and restaurant.logo_url %}
+                        <img src="{{ restaurant.logo_url }}" alt="{{ restaurant.name }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;">
+                    {% elif restaurant and restaurant.logo %}
+                        <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;">
+                    {% elif user.restaurant and user.restaurant.logo_url %}
+                        <img src="{{ user.restaurant.logo_url }}" alt="{{ user.restaurant.name }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;">
+                    {% else %}
+                        <div class="chef-brand-icon shadow-xs" style="width: 32px; height: 32px; font-size: 1.05rem; border-radius: 8px;">
+                            <i class="bi bi-fire"></i>
+                        </div>
+                    {% endif %}
+                    <div class="line-height-1">
+                        <span class="fw-bold text-body text-truncate d-block" style="font-size: 0.95rem; max-width: 200px;">
+                            {{ restaurant.name|default:RESTAURANT_NAME|default:"Kitchen Portal" }}
+                        </span>
+                        <span class="text-primary fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.5px;">KITCHEN OPERATIONS</span>
+                    </div>
+                </a>
+
+                <!-- Desktop: Live Time Clock Pill (d-none d-lg-flex) -->
+                <div class="d-none d-lg-flex align-items-center gap-2 px-3 py-1.5 rounded-pill border live-time-pill" style="font-size: 0.82rem; font-weight: 600;">
+                    <i class="bi bi-clock-history text-primary"></i> <span id="chefClock">--:-- --</span>
+                </div>
+
+                <!-- Global Back Button on Desktop (when not on chef dashboard) -->
+                {% if request.resolver_match.url_name != 'dashboard' %}
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 d-none d-lg-inline-flex align-items-center gap-1.5 shadow-xs" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{% url 'chef:dashboard' %}'; }" title="Go Back">
+                    <i class="bi bi-arrow-left"></i> <span class="small fw-semibold">Back</span>
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Right: Desktop Navigation Controls (d-none d-lg-flex) & Mobile Hamburger Button (d-lg-none) -->
+            <div class="d-flex align-items-center gap-2.5">
+                <!-- Mobile & Tablet: Back Button at Topbar (when not on chef dashboard) -->
+                {% if request.resolver_match.url_name != 'dashboard' %}
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 d-lg-none d-inline-flex align-items-center gap-1 shadow-xs" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{% url 'chef:dashboard' %}'; }" title="Go Back">
+                    <i class="bi bi-arrow-left"></i> <span class="small fw-semibold">Back</span>
+                </button>
+                {% endif %}
+                <!-- Desktop Action Controls: Theme Toggle, User Profile (d-none d-lg-flex) -->
+                <div class="d-none d-lg-flex align-items-center gap-3">
+
+                    <!-- Dark Mode Toggle -->
+                    <button class="btn btn-outline-secondary rounded-circle border shadow-sm d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                        <i class="bi bi-moon-stars" id="themeIcon"></i>
+                    </button>
+
+                    <!-- User profile badge -->
+                    <div class="d-flex align-items-center gap-2 ps-2 border-start">
+                        {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" class="rounded-circle shadow-sm" style="width: 36px; height: 36px; object-fit: cover;">
+                        {% else %}
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px; font-weight: 700; font-size: 0.9rem;">
+                                {{ user.first_name|default:user.username|make_list|first|upper }}
+                            </div>
+                        {% endif %}
+                        <div class="text-start line-height-1">
+                            <div class="fw-semibold small text-truncate" style="max-width: 140px;">
+                                {{ user.get_full_name|default:user.username }}
+                            </div>
+                            <div class="text-muted font-monospace" style="font-size: 0.68rem;">
+                                @{{ user.username }} &bull; {{ profile.get_designation_display|default:"Kitchen Staff" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile & Tablet: Hamburger Menu Button at Right (d-lg-none) -->
+                <button class="btn btn-outline-secondary rounded-3 p-1.5 d-lg-none d-flex align-items-center justify-content-center shadow-xs" id="chefSidebarToggle" type="button" onclick="toggleChefSidebar()" aria-label="Toggle navigation menu" style="width: 40px; height: 40px;">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- DJANGO MESSAGES TOASTS -->
+        {% if messages %}
+        <div class="px-4 pt-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-2" role="alert">
+                <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' or message.tags == 'danger' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- PAGE CONTENT -->
+        <main class="chef-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- LIVE CHEF BACKEND SYNCHRONIZATION & AUDIO ENGINE -->
+    <script>
+        // Sidebar Toggle for Mobile & Tablet (Opens from Right Side)
+        function toggleChefSidebar() {
+            const sb = document.getElementById('chefSidebar');
+            const bd = document.getElementById('chefSidebarBackdrop');
+            if (sb) sb.classList.toggle('show');
+            if (bd) bd.classList.toggle('show');
+        }
+
+        // Close mobile drawer on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const sb = document.getElementById('chefSidebar');
+                const bd = document.getElementById('chefSidebarBackdrop');
+                if (sb && sb.classList.contains('show')) sb.classList.remove('show');
+                if (bd && bd.classList.contains('show')) bd.classList.remove('show');
+            }
+        });
+
+        // ========================================================
+        // CHEF SIDEBAR SCROLL PERSISTENCE & POSITION RESTORATION
+        // ========================================================
+        const chefSidebarEl = document.getElementById('chefSidebar');
+        if (chefSidebarEl) {
+            function restoreChefSidebarScroll() {
+                try {
+                    const savedScroll = sessionStorage.getItem('rms_chef_sidebar_scroll');
+                    if (savedScroll !== null && savedScroll !== '') {
+                        chefSidebarEl.scrollTop = parseInt(savedScroll, 10);
+                    } else {
+                        const activeItem = chefSidebarEl.querySelector('.chef-nav-link.active');
+                        if (activeItem) {
+                            const activeRect = activeItem.getBoundingClientRect();
+                            const sbRect = chefSidebarEl.getBoundingClientRect();
+                            if (activeRect.top < sbRect.top || activeRect.bottom > sbRect.bottom) {
+                                activeItem.scrollIntoView({ block: 'center', inline: 'nearest' });
+                            }
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            restoreChefSidebarScroll();
+            window.addEventListener('load', restoreChefSidebarScroll);
+
+            let chefScrollTimeout;
+            chefSidebarEl.addEventListener('scroll', function() {
+                clearTimeout(chefScrollTimeout);
+                chefScrollTimeout = setTimeout(function() {
+                    try {
+                        sessionStorage.setItem('rms_chef_sidebar_scroll', chefSidebarEl.scrollTop);
+                    } catch (e) {}
+                }, 50);
+            }, { passive: true });
+
+            chefSidebarEl.querySelectorAll('a').forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    try {
+                        sessionStorage.setItem('rms_chef_sidebar_scroll', chefSidebarEl.scrollTop);
+                    } catch (e) {}
+
+                    if (link.href) {
+                        const currentUrl = window.location.href.split('#')[0].replace(/\/+$/, '');
+                        const linkUrl = link.href.split('#')[0].replace(/\/+$/, '');
+                        if (linkUrl === currentUrl) {
+                            e.preventDefault();
+                            return;
+                        }
+                    }
+
+                    if (window.innerWidth < 992) {
+                        const bd = document.getElementById('chefSidebarBackdrop');
+                        chefSidebarEl.classList.remove('show');
+                        if (bd) bd.classList.remove('show');
+                    }
+                });
+            });
+
+            window.addEventListener('beforeunload', function() {
+                try {
+                    sessionStorage.setItem('rms_chef_sidebar_scroll', chefSidebarEl.scrollTop);
+                } catch (e) {}
+            });
+        }
+
+        // Live Synchronized Clocks (Desktop Topbar & Mobile Drawer)
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const el = document.getElementById('chefClock');
+            if (el) el.textContent = timeStr;
+            const elMob = document.getElementById('chefClockMobile');
+            if (elMob) elMob.textContent = timeStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // High-Contrast Theme Toggle & Dual UI Synchronizer
+        function updateChefThemeUI(theme) {
+            const isDark = theme === 'dark';
+            // Desktop Topbar Icon
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.className = isDark ? 'bi bi-sun-fill text-warning' : 'bi bi-moon-stars';
+            }
+            // Mobile Drawer Theme Controls
+            const mobStatus = document.getElementById('chefThemeStatusMobile');
+            if (mobStatus) mobStatus.textContent = isDark ? 'Dark' : 'Light';
+            const mobIcon = document.getElementById('chefThemeIconMobile');
+            if (mobIcon) mobIcon.className = isDark ? 'bi bi-sun-fill text-warning' : 'bi bi-moon-stars-fill text-info';
+            const mobLabel = document.getElementById('chefThemeLabelMobile');
+            if (mobLabel) mobLabel.textContent = isDark ? 'Light' : 'Dark';
+        }
+
+        function toggleTheme() {
+            const curr = document.documentElement.getAttribute('data-bs-theme') || 'light';
+            const next = curr === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', next);
+            localStorage.setItem('rms-theme', next);
+            updateChefThemeUI(next);
+        }
+
+        // Web Audio Synthesizer for Kitchen Bell Chime
+        let audioContext = null;
+        let soundEnabled = localStorage.getItem('chef-sound-enabled') !== 'false';
+
+        function initAudio() {
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {}
+            }
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }
+
+        function playKitchenChime() {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioContext) return;
+
+            const now = audioContext.currentTime;
+            
+            // Dual chime chords: 587Hz (D5) then 880Hz (A5)
+            const osc1 = audioContext.createOscillator();
+            const gain1 = audioContext.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(587.33, now);
+            gain1.gain.setValueAtTime(0.25, now);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+            osc1.connect(gain1);
+            gain1.connect(audioContext.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.6);
+
+            const osc2 = audioContext.createOscillator();
+            const gain2 = audioContext.createGain();
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(880, now + 0.15);
+            gain2.gain.setValueAtTime(0.3, now + 0.15);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+            osc2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            osc2.start(now + 0.15);
+            osc2.stop(now + 0.8);
+        }
+
+        function syncKitchenSoundUI() {
+            const btn = document.getElementById('btnSoundChime');
+            const icon = document.getElementById('soundIcon');
+            const txt = document.getElementById('soundStatusText');
+
+            if (soundEnabled) {
+                if (btn) btn.classList.add('active');
+                if (icon) icon.className = 'bi bi-volume-up-fill';
+                if (txt) txt.textContent = 'Chime ON';
+            } else {
+                if (btn) btn.classList.remove('active');
+                if (icon) icon.className = 'bi bi-volume-mute-fill text-muted';
+                if (txt) txt.textContent = 'Chime OFF';
+            }
+        }
+
+        function toggleKitchenSound() {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('chef-sound-enabled', soundEnabled);
+            syncKitchenSoundUI();
+            if (soundEnabled) {
+                initAudio();
+                playKitchenChime();
+            }
+        }
+
+        // Initialize Theme & Sound states on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+            updateChefThemeUI(currentTheme);
+            syncKitchenSoundUI();
+        });
+
+        // Live Polling API loop
+        let lastIncomingAlert = false;
+        async function pollChefLive() {
+            try {
+                const res = await fetch("{% url 'chef:api_live' %}", {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                // Update sidebar badges
+                if (data.counts) {
+                    const nb = document.getElementById('navNewBadge');
+                    if (nb) nb.textContent = data.counts.new;
+                    const pb = document.getElementById('navPreparingBadge');
+                    if (pb) pb.textContent = data.counts.preparing;
+                    const rb = document.getElementById('navReadyBadge');
+                    if (rb) rb.textContent = data.counts.ready;
+                    const notifB = document.getElementById('navNotifBadge');
+                    if (notifB) {
+                        if (data.counts.unread_notifications > 0) {
+                            notifB.textContent = data.counts.unread_notifications;
+                            notifB.classList.remove('d-none');
+                        } else {
+                            notifB.classList.add('d-none');
+                        }
+                    }
+                }
+
+                // If new incoming orders detected, chime!
+                if (data.has_new_incoming && !lastIncomingAlert) {
+                    playKitchenChime();
+                }
+                lastIncomingAlert = data.has_new_incoming;
+            } catch (e) {}
+        }
+
+        // Poll every 8 seconds
+        setInterval(pollChefLive, 8000);
+        pollChefLive();
+
+        // Dynamic measurement for sticky filter bars
+        function updateChefTopbarHeight() {
+            const topbar = document.querySelector('.chef-topbar');
+            if (topbar) {
+                document.documentElement.style.setProperty('--chef-topbar-height', topbar.offsetHeight + 'px');
+            }
+        }
+        window.addEventListener('resize', updateChefTopbarHeight);
+        window.addEventListener('orientationchange', updateChefTopbarHeight);
+        document.addEventListener('DOMContentLoaded', updateChefTopbarHeight);
+
+        // Auto-dismiss notification popup alerts within 2 seconds
+        function autoDismissAlerts() {
+            const alerts = document.querySelectorAll('.alert.alert-dismissible, .messages .alert, [role="alert"].alert-dismissible, .alert:has(.btn-close)');
+            alerts.forEach(function(alert) {
+                if (alert.dataset.autoDismissAttached) return;
+                alert.dataset.autoDismissAttached = "true";
+
+                setTimeout(function() {
+                    if (alert && alert.parentNode) {
+                        alert.classList.remove('show');
+                        alert.classList.add('fade');
+                        alert.style.transition = 'opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease, margin 0.35s ease, padding 0.35s ease';
+                        alert.style.opacity = '0';
+                        alert.style.transform = 'translateY(-6px)';
+
+                        setTimeout(function() {
+                            if (window.bootstrap && bootstrap.Alert) {
+                                try {
+                                    const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                                    if (bsAlert) {
+                                        bsAlert.close();
+                                        return;
+                                    }
+                                } catch (e) {}
+                            }
+                            if (alert.parentNode) {
+                                alert.remove();
+                            }
+                        }, 350);
+                    }
+                }, 2000);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', autoDismissAlerts);
+        } else {
+            autoDismissAlerts();
+        }
+
+        if (window.MutationObserver) {
+            const alertObserver = new MutationObserver(function(mutations) {
+                for (let mutation of mutations) {
+                    if (mutation.addedNodes.length > 0) {
+                        autoDismissAlerts();
+                        break;
+                    }
+                }
+            });
+            alertObserver.observe(document.documentElement, {
+                childList: true,
+                subtree: true
+            });
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

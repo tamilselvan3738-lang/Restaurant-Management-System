@@ -1,0 +1,79 @@
+
+
+            const data = await res.json();
+
+
+
+            if (res.ok && data.success) {
+
+                if (msgInput) {
+
+                    msgInput.value = '';
+
+                    if (charDisplay) charDisplay.textContent = '0 / 255';
+
+                }
+
+
+
+                if (alertBox) {
+
+                    alertBox.className = 'alert alert-success alert-dismissible fade show rounded-3 py-2 px-3 small';
+
+                    alertBox.innerHTML = `
+
+                        <i class="bi bi-check-circle-fill me-1"></i> ${data.message}
+
+                        <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+
+                    `;
+
+                }
+
+
+
+                const historyTab = document.getElementById('tab-history-link');
+
+                if (historyTab && window.bootstrap && bootstrap.Tab) {
+
+                    new bootstrap.Tab(historyTab).show();
+
+                }
+
+
+
+                pollServiceStatus();
+
+            } else {
+
+                if (alertBox) {
+
+                    alertBox.className = 'alert alert-danger alert-dismissible fade show rounded-3 py-2 px-3 small';
+
+                    alertBox.innerHTML = `
+
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> ${data.message || 'Failed to submit request.'}
+
+                        <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+
+                    `;
+
+                }
+
+            }
+
+        } catch (err) {
+
+            console.error('Service request error:', err);
+
+            if (alertBox) {
+
+                alertBox.className = 'alert alert-danger alert-dismissible fade show rounded-3 py-2 px-3 small';
+
+                alertBox.innerHTML = `
+
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Network error. Please try again or wave to your waiter.
+
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+
+                `;

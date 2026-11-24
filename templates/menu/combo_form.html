@@ -1,0 +1,456 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_edit %}Edit Combo: {{ combo.name }}{% else %}Create Custom Food Combo{% endif %} - {{ RESTAURANT_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.builder-card {
+    border-radius: 16px;
+    border: 1px solid var(--bs-border-color, #e2e8f0);
+}
+.dish-picker-item {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    border-radius: 10px;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--bs-border-color-translucent, #f1f5f9);
+    margin-bottom: 6px;
+}
+.dish-picker-item:hover {
+    background-color: var(--bs-tertiary-bg, #f8fafc);
+}
+.selected-item-row {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color, #e2e8f0);
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+.savings-metric-box {
+    background: linear-gradient(135deg, rgba(234, 88, 12, 0.08), rgba(16, 185, 129, 0.06));
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px dashed rgba(234, 88, 12, 0.3);
+}
+.qty-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-gift-fill text-warning me-2"></i>
+                {% if is_edit %}Edit Custom Combo: {{ combo.name }}{% else %}Create Custom Food Combo{% endif %}
+            </h3>
+        </div>
+        <p class="text-muted small mb-0 mt-1">
+            Group 3 or more food items from the menu into one consolidated customer combo and assign a single fixed price.
+        </p>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="{% url 'menu:combo_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-arrow-left"></i> Back to Combos
+        </a>
+    </div>
+</div>
+
+<form method="POST" enctype="multipart/form-data" id="comboBuilderForm">
+    {% csrf_token %}
+
+    <div class="row g-4">
+        <!-- LEFT: Combo Details & Financial Metrics -->
+        <div class="col-lg-5">
+            <div class="card builder-card shadow-sm mb-4">
+                <div class="card-header bg-body py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-body">
+                        <i class="bi bi-info-circle text-primary me-2"></i>Combo Information
+                    </h6>
+                </div>
+                <div class="card-body p-3.5">
+                    <!-- Form Errors -->
+                    {% if form.errors %}
+                    <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3">
+                        <ul class="mb-0 ps-3">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Combo Name -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Combo Name <span class="text-danger">*</span></label>
+                        {{ form.name }}
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Description</label>
+                        {{ form.description }}
+                    </div>
+
+                    <!-- Image Upload -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Combo Display Image</label>
+                        {{ form.image }}
+                        {% if is_edit and combo.image %}
+                        <div class="mt-2">
+                            <img src="{{ combo.image.url }}" alt="{{ combo.name }}" class="rounded-3 shadow-xs" style="max-height: 80px;">
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Single Fixed Selling Price -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Single Fixed Selling Price (₹) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text font-monospace">₹</span>
+                            {{ form.price }}
+                        </div>
+                        <div class="form-text small">This is the ONLY amount charged to customer bills & orders.</div>
+                    </div>
+
+                    <!-- Dates & Active Status -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">Valid From</label>
+                            {{ form.start_date }}
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">Valid Until</label>
+                            {{ form.end_date }}
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        {{ form.is_available }}
+                        <label class="form-check-label small fw-bold" for="id_is_available">Available for Customer QR Ordering</label>
+                    </div>
+
+                    <!-- Live Dynamic Savings Metric Card -->
+                    <div class="savings-metric-box mb-3">
+                        <div class="d-flex justify-content-between small mb-1.5">
+                            <span class="text-muted">Individual Total Price:</span>
+                            <span class="font-monospace fw-bold" id="metricIndividualTotal">₹0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1.5">
+                            <span class="text-muted">Fixed Combo Selling Price:</span>
+                            <span class="font-monospace fw-bold text-primary" id="metricComboPrice">₹0.00</span>
+                        </div>
+                        <hr class="my-1.5 border-secondary-subtle">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-success small">Customer Savings:</span>
+                            <span class="badge bg-success font-monospace fs-6" id="metricSavings">Save ₹0.00</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold text-dark shadow-sm d-flex align-items-center justify-content-center gap-2" id="submitComboBtn">
+                        <i class="bi bi-check2-circle"></i> {% if is_edit %}Save Changes{% else %}Create Food Combo{% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Interactive 3+ Food Items Picker -->
+        <div class="col-lg-7">
+            <div class="card builder-card shadow-sm mb-4">
+                <div class="card-header bg-body py-3 d-flex justify-content-between align-items-center border-bottom">
+                    <div>
+                        <h6 class="fw-bold mb-0 text-body">
+                            <i class="bi bi-stack text-warning me-2"></i>Included Food Items
+                        </h6>
+                        <span class="small text-muted">Select at least 3 distinct menu items</span>
+                    </div>
+                    <span class="badge bg-danger rounded-pill px-3 py-1.5" id="itemCountBadge">
+                        0 / 3 Items Selected
+                    </span>
+                </div>
+                <div class="card-body p-3.5">
+                    <!-- Rule Notification -->
+                    <div class="alert alert-warning py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 fs-5 text-warning"></i>
+                        <div>
+                            <strong>Requirement:</strong> A combo must contain at least <strong>3 distinct food items</strong>. Component items will automatically reach the kitchen for cooking with their parent combo label.
+                        </div>
+                    </div>
+
+                    <!-- Selected Items Container (Dynamic Rows) -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted mb-2">Selected Combo Components:</label>
+                        <div id="selectedItemsContainer">
+                            <!-- Rows injected by JavaScript -->
+                            <div id="emptySelectedPlaceholder" class="text-center py-4 text-muted border border-dashed rounded-3">
+                                <i class="bi bi-plus-circle display-6 text-secondary opacity-50 d-block mb-1"></i>
+                                Click on dishes below to add them to this combo.
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3 border-secondary-subtle">
+
+                    <!-- Search Dishes -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label small fw-bold text-muted mb-0">Browse Restaurant Menu Dishes:</label>
+                        <input type="text" id="dishSearchInput" class="form-control form-control-sm" placeholder="Filter dishes..." style="max-width: 200px;">
+                    </div>
+
+                    <!-- Available Menu Items List -->
+                    <div style="max-height: 380px; overflow-y: auto;" class="pe-1" id="availableDishesList">
+                        {% for item in available_items %}
+                        <div class="dish-picker-item d-flex justify-content-between align-items-center" data-id="{{ item.id }}" data-name="{{ item.name }}" data-price="{{ item.price }}">
+                            <div class="d-flex align-items-center gap-2 text-truncate">
+                                {% if item.image %}
+                                <img src="{{ item.image.url }}" alt="{{ item.name }}" class="rounded-2" style="width: 38px; height: 38px; object-fit: cover;">
+                                {% else %}
+                                <div class="rounded-2 bg-secondary-subtle d-flex align-items-center justify-content-center text-muted" style="width: 38px; height: 38px;">
+                                    <i class="bi bi-egg-fried"></i>
+                                </div>
+                                {% endif %}
+                                <div class="text-truncate">
+                                    <div class="fw-semibold text-dark text-truncate" style="max-width: 240px;">{{ item.name }}</div>
+                                    <div class="small text-muted">{{ item.category.name }} &bull; ₹{{ item.price|floatformat:2 }}</div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-2.5 py-1 text-dark fw-bold add-dish-btn" data-id="{{ item.id }}" data-name="{{ item.name }}" data-price="{{ item.price }}">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-4 text-muted">
+                            No menu items available in your restaurant menu.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial data from server
+    const initialPairs = {{ selected_pairs|safe|default:"[]" }};
+
+    const container = document.getElementById('selectedItemsContainer');
+    const placeholder = document.getElementById('emptySelectedPlaceholder');
+    const badge = document.getElementById('itemCountBadge');
+    const metricIndiv = document.getElementById('metricIndividualTotal');
+    const metricCombo = document.getElementById('metricComboPrice');
+    const metricSave = document.getElementById('metricSavings');
+    const priceInput = document.getElementById('id_combo_price');
+    const searchInput = document.getElementById('dishSearchInput');
+    const form = document.getElementById('comboBuilderForm');
+
+    // Map of selected items: id -> {name, price, qty}
+    const selected = new Map();
+
+    // Index all available dishes from DOM
+    const allDishElements = document.querySelectorAll('.dish-picker-item');
+    const dishDataMap = new Map();
+    allDishElements.forEach(el => {
+        const id = parseInt(el.getAttribute('data-id'));
+        const name = el.getAttribute('data-name');
+        const price = parseFloat(el.getAttribute('data-price')) || 0;
+        dishDataMap.set(id, { name, price });
+    });
+
+    // Populate initial pairs if edit or re-render
+    initialPairs.forEach(pair => {
+        const id = pair[0];
+        const qty = pair[1] || 1;
+        if (dishDataMap.has(id)) {
+            const data = dishDataMap.get(id);
+            selected.set(id, { name: data.name, price: data.price, qty: qty });
+        }
+    });
+
+    function renderSelectedRows() {
+        // Clear container except placeholder
+        container.innerHTML = '';
+
+        if (selected.size === 0) {
+            container.appendChild(placeholder);
+        } else {
+            selected.forEach((val, id) => {
+                const row = document.createElement('div');
+                row.className = 'selected-item-row d-flex justify-content-between align-items-center';
+                row.innerHTML = `
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="hidden" name="item_id[]" value="${id}">
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill font-monospace">#${id}</span>
+                        <div>
+                            <strong class="text-dark">${val.name}</strong>
+                            <div class="small text-muted font-monospace">₹${val.price.toFixed(2)} each</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="input-group input-group-sm" style="width: 110px;">
+                            <button type="button" class="btn btn-outline-secondary qty-btn btn-qty-minus" data-id="${id}">-</button>
+                            <input type="number" name="quantity[]" value="${val.qty}" min="1" class="form-control text-center font-monospace px-1 qty-input" data-id="${id}">
+                            <button type="button" class="btn btn-outline-secondary qty-btn btn-qty-plus" data-id="${id}">+</button>
+                        </div>
+                        <span class="font-monospace fw-bold text-dark small" style="min-width: 65px; text-align: right;">
+                            ₹${(val.price * val.qty).toFixed(2)}
+                        </span>
+                        <button type="button" class="btn btn-sm btn-outline-danger border-0 p-1 btn-remove" data-id="${id}">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        updateMetrics();
+    }
+
+    function updateMetrics() {
+        const count = selected.size;
+        if (count >= 3) {
+            badge.className = 'badge bg-success rounded-pill px-3 py-1.5';
+            badge.innerText = `${count} Items Selected (Valid Combo)`;
+        } else {
+            badge.className = 'badge bg-danger rounded-pill px-3 py-1.5';
+            badge.innerText = `${count} / 3 Items Selected (Min. 3 Required)`;
+        }
+
+        let individualTotal = 0;
+        selected.forEach(val => {
+            individualTotal += val.price * val.qty;
+        });
+
+        const comboPrice = parseFloat(priceInput.value) || 0;
+        const savings = Math.max(0, individualTotal - comboPrice);
+        const discountPct = individualTotal > 0 ? Math.round((savings / individualTotal) * 100) : 0;
+
+        metricIndiv.innerText = `₹${individualTotal.toFixed(2)}`;
+        metricCombo.innerText = `₹${comboPrice.toFixed(2)}`;
+
+        if (savings > 0) {
+            metricSave.className = 'badge bg-success font-monospace fs-6';
+            metricSave.innerText = `Save ₹${savings.toFixed(2)} (${discountPct}% OFF)`;
+        } else {
+            metricSave.className = 'badge bg-secondary font-monospace fs-6';
+            metricSave.innerText = `Save ₹0.00`;
+        }
+    }
+
+    // Add dish button handlers
+    document.querySelectorAll('.add-dish-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const id = parseInt(this.getAttribute('data-id'));
+            const name = this.getAttribute('data-name');
+            const price = parseFloat(this.getAttribute('data-price')) || 0;
+
+            if (selected.has(id)) {
+                // Increment quantity
+                const current = selected.get(id);
+                current.qty += 1;
+            } else {
+                selected.set(id, { name, price, qty: 1 });
+            }
+            renderSelectedRows();
+        });
+    });
+
+    // Delegate row actions: +, -, qty input, remove
+    container.addEventListener('click', function(e) {
+        const plusBtn = e.target.closest('.btn-qty-plus');
+        const minusBtn = e.target.closest('.btn-qty-minus');
+        const removeBtn = e.target.closest('.btn-remove');
+
+        if (plusBtn) {
+            const id = parseInt(plusBtn.getAttribute('data-id'));
+            if (selected.has(id)) {
+                selected.get(id).qty += 1;
+                renderSelectedRows();
+            }
+        } else if (minusBtn) {
+            const id = parseInt(minusBtn.getAttribute('data-id'));
+            if (selected.has(id)) {
+                const cur = selected.get(id);
+                if (cur.qty > 1) {
+                    cur.qty -= 1;
+                } else {
+                    selected.delete(id);
+                }
+                renderSelectedRows();
+            }
+        } else if (removeBtn) {
+            const id = parseInt(removeBtn.getAttribute('data-id'));
+            selected.delete(id);
+            renderSelectedRows();
+        }
+    });
+
+    container.addEventListener('input', function(e) {
+        if (e.target.classList.contains('qty-input')) {
+            const id = parseInt(e.target.getAttribute('data-id'));
+            const val = parseInt(e.target.value) || 1;
+            if (selected.has(id)) {
+                selected.get(id).qty = Math.max(1, val);
+                updateMetrics();
+            }
+        }
+    });
+
+    if (priceInput) {
+        priceInput.addEventListener('input', updateMetrics);
+    }
+
+    // Live filter search for available dishes
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            allDishElements.forEach(el => {
+                const name = el.getAttribute('data-name').toLowerCase();
+                if (name.includes(query)) {
+                    el.style.display = 'flex';
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // Form submission validation
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (selected.size < 3) {
+                e.preventDefault();
+                alert('Validation Error: A custom food combo must contain at least three (3) distinct food items. Please select more items.');
+                return false;
+            }
+            const comboPrice = parseFloat(priceInput.value) || 0;
+            if (comboPrice <= 0) {
+                e.preventDefault();
+                alert('Validation Error: Please enter a valid selling price greater than zero.');
+                return false;
+            }
+        });
+    }
+
+    // Initial render
+    renderSelectedRows();
+});
+</script>
+{% endblock %}

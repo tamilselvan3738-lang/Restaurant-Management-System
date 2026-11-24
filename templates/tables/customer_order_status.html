@@ -1,0 +1,854 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="refresh" content="15">
+    <title>Order #{{ order.order_number }} • Table {{ table.table_number }} | {{ RESTAURANT_NAME }}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Culinary Theme -->
+    <link rel="stylesheet" href="{% static 'css/culinary-theme.css' %}?v=20261124a">
+    <style>
+        :root {
+            --rms-primary: #e65100;
+            --rms-primary-rgb: 230, 81, 0;
+            --rms-gradient-primary: linear-gradient(135deg, #e65100 0%, #ff7043 100%);
+        }
+        body {
+            background-color: #f8fafc;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            padding-bottom: 60px;
+        }
+        .status-header {
+            background: var(--rms-gradient-primary);
+            color: #ffffff;
+            padding: 18px 16px 22px 16px;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            box-shadow: 0 4px 20px rgba(var(--rms-primary-rgb), 0.25);
+        }
+        .shop-btn {
+            background: #ffffff;
+            color: var(--rms-primary);
+            font-weight: 700;
+            border-radius: 30px;
+            padding: 8px 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: none;
+            white-space: nowrap;
+            font-size: 0.85rem;
+        }
+        .shop-btn:hover, .shop-btn:active {
+            background: #fff3e0;
+            color: #bf360c;
+            transform: translateY(-1px);
+        }
+        .step-track {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin: 20px 10px;
+        }
+        .step-track::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 3px;
+            background: #e2e8f0;
+            z-index: 1;
+        }
+        .step-node {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            flex: 1;
+        }
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3px solid #cbd5e1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            transition: all 0.3s;
+        }
+        .step-node.completed .step-circle {
+            background: #16a34a;
+            border-color: #16a34a;
+            color: #ffffff;
+        }
+        .step-node.active .step-circle {
+            background: var(--rms-primary);
+            border-color: #ffccbc;
+            color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(var(--rms-primary-rgb), 0.2);
+            animation: pulse-ring 2s infinite;
+        }
+        .step-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+        .step-node.active .step-label {
+            color: var(--rms-primary);
+            font-weight: 700;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+        .dish-thumbnail {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 1px solid rgba(0,0,0,0.08);
+            flex-shrink: 0;
+        }
+        .dish-item-row {
+            padding: 14px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .dish-item-row:last-child {
+            border-bottom: none;
+            padding-bottom: 2px;
+        }
+        .dish-item-row:first-child {
+            padding-top: 2px;
+        }
+        .cancelled-item {
+            opacity: 0.8;
+            background-color: #fff5f5;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin: 6px 0;
+            border: 1px dashed #fecaca;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation with Dedicated SHOP Button -->
+    <header class="status-header">
+        <div class="container d-flex justify-content-between align-items-center gap-2" style="max-width: 600px;">
+            <div class="min-w-0 flex-grow-1 pe-2">
+                <div class="d-flex align-items-center gap-1.5 mb-1.5 flex-wrap">
+                    <span class="badge bg-white text-dark rounded-pill px-2.5 py-1 fw-bold text-nowrap">
+                        <i class="bi bi-geo-alt-fill text-primary me-1"></i>Table {{ table.table_number }}
+                    </span>
+                    {% if session %}
+                    <span class="badge bg-white bg-opacity-25 text-white rounded-pill px-2.5 py-1 text-truncate" style="max-width: 170px;">
+                        {{ session.session_name }} ({{ session.customer_name }})
+                    </span>
+                    {% endif %}
+                </div>
+                <h5 class="fw-bold mb-0 text-white text-truncate">Order Status & Bill</h5>
+            </div>
+
+            <!-- Shop Button at Top-Right Corner -->
+            <div class="flex-shrink-0">
+                <a href="{% url 'tables:customer_order' table.table_number %}" class="shop-btn" id="topShopBtn" title="Browse digital menu and add more food">
+                    <i class="bi bi-bag-heart-fill"></i>
+                    <span>Shop Menu</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container my-3" style="max-width: 600px;">
+
+        <!-- Flash Messages -->
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show py-2 px-3 small rounded-3 shadow-xs" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Order Header & Preparation Timeline Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-2.5 mb-3">
+                <div>
+                    <span class="text-muted small">Order Number:</span>
+                    <strong class="d-block font-monospace text-dark fs-6">#{{ order.order_number }}</strong>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-{{ order.badge_class }} fs-6 px-3 py-1.5 rounded-pill text-nowrap" id="orderStatusBadge">
+                        {% if order.status == 'PREPARING' %}Start Cooking{% else %}{{ order.get_status_display }}{% endif %}
+                    </span>
+                    <div class="text-muted small mt-1" style="font-size: 0.72rem;">
+                        Placed at {{ order.created_at|date:"h:i A" }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5-Step Visual Progress Tracker -->
+            {% if order.status != 'CANCELLED' %}
+            <div class="step-track my-3" id="orderStepTrack">
+                <!-- Step 1: Order Placed -->
+                <div class="step-node {% if order.status in 'ACCEPTED PREPARING READY SERVED COMPLETED' or order.accepted_by or order.cooking_started_at %}completed{% else %}active{% endif %}" id="stepNode1">
+                    <div class="step-circle"><i class="bi bi-receipt"></i></div>
+                    <div class="step-label">Order Placed</div>
+                </div>
+                <!-- Step 2: Accepted by Kitchen -->
+                <div class="step-node {% if order.status in 'PREPARING READY SERVED COMPLETED' or order.cooking_started_at %}completed{% elif order.status == 'ACCEPTED' or order.accepted_by %}active{% endif %}" id="stepNode2">
+                    <div class="step-circle"><i class="bi bi-person-check"></i></div>
+                    <div class="step-label">Accepted</div>
+                </div>
+                <!-- Step 3: Start Cooking -->
+                <div class="step-node {% if order.status in 'READY SERVED COMPLETED' %}completed{% elif order.status == 'PREPARING' or order.cooking_started_at %}active{% endif %}" id="stepNode3">
+                    <div class="step-circle"><i class="bi bi-fire"></i></div>
+                    <div class="step-label">Start Cooking</div>
+                </div>
+                <!-- Step 4: Food Ready -->
+                <div class="step-node {% if order.status in 'SERVED COMPLETED' %}completed{% elif order.status == 'READY' %}active{% endif %}" id="stepNode4">
+                    <div class="step-circle"><i class="bi bi-bell-fill"></i></div>
+                    <div class="step-label">Food Ready</div>
+                </div>
+                <!-- Step 5: Served -->
+                <div class="step-node {% if order.status in 'SERVED COMPLETED' %}completed active{% endif %}" id="stepNode5">
+                    <div class="step-circle"><i class="bi bi-check2-all"></i></div>
+                    <div class="step-label">Served</div>
+                </div>
+            </div>
+
+            <!-- Stage 3 Alert: Start Cooking in Progress -->
+            <div class="alert alert-primary bg-primary-subtle border-primary-subtle text-primary-emphasis rounded-3 p-3 mt-3 mb-1 shadow-xs {% if order.status != 'PREPARING' and not order.cooking_started_at or order.status == 'READY' or order.status in 'SERVED COMPLETED' %}d-none{% endif %}" id="cookingNoticeBox">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="spinner-grow text-primary flex-shrink-0" style="width: 24px; height: 24px;" role="status"></div>
+                    <div>
+                        <div class="fw-bold" style="font-size: 0.95rem;">Order Status: Start Cooking</div>
+                        <div class="small">Your food is being prepared in the kitchen{% if order.accepted_by_name %} by Chef <strong>{{ order.accepted_by_name }}</strong>{% endif %}.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 4 Card: Food Ready & 5-Minute Serving Countdown -->
+            <div class="card border-success border-2 shadow-sm rounded-4 p-3 mt-3 mb-1 bg-success-subtle text-success-emphasis {% if order.status != 'READY' %}d-none{% endif %}" id="readyNoticeBox" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 42px; height: 42px; font-size: 1.25rem;">
+                        <i class="bi bi-bell-fill"></i>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <h6 class="fw-bold text-success mb-1" style="font-size: 0.95rem;">Your order is ready! Our staff will serve your food within 5 minutes.</h6>
+                        <p class="small text-muted mb-2">Our kitchen staff has finished cooking your meal. It is being prepared for table service right now.</p>
+                        
+                        <!-- Details Pill Row -->
+                        <div class="d-flex flex-wrap gap-2 mb-2.5">
+                            <span class="badge bg-white text-dark border px-2 py-1 font-monospace" style="font-size: 0.74rem;">
+                                <i class="bi bi-receipt me-1 text-primary"></i>Order #{{ order.order_number }}
+                            </span>
+                            <span class="badge bg-white text-dark border px-2 py-1" style="font-size: 0.74rem;">
+                                <i class="bi bi-geo-alt-fill me-1 text-danger"></i>Table {{ table.table_number }}
+                            </span>
+                            <span class="badge bg-white text-dark border px-2 py-1 font-monospace" id="readyTimestampBadge" style="font-size: 0.74rem;">
+                                <i class="bi bi-clock-history me-1 text-success"></i>Ready at: {{ order.ready_at|date:"h:i A"|default:"Just now" }}
+                            </span>
+                        </div>
+
+                        <!-- 5-Minute Serving Countdown Indicator -->
+                        <div class="bg-white p-3 rounded-3 border border-success-subtle shadow-xs">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold text-success text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">
+                                    <i class="bi bi-hourglass-split me-1"></i> Expected Serving Time
+                                </span>
+                                <strong class="font-monospace text-success fs-5" id="servingCountdownText">
+                                    05:00
+                                </strong>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" id="servingProgressBar" style="width: 100%;"></div>
+                            </div>
+                            <div class="text-muted small mt-2" style="font-size: 0.72rem;" id="countdownSubtext">
+                                * The 5-minute period is an expected serving arrival window. Our waiter will physically confirm serving.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 5 Alert: Food Served -->
+            <div class="alert alert-success border-success-subtle bg-success-subtle text-success-emphasis rounded-3 p-3 mt-3 mb-1 shadow-xs {% if order.status != 'SERVED' and order.status != 'COMPLETED' %}d-none{% endif %}" id="servedNoticeBox">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi bi-check-circle-fill fs-3 text-success flex-shrink-0"></i>
+                    <div>
+                        <div class="fw-bold" style="font-size: 0.95rem;">Order Served!</div>
+                        <div class="small">Your food has been served to your table. Please enjoy your meal!</div>
+                    </div>
+                </div>
+            </div>
+
+            {% else %}
+            <div class="alert alert-danger py-2 px-3 rounded-3 small mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-x-circle-fill text-danger fs-5 flex-shrink-0"></i>
+                <div>
+                    <strong>Order Cancelled</strong>
+                    {% if order.cancellation_reason %}
+                        <div class="text-muted small">Reason: {{ order.cancellation_reason }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Special instructions note if any -->
+            {% if order.special_instructions %}
+            <div class="p-2.5 rounded-3 bg-warning-subtle text-warning-emphasis small mt-3 d-flex align-items-center gap-2 border border-warning-subtle">
+                <i class="bi bi-info-circle-fill text-warning flex-shrink-0"></i>
+                <span class="fst-italic text-truncate">{{ order.special_instructions }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Ordered Food Items Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-basket text-primary"></i> Ordered Food Items
+                </h6>
+                <span class="badge bg-light text-secondary border font-monospace">
+                    {{ active_items|length }} active item{{ active_items|length|pluralize }}
+                </span>
+            </div>
+
+            <!-- Items List -->
+            <div class="dish-items-container">
+                {% for item in items %}
+                <div class="dish-item-row w-100 {% if item.is_cancelled %}cancelled-item{% endif %} py-2.5" id="item-row-{{ item.id }}">
+                    <div class="d-flex align-items-stretch w-100 gap-2 overflow-hidden">
+                        <!-- Left: Dish Thumbnail -->
+                        {% if item.menu_item.image %}
+                            <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" class="dish-thumbnail rounded-3 shadow-xs flex-shrink-0" style="width: 54px; height: 54px; object-fit: cover; align-self: center;">
+                        {% else %}
+                            <div class="dish-thumbnail rounded-3 bg-light text-muted d-flex align-items-center justify-content-center border flex-shrink-0" style="width: 54px; height: 54px; align-self: center;">
+                                <i class="bi bi-egg-fried fs-4 opacity-50"></i>
+                            </div>
+                        {% endif %}
+
+                        <!-- Middle: Details, Unit Price & Status Badge (strictly constrained) -->
+                        <div class="min-w-0 flex-grow-1 d-flex flex-column justify-content-between overflow-hidden pe-1">
+                            <!-- Line 1: Quantity badge + Dish Name (truncates smoothly) -->
+                            <div class="d-flex align-items-center gap-1.5 min-w-0 w-100 overflow-hidden">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace fw-bold flex-shrink-0" style="font-size: 0.72rem; padding: 2px 6px;">
+                                    {{ item.quantity }}x
+                                </span>
+                                <span class="fw-bold text-dark text-truncate small min-w-0 {% if item.is_cancelled %}text-decoration-line-through text-muted{% endif %}" title="{{ item.menu_item.name }}">
+                                    {{ item.menu_item.name }}
+                                </span>
+                                {% if item.is_extra %}
+                                    <span class="badge bg-warning text-dark font-monospace flex-shrink-0" style="font-size: 0.65rem;">+Extra</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Line 2: Unit Price & Notes -->
+                            <div class="text-muted small my-1 text-truncate" style="font-size: 0.72rem; line-height: 1.2;">
+                                ₹{{ item.unit_price|floatformat:2 }} each
+                                {% if item.special_notes %}
+                                    &bull; <span class="fst-italic text-secondary">{{ item.special_notes }}</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Line 3: Preparation Status Badge -->
+                            <div class="d-flex align-items-center min-w-0 overflow-hidden">
+                                {% if item.status == 'PENDING' %}
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle text-nowrap" style="font-size: 0.68rem; padding: 3px 8px;">
+                                        <i class="bi bi-clock me-1"></i>Pending Kitchen
+                                    </span>
+                                {% elif item.status == 'COOKING' %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle text-nowrap" style="font-size: 0.68rem; padding: 3px 8px;">
+                                        <i class="bi bi-fire me-1"></i>Cooking in Kitchen
+                                    </span>
+                                {% elif item.status == 'READY' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle text-nowrap" style="font-size: 0.68rem; padding: 3px 8px;">
+                                        <i class="bi bi-check-circle me-1"></i>Ready to Serve
+                                    </span>
+                                {% elif item.status == 'SERVED' %}
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle text-nowrap" style="font-size: 0.68rem; padding: 3px 8px;">
+                                        <i class="bi bi-check2-all me-1"></i>Served to Table
+                                    </span>
+                                {% elif item.status == 'CANCELLATION_REQUESTED' %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle text-nowrap" style="font-size: 0.68rem; padding: 3px 8px;">
+                                        <i class="bi bi-hourglass-split me-1"></i>Cancellation Requested
+                                    </span>
+                                {% elif item.status == 'CANCELLED' %}
+                                    <span class="badge bg-danger text-white text-nowrap" style="font-size: 0.68rem; padding: 3px 8px;">
+                                        <i class="bi bi-x-circle me-1"></i>Cancelled
+                                    </span>
+                                    {% if item.cancellation_reason %}
+                                        <span class="text-danger small ms-1 text-truncate" style="font-size: 0.7rem;">({{ item.cancellation_reason }})</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Right: Total Price (Top) & Cancel Action (Bottom) -->
+                        <div class="d-flex flex-column justify-content-between align-items-end flex-shrink-0 align-self-stretch text-end" style="width: 72px;">
+                            <!-- Total Price -->
+                            <div class="fw-bold font-monospace text-nowrap {% if item.is_cancelled %}text-decoration-line-through text-muted small{% else %}text-dark fs-6{% endif %}">
+                                ₹{{ item.original_total_price|floatformat:2 }}
+                            </div>
+
+                            <!-- Cancel Item Button -->
+                            <div>
+                                {% if item.can_cancel_direct %}
+                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-pill py-0.5 px-2.5 d-inline-flex align-items-center gap-1 shadow-xs text-nowrap" style="font-size: 0.72rem;" 
+                                            onclick="openCancelItemModal({{ item.id }}, '{{ item.menu_item.name|escapejs }}', {{ item.quantity }}, '{{ item.original_total_price|floatformat:2 }}', false)">
+                                        <i class="bi bi-x-circle"></i> <span>Cancel</span>
+                                    </button>
+                                {% elif item.can_request_cancel %}
+                                    <button type="button" class="btn btn-outline-warning btn-sm rounded-pill py-0.5 px-2.5 d-inline-flex align-items-center gap-1 shadow-xs text-nowrap" style="font-size: 0.72rem;" 
+                                            onclick="openCancelItemModal({{ item.id }}, '{{ item.menu_item.name|escapejs }}', {{ item.quantity }}, '{{ item.original_total_price|floatformat:2 }}', true)">
+                                        <i class="bi bi-clock-history"></i> <span>Cancel</span>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-inbox fs-2 text-secondary mb-2 d-block"></i>
+                    No food items in this order.
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Add More Food CTA -->
+            <div class="mt-3 pt-3 border-top">
+                <a href="{% url 'tables:customer_order' table.table_number %}" class="btn btn-primary rounded-pill w-100 py-2.5 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-plus-circle-fill"></i>
+                    <span>Add More Food to Table {{ table.table_number }}</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Separate Bill & Payment Summary Card -->
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-4">
+            <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-receipt-cutoff text-success"></i> Bill & Payment Details
+            </h6>
+
+            <div class="bg-light p-3 rounded-3 small mb-3">
+                <div class="d-flex justify-content-between text-muted py-1">
+                    <span>Food Subtotal</span>
+                    <span class="font-monospace fw-semibold text-dark">₹{{ order.subtotal|floatformat:2 }}</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted py-1">
+                    <span>GST Tax (8.25%)</span>
+                    <span class="font-monospace text-dark">₹{{ order.tax_amount|floatformat:2 }}</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted py-1">
+                    <span>Service Charge (5%)</span>
+                    <span class="font-monospace text-dark">₹{{ order.service_charge_amount|floatformat:2 }}</span>
+                </div>
+
+                {% if order.discount_amount > 0 %}
+                <div class="d-flex justify-content-between text-success py-1">
+                    <span>Discount</span>
+                    <span class="font-monospace">-₹{{ order.discount_amount|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between fw-bold fs-6 text-dark border-top pt-2.5 mt-2">
+                    <span>Total Amount</span>
+                    <span class="text-primary font-monospace fs-5">₹{{ order.total_amount|floatformat:2 }}</span>
+                </div>
+
+                <!-- Session Overall Bill Status -->
+                {% if session %}
+                <div class="border-top pt-2.5 mt-2.5">
+                    <div class="d-flex justify-content-between text-muted py-1">
+                        <span>Group Bill Total:</span>
+                        <strong class="text-dark font-monospace">₹{{ session.total_amount|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between text-success py-1">
+                        <span>Amount Paid:</span>
+                        <span class="font-monospace">₹{{ session.total_paid|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between fw-bold py-1 {% if session.balance_due > 0 %}text-danger{% else %}text-success{% endif %}">
+                        <span>Balance Due:</span>
+                        <span class="font-monospace">₹{{ session.balance_due|floatformat:2 }}</span>
+                    </div>
+
+                    <!-- Refund Due Alert (if any excess paid before item/order cancellation) -->
+                    {% if session.refund_due > 0 %}
+                    <div class="alert alert-warning py-2 px-3 small rounded-3 mt-2.5 mb-0 d-flex align-items-center justify-content-between">
+                        <div>
+                            <i class="bi bi-arrow-counterclockwise text-warning me-1"></i>
+                            <strong>Refund Due:</strong>
+                            <span>₹{{ session.refund_due|floatformat:2 }}</span>
+                        </div>
+                        <span class="badge bg-warning text-dark">Refund Pending</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Bill Payment Actions -->
+            <div class="d-flex flex-column" style="gap: 12px;">
+                {% if session and session.balance_due > 0 %}
+                <a href="{% url 'tables:customer_request_bill' table.table_number session.session_token %}" class="btn btn-outline-warning text-dark rounded-pill w-100 py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-bell"></i>
+                    <span>Request Bill at Table</span>
+                </a>
+                {% elif session and session.is_paid %}
+                <div class="alert alert-success py-2 px-3 rounded-3 text-center fw-bold small mb-0">
+                    <i class="bi bi-check-circle-fill me-1"></i> Bill Paid in Full! Thank you.
+                </div>
+                {% endif %}
+
+                <!-- Cancel Entire Order Button -->
+                {% if can_cancel_order %}
+                <button type="button" class="btn btn-outline-danger rounded-pill w-100 py-2.5 fw-semibold text-nowrap d-flex align-items-center justify-content-center gap-2" onclick="openCancelEntireOrderModal()">
+                    <i class="bi bi-trash3"></i>
+                    <span>Cancel Entire Order</span>
+                </button>
+                {% endif %}
+
+                <!-- Close Session / Leave Table Button -->
+                {% if can_close_session %}
+                <button type="button" class="btn btn-dark rounded-pill w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2" onclick="openCloseSessionModal()">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Leave Table & Free My Seats</span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL 1: CANCEL INDIVIDUAL ITEM -->
+    <div class="modal fade" id="cancelItemModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg p-3">
+                <form id="cancelItemForm" method="post" action="">
+                    {% csrf_token %}
+                    <div class="modal-header border-0 pb-0 justify-content-between">
+                        <h6 class="fw-bold modal-title text-danger d-flex align-items-center gap-2">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Cancel Food Item
+                        </h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-2">Are you sure you want to cancel the following item from your order?</p>
+                        
+                        <div class="p-3 bg-light rounded-3 border mb-3">
+                            <div class="fw-bold text-dark" id="cancelItemName">Dish Name</div>
+                            <div class="small text-muted d-flex justify-content-between mt-1">
+                                <span>Quantity: <strong id="cancelItemQty">1</strong></span>
+                                <span>Amount: <strong class="text-danger" id="cancelItemPrice">₹0.00</strong></span>
+                            </div>
+                        </div>
+
+                        <div id="cancelCookingWarning" class="alert alert-warning small py-2 px-3 rounded-3 d-none mb-3">
+                            <i class="bi bi-info-circle-fill me-1"></i> This item is currently cooking. Submitting will send a cancellation request to the kitchen staff for approval.
+                        </div>
+
+                        <input type="hidden" name="reason" value="Cancelled by Customer">
+                    </div>
+                    <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                        <button type="button" class="btn btn-light rounded-pill flex-grow-1" data-bs-dismiss="modal">Keep Item</button>
+                        <button type="submit" class="btn btn-danger rounded-pill flex-grow-1 fw-bold">Confirm Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: CANCEL ENTIRE ORDER -->
+    <div class="modal fade" id="cancelEntireOrderModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg p-3">
+                <form method="post" action="{% url 'tables:customer_cancel_order' table.table_number order.id %}">
+                    {% csrf_token %}
+                    <div class="modal-header border-0 pb-0 justify-content-between">
+                        <h6 class="fw-bold modal-title text-danger d-flex align-items-center gap-2">
+                            <i class="bi bi-trash3-fill"></i> Cancel Entire Order
+                        </h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-2">
+                            Are you sure you want to cancel your entire order <strong>#{{ order.order_number }}</strong>?
+                        </p>
+                        <div class="alert alert-danger bg-danger-subtle text-danger border-0 small py-2 px-3 rounded-3 mb-3">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>
+                            All eligible items will be cancelled and removed from your bill. Note: Table seats remain yours until you decide to leave.
+                        </div>
+
+                        <input type="hidden" name="reason" value="Cancelled Entire Order by Customer">
+                    </div>
+                    <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                        <button type="button" class="btn btn-light rounded-pill flex-grow-1" data-bs-dismiss="modal">Go Back</button>
+                        <button type="submit" class="btn btn-danger rounded-pill flex-grow-1 fw-bold">Cancel Entire Order</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: LEAVE TABLE & CLOSE SESSION -->
+    <div class="modal fade" id="closeSessionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg p-3 text-center">
+                <form method="post" action="{% url 'tables:customer_close_session' table.table_number %}">
+                    {% csrf_token %}
+                    <div class="modal-header border-0 pb-0 justify-content-end">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body pt-0">
+                        <div class="fs-1 text-primary mb-2">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-2">Leave Table {{ table.table_number }}?</h5>
+                        <p class="small text-muted mb-3">
+                            This will close your ordering session and automatically release your occupied seats at Table {{ table.table_number }}.
+                        </p>
+                        <div class="alert alert-light border small text-muted text-start py-2 px-3 rounded-3 mb-0">
+                            <i class="bi bi-info-circle text-primary me-1"></i> If other companion groups are sitting at Table {{ table.table_number }}, their separate bills and seats remain active.
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                        <button type="button" class="btn btn-light rounded-pill flex-grow-1" data-bs-dismiss="modal">Stay Seated</button>
+                        <button type="submit" class="btn btn-dark rounded-pill flex-grow-1 fw-bold">Yes, Leave & Free Seats</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        function openCancelItemModal(itemId, itemName, qty, price, isCooking) {
+            const form = document.getElementById('cancelItemForm');
+            form.action = `/tables/{{ table.table_number }}/order/{{ order.id }}/item/${itemId}/cancel/`;
+            document.getElementById('cancelItemName').innerText = itemName;
+            document.getElementById('cancelItemQty').innerText = qty + 'x';
+            document.getElementById('cancelItemPrice').innerText = '₹' + price;
+
+            const warning = document.getElementById('cancelCookingWarning');
+            if (isCooking) {
+                warning.classList.remove('d-none');
+            } else {
+                warning.classList.add('d-none');
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('cancelItemModal'));
+            modal.show();
+        }
+
+        function openCancelEntireOrderModal() {
+            const modal = new bootstrap.Modal(document.getElementById('cancelEntireOrderModal'));
+            modal.show();
+        }
+
+        function openCloseSessionModal() {
+            const modal = new bootstrap.Modal(document.getElementById('closeSessionModal'));
+            modal.show();
+        }
+
+        // ----------------------------------------------------
+        // LIVE ORDER POLLING & 5-MINUTE COUNTDOWN ENGINE
+        // ----------------------------------------------------
+        let countdownSeconds = {{ order.serving_countdown_remaining_seconds|default:0 }};
+        let isReady = {% if order.status == 'READY' %}true{% else %}false{% endif %};
+        let countdownInterval = null;
+
+        function formatCountdown(sec) {
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateCountdownDisplay() {
+            const textEl = document.getElementById('servingCountdownText');
+            const barEl = document.getElementById('servingProgressBar');
+            const subEl = document.getElementById('countdownSubtext');
+            if (!textEl) return;
+
+            if (countdownSeconds > 0) {
+                textEl.textContent = formatCountdown(countdownSeconds);
+                if (barEl) {
+                    const pct = Math.max(0, Math.min(100, (countdownSeconds / 300) * 100));
+                    barEl.style.width = pct + '%';
+                }
+            } else {
+                textEl.textContent = "00:00";
+                if (barEl) barEl.style.width = "0%";
+                if (subEl) {
+                    subEl.innerHTML = '<span class="text-warning-emphasis fw-bold"><i class="bi bi-person-walking me-1"></i>Our staff is on the way to your table with your freshly prepared dishes!</span>';
+                }
+            }
+        }
+
+        function runCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            updateCountdownDisplay();
+            countdownInterval = setInterval(() => {
+                if (countdownSeconds > 0) {
+                    countdownSeconds--;
+                    updateCountdownDisplay();
+                }
+            }, 1000);
+        }
+
+        if (isReady && countdownSeconds > 0) {
+            runCountdown();
+        }
+
+        // Live Polling Function (every 3.5s without reloading page)
+        const liveUrl = "{% url 'tables:customer_order_status_live' table.table_number order.id %}";
+
+        async function pollOrderStatus() {
+            try {
+                const response = await fetch(liveUrl, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    applyLiveStatusUpdate(data);
+                }
+            } catch (err) {
+                console.warn('Live order polling retry...', err);
+            }
+        }
+
+        function applyLiveStatusUpdate(data) {
+            if (data.bill_requested) {
+                window.location.href = data.redirect_url || `/tables/{{ table.table_number }}/thank-you/?bill_requested=1`;
+                return;
+            }
+            const stepStage = data.step_stage;
+
+            // 1. Update status badge text
+            const statusBadge = document.getElementById('orderStatusBadge');
+            if (statusBadge) {
+                statusBadge.textContent = data.status_display;
+            }
+
+            // 2. Update 5-step progress nodes
+            if (stepStage >= 1) {
+                for (let k = 1; k <= 5; k++) {
+                    const node = document.getElementById(`stepNode${k}`);
+                    if (!node) continue;
+                    if (k < stepStage) {
+                        node.className = 'step-node completed';
+                    } else if (k === stepStage) {
+                        node.className = 'step-node active';
+                    } else {
+                        node.className = 'step-node';
+                    }
+                }
+            }
+
+            // 3. Toggle stage alert cards
+            const cookingBox = document.getElementById('cookingNoticeBox');
+            const readyBox = document.getElementById('readyNoticeBox');
+            const servedBox = document.getElementById('servedNoticeBox');
+
+            if (cookingBox) cookingBox.classList.toggle('d-none', stepStage !== 3);
+            if (readyBox) readyBox.classList.toggle('d-none', stepStage !== 4);
+            if (servedBox) servedBox.classList.toggle('d-none', stepStage !== 5);
+
+            // 4. Update Ready & Countdown state
+            if (stepStage === 4) {
+                if (!isReady) {
+                    isReady = true;
+                    countdownSeconds = data.serving_countdown_seconds || 300;
+                    runCountdown();
+                } else if (Math.abs(countdownSeconds - (data.serving_countdown_seconds || 0)) > 4) {
+                    countdownSeconds = data.serving_countdown_seconds;
+                    updateCountdownDisplay();
+                }
+                const readyTimestamp = document.getElementById('readyTimestampBadge');
+                if (readyTimestamp && data.ready_at) {
+                    readyTimestamp.innerHTML = `<i class="bi bi-clock-history me-1 text-success"></i>Ready at: ${data.ready_at}`;
+                }
+            } else if (stepStage === 5) {
+                if (countdownInterval) clearInterval(countdownInterval);
+                isReady = false;
+            }
+        }
+
+        setInterval(pollOrderStatus, 3500);
+
+        // Auto-dismiss notification popup alerts within 2 seconds
+        function autoDismissAlerts() {
+            const alerts = document.querySelectorAll('.alert.alert-dismissible, .messages .alert, [role="alert"].alert-dismissible, .alert:has(.btn-close)');
+            alerts.forEach(function(alert) {
+                if (alert.dataset.autoDismissAttached) return;
+                alert.dataset.autoDismissAttached = "true";
+
+                setTimeout(function() {
+                    if (alert && alert.parentNode) {
+                        alert.classList.remove('show');
+                        alert.classList.add('fade');
+                        alert.style.transition = 'opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease, margin 0.35s ease, padding 0.35s ease';
+                        alert.style.opacity = '0';
+                        alert.style.transform = 'translateY(-6px)';
+
+                        setTimeout(function() {
+                            if (window.bootstrap && bootstrap.Alert) {
+                                try {
+                                    const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                                    if (bsAlert) {
+                                        bsAlert.close();
+                                        return;
+                                    }
+                                } catch (e) {}
+                            }
+                            if (alert && alert.parentNode) {
+                                alert.parentNode.removeChild(alert);
+                            }
+                        }, 350);
+                    }
+                }, 1000);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', autoDismissAlerts);
+        } else {
+            autoDismissAlerts();
+        }
+
+        if (window.MutationObserver) {
+            const alertObserver = new MutationObserver(function(mutations) {
+                for (let mutation of mutations) {
+                    if (mutation.addedNodes.length > 0) {
+                        autoDismissAlerts();
+                        break;
+                    }
+                }
+            });
+            alertObserver.observe(document.documentElement, {
+                childList: true,
+                subtree: true
+            });
+        }
+    </script>
+    {% include 'tables/includes/service_assistance_widget.html' %}
+</body>
+</html>

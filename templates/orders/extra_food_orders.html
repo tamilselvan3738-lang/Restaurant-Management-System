@@ -1,0 +1,513 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Extra Food Orders | {{ RESTAURANT_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.badge-table-pill {
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 6px rgba(13, 110, 253, 0.25);
+}
+.dish-extra-badge {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    border: 1px solid #f59e0b;
+}
+.extra-food-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.extra-food-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.08) !important;
+}
+.pulse-warning {
+    animation: pulseWarn 1.6s infinite ease-in-out;
+}
+@keyframes pulseWarn {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.15); }
+}
+
+/* Extra Dish Card Styling */
+.extra-dish-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    border: 1px solid var(--bs-border-color, #e2e8f0);
+    background-color: var(--bs-card-bg, #ffffff);
+}
+.extra-dish-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12) !important;
+}
+.unseen-card {
+    border: 2px solid #f59e0b !important;
+    background: linear-gradient(180deg, rgba(254, 243, 199, 0.25) 0%, var(--bs-card-bg, #ffffff) 100%);
+    box-shadow: 0 4px 18px rgba(245, 158, 11, 0.22) !important;
+}
+[data-bs-theme="dark"] .unseen-card {
+    border: 2px solid #f59e0b !important;
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.15) 0%, var(--bs-card-bg, #1e222d) 100%) !important;
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.28) !important;
+}
+[data-bs-theme="dark"] .badge-table-pill {
+    box-shadow: 0 2px 8px rgba(255, 94, 20, 0.35);
+}
+.unseen-row {
+    background-color: rgba(254, 243, 199, 0.25) !important;
+    border-left: 4px solid #f59e0b !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <h3 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-fire text-warning me-1"></i> Extra Food Orders
+            </h3>
+            <span class="badge bg-warning text-dark rounded-pill px-3 py-1.5 fw-bold" id="page-unseen-badge" style="{% if unseen_count == 0 %}display: none;{% endif %}">
+                {{ unseen_count }} New
+            </span>
+        </div>
+        <p class="text-muted small mb-0">Live log of extra dishes ordered by seated guests across all tables</p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <a href="{% url 'orders:list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5">
+            <i class="bi bi-receipt"></i> Active Orders
+        </a>
+        <button class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold text-dark d-inline-flex align-items-center gap-1.5 shadow-sm" id="btnMarkAllSeen" onclick="markAllExtraFoodSeen()" style="{% if unseen_count == 0 %}display: none;{% endif %}">
+            <i class="bi bi-check2-all"></i> Mark All as Seen
+        </button>
+        <button class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> Refresh Log
+        </button>
+    </div>
+</div>
+
+<!-- 1. Key Metrics Cards -->
+<div class="row g-3 mb-4">
+    <!-- Card 1: New / Unseen Extra Orders -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white extra-food-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">New Extra Orders</span>
+                    <h3 class="fw-bold {% if unseen_count > 0 %}text-warning{% else %}text-muted{% endif %} mb-0 mt-1" id="card-unseen-count">
+                        {{ unseen_count }}
+                    </h3>
+                </div>
+                <div class="rounded-circle {% if unseen_count > 0 %}bg-warning-subtle text-warning pulse-warning{% else %}bg-secondary-subtle text-muted{% endif %} d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-bell-fill fs-5"></i>
+                </div>
+            </div>
+            <div class="text-muted small mt-2" style="font-size: 0.75rem;">
+                Awaiting staff acknowledgment
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 2: Total Extra Dishes Ordered -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white extra-food-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Total Extra Requests</span>
+                    <h3 class="fw-bold text-dark mb-0 mt-1">{{ total_count }}</h3>
+                </div>
+                <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-fire fs-5"></i>
+                </div>
+            </div>
+            <div class="text-muted small mt-2" style="font-size: 0.75rem;">
+                Extra dishes added across all tables
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 3: Total Extra Revenue -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white extra-food-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Extra Revenue</span>
+                    <h3 class="fw-bold text-success mb-0 mt-1">{{ RESTAURANT_CURRENCY }}{{ total_amount|floatformat:2 }}</h3>
+                </div>
+                <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-currency-rupee fs-5"></i>
+                </div>
+            </div>
+            <div class="text-muted small mt-2" style="font-size: 0.75rem;">
+                Consolidated into active session bills
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 4: Active Tables Ordering Extra Food -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white extra-food-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Active Tables</span>
+                    <h3 class="fw-bold text-info mb-0 mt-1">{{ active_tables_count }}</h3>
+                </div>
+                <div class="rounded-circle bg-info-subtle text-info d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-grid-3x3-gap-fill fs-5"></i>
+                </div>
+            </div>
+            <div class="text-muted small mt-2" style="font-size: 0.75rem;">
+                Seated tables with extra food in progress
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Filters & Search Toolbar -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 p-3 bg-white">
+    <form method="get" class="row g-2 align-items-center">
+        <!-- Filter Tabs -->
+        <div class="col-12 col-md-auto d-flex gap-1.5 flex-wrap">
+            <a href="?filter=all{% if search_q %}&q={{ search_q }}{% endif %}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-semibold {% if filter_type == 'all' %}btn-primary text-white{% else %}btn-outline-secondary{% endif %}">
+                All Extra Dishes ({{ total_count }})
+            </a>
+            <a href="?filter=unseen{% if search_q %}&q={{ search_q }}{% endif %}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-semibold {% if filter_type == 'unseen' %}btn-warning text-dark{% else %}btn-outline-warning text-dark{% endif %}">
+                <i class="bi bi-bell-fill me-1"></i> New / Unseen ({{ unseen_count }})
+            </a>
+            <a href="?filter=seen{% if search_q %}&q={{ search_q }}{% endif %}" class="btn btn-sm rounded-pill px-3 py-1.5 fw-semibold {% if filter_type == 'seen' %}btn-secondary text-white{% else %}btn-outline-secondary{% endif %}">
+                Acknowledged
+            </a>
+        </div>
+
+        <!-- Search Input -->
+        <div class="col-12 col-md ms-md-auto">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" name="q" value="{{ search_q }}" class="form-control bg-light border-start-0 pe-3" placeholder="Search table (e.g. T-01), dish name, order #, customer name...">
+                {% if search_q %}
+                <a href="?filter={{ filter_type }}" class="btn btn-outline-secondary border-start-0" title="Clear Search">
+                    <i class="bi bi-x"></i>
+                </a>
+                {% endif %}
+                <button type="submit" class="btn btn-primary rounded-end-pill px-3">Search</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 3. Extra Food Orders Cards Grid -->
+<div class="row g-3 mb-4" id="extra-food-cards-grid">
+    {% for log in extra_food_logs %}
+    <div class="col-12 col-md-6 col-xl-4 extra-food-item" id="extra-log-card-{{ log.id }}">
+        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden extra-dish-card position-relative {% if not log.is_seen %}unseen-card{% endif %}" id="extra-log-row-{{ log.id }}">
+            
+            <!-- Top Bar: Table & Kitchen Status -->
+            <div class="card-header bg-transparent border-0 pt-3 px-3 pb-0 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                    <span class="badge bg-primary rounded-pill px-3 py-1.5 fw-bold badge-table-pill d-inline-flex align-items-center gap-1 shadow-xs">
+                        <i class="bi bi-geo-alt-fill"></i> Table {{ log.table_name|default:log.table.table_number|default:"N/A" }}
+                    </span>
+                    {% if log.session_name %}
+                    <span class="badge bg-light text-muted border rounded-pill px-2 py-1 font-monospace small" style="font-size: 0.72rem;">
+                        {{ log.session_name }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div>
+                    {% if log.order_item %}
+                        <span class="badge bg-{{ log.order_item.badge_class }} rounded-pill px-2.5 py-1 font-monospace" style="font-size: 0.72rem;">
+                            {{ log.order_item.get_status_display }}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary-subtle text-dark border px-2.5 py-1 rounded-pill font-monospace" style="font-size: 0.72rem;">
+                            {{ log.order.get_status_display }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Card Body: Dish Name, Notes, Details & Price -->
+            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                <div>
+                    <!-- Extra Dish Name & Quantity -->
+                    <div class="mb-2">
+                        <div class="fw-bold text-body lh-sm fs-5">
+                            <span class="badge bg-warning text-dark font-monospace fw-bold rounded-pill me-1 px-2 py-0.5" style="font-size: 0.85rem;">
+                                {{ log.quantity }}x
+                            </span>
+                            <span>{{ log.item_name }}</span>
+                            <span class="badge dish-extra-badge font-monospace ms-1" style="font-size: 0.65rem;">+EXTRA</span>
+                        </div>
+                        <div class="text-body-secondary small mt-1 d-flex align-items-center gap-1.5 flex-wrap">
+                            <span class="fw-semibold">{{ RESTAURANT_CURRENCY }}{{ log.unit_price }} each</span>
+                            {% if log.special_notes %}
+                                &bull; <span class="text-danger fst-italic"><i class="bi bi-chat-dots me-0.5"></i>{{ log.special_notes }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Details Panel: Added By, Order #, Time, Total -->
+                    <div class="p-2.5 rounded-3 bg-light-subtle border mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-light text-primary border rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1 shadow-xs" style="font-size: 0.75rem;">
+                                <i class="bi bi-person-fill"></i>
+                                <span>{{ log.added_by_name|default:"Customer" }}</span>
+                            </span>
+
+                            <a href="{% url 'orders:detail' log.order.id %}" class="text-decoration-none fw-bold text-primary font-monospace small d-inline-flex align-items-center gap-1" title="View Order Ticket">
+                                <i class="bi bi-receipt"></i> #{{ log.order.order_number }}
+                            </a>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-baseline">
+                            <div class="text-body-secondary small font-monospace">
+                                <i class="bi bi-clock me-1 text-secondary"></i>
+                                <span class="fw-semibold text-body">{{ log.created_at|date:"h:i A" }}</span>
+                                <span class="opacity-75">({{ log.created_at|timesince }} ago)</span>
+                            </div>
+                            <div class="font-monospace fw-bold fs-4 text-body text-end">
+                                {{ RESTAURANT_CURRENCY }}{{ log.total_price }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Actions & Acknowledgment -->
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                    <div id="status-pill-{{ log.id }}">
+                        {% if not log.is_seen %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill small fw-bold">
+                            <i class="bi bi-bell-fill me-1"></i> New Request
+                        </span>
+                        {% else %}
+                        <span class="badge bg-light text-muted border px-2.5 py-1 rounded-pill small fw-semibold" style="font-size: 0.75rem;">
+                            <i class="bi bi-check2-all text-success me-1"></i> Seen
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <div id="action-btn-container-{{ log.id }}">
+                            {% if not log.is_seen %}
+                            <button type="button" class="btn btn-warning btn-sm py-1.5 px-3 rounded-pill fw-bold text-dark d-inline-flex align-items-center gap-1.5 shadow-sm btn-ack" id="btn-ack-{{ log.id }}" onclick="toggleSingleSeen({{ log.id }}, this)" style="font-size: 0.75rem;" title="Click to mark as Seen">
+                                <i class="bi bi-check2-circle"></i> Mark as Seen
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2.5 rounded-pill small fw-semibold d-inline-flex align-items-center gap-1 opacity-75 btn-ack" id="btn-ack-{{ log.id }}" onclick="toggleSingleSeen({{ log.id }}, this)" style="font-size: 0.72rem;" title="Mark as Unseen to reactivate notification">
+                                <i class="bi bi-arrow-counterclockwise"></i> Mark Unseen
+                            </button>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'orders:detail' log.order.id %}" class="btn btn-outline-secondary btn-sm rounded-circle shadow-xs" title="View Order Details" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-body">
+            <div class="py-4">
+                <i class="bi bi-fire fs-1 opacity-25 text-warning mb-2 d-block"></i>
+                <h5 class="fw-bold text-body">No Extra Food Orders Found</h5>
+                <p class="small text-body-secondary mb-0">When seated guests add more dishes to their tables, they will appear here as live cards with their table name and details.</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle a single extra food request between Seen and Unseen
+function toggleSingleSeen(logId, btn) {
+    if (!logId) return;
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>...';
+    }
+
+    const formData = new FormData();
+    formData.append('action', 'toggle');
+
+    fetch(`/orders/extra-food/${logId}/seen/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const cardEl = document.getElementById(`extra-log-card-${logId}`);
+            const card = cardEl ? cardEl.querySelector('.extra-dish-card') : null;
+            const statusPill = document.getElementById(`status-pill-${logId}`);
+            const btnContainer = document.getElementById(`action-btn-container-${logId}`);
+
+            if (data.is_seen) {
+                // Card is now SEEN
+                if (card) card.classList.remove('unseen-card');
+                if (statusPill) {
+                    statusPill.innerHTML = `<span class="badge bg-light text-muted border px-2.5 py-1 rounded-pill small fw-semibold" style="font-size: 0.75rem;"><i class="bi bi-check2-all text-success me-1"></i> Seen</span>`;
+                }
+                if (btnContainer) {
+                    btnContainer.innerHTML = `<button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2.5 rounded-pill small fw-semibold d-inline-flex align-items-center gap-1 opacity-75 btn-ack" id="btn-ack-${logId}" onclick="toggleSingleSeen(${logId}, this)" style="font-size: 0.72rem;" title="Mark as Unseen to reactivate notification"><i class="bi bi-arrow-counterclockwise"></i> Mark Unseen</button>`;
+                }
+            } else {
+                // Card is now UNSEEN (New Notification!)
+                if (card) card.classList.add('unseen-card');
+                if (statusPill) {
+                    statusPill.innerHTML = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill small fw-bold"><i class="bi bi-bell-fill me-1"></i> New Request</span>`;
+                }
+                if (btnContainer) {
+                    btnContainer.innerHTML = `<button type="button" class="btn btn-warning btn-sm py-1.5 px-3 rounded-pill fw-bold text-dark d-inline-flex align-items-center gap-1.5 shadow-sm btn-ack" id="btn-ack-${logId}" onclick="toggleSingleSeen(${logId}, this)" style="font-size: 0.75rem;" title="Click to mark as Seen"><i class="bi bi-check2-circle"></i> Mark as Seen</button>`;
+                }
+            }
+
+            const remaining = data.remaining_count !== undefined ? data.remaining_count : 0;
+            currentUnseenCount = remaining;
+            updateExtraFoodBadges(remaining);
+        } else if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check2-circle"></i> Mark as Seen';
+        }
+    })
+    .catch(() => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check2-circle"></i> Mark as Seen';
+        }
+    });
+}
+
+// Keep markSingleSeen as an alias so any existing caller works
+window.markSingleSeen = function(logId, btn) {
+    toggleSingleSeen(logId, btn);
+};
+
+// Mark all unseen extra food requests as seen
+function markAllExtraFoodSeen() {
+    const btn = document.getElementById('btnMarkAllSeen');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Updating...';
+    }
+
+    fetch('/orders/extra-food/mark-seen/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Remove highlight on all cards
+            document.querySelectorAll('.extra-dish-card.unseen-card').forEach(c => c.classList.remove('unseen-card'));
+            document.querySelectorAll('[id^="status-pill-"]').forEach(p => {
+                p.innerHTML = `<span class="badge bg-light text-muted border px-2.5 py-1 rounded-pill small fw-semibold" style="font-size: 0.75rem;"><i class="bi bi-check2-all text-success me-1"></i> Seen</span>`;
+            });
+            document.querySelectorAll('[id^="action-btn-container-"]').forEach(container => {
+                const logId = container.id.replace('action-btn-container-', '');
+                container.innerHTML = `<button type="button" class="btn btn-outline-secondary btn-sm py-1 px-2.5 rounded-pill small fw-semibold d-inline-flex align-items-center gap-1 opacity-75 btn-ack" id="btn-ack-${logId}" onclick="toggleSingleSeen(${logId}, this)" style="font-size: 0.72rem;" title="Mark as Unseen to reactivate notification"><i class="bi bi-arrow-counterclockwise"></i> Mark Unseen</button>`;
+            });
+            currentUnseenCount = 0;
+            updateExtraFoodBadges(0);
+        }
+    })
+    .catch(() => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check2-all"></i> Mark All as Seen';
+        }
+    });
+}
+
+// Helper to update all extra food notification badges in DOM (page & sidebar)
+function updateExtraFoodBadges(count) {
+    // 1. Sidebar Badges: update and VANISH when 0
+    document.querySelectorAll('.sidebar-extra-food-badge').forEach(b => {
+        if (count > 0) {
+            b.textContent = count;
+            b.style.display = 'inline-flex';
+        } else {
+            b.style.display = 'none'; // Vanish!
+        }
+    });
+
+    // 2. Page Header Badge: update and VANISH when 0
+    const pageBadge = document.getElementById('page-unseen-badge');
+    if (pageBadge) {
+        if (count > 0) {
+            pageBadge.className = 'badge bg-warning text-dark rounded-pill px-3 py-1.5 fw-bold';
+            pageBadge.textContent = `${count} New`;
+            pageBadge.style.display = 'inline-flex';
+        } else {
+            pageBadge.style.display = 'none'; // Vanish!
+        }
+    }
+
+    // 3. Mark All as Seen Button: VANISH when 0
+    const markAllBtn = document.getElementById('btnMarkAllSeen');
+    if (markAllBtn) {
+        if (count > 0) {
+            markAllBtn.style.display = 'inline-flex';
+        } else {
+            markAllBtn.style.display = 'none'; // Vanish!
+        }
+    }
+
+    // 4. Metrics Card Count
+    const cardCount = document.getElementById('card-unseen-count');
+    if (cardCount) {
+        cardCount.textContent = count;
+        if (count === 0) {
+            cardCount.className = 'fw-bold text-muted mb-0 mt-1';
+        } else {
+            cardCount.className = 'fw-bold text-warning mb-0 mt-1';
+        }
+    }
+}
+
+// Live Real-Time Poller for Extra Food Orders (every 4 seconds)
+let currentUnseenCount = {{ unseen_count|default:0 }};
+
+async function pollLiveExtraFoodOrders() {
+    try {
+        const res = await fetch("{% url 'orders:poll_extra_food' %}", {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const serverCount = data.unseen_count !== undefined ? data.unseen_count : 0;
+
+        if (serverCount !== currentUnseenCount) {
+            const wasIncrease = serverCount > currentUnseenCount;
+            currentUnseenCount = serverCount;
+            updateExtraFoodBadges(serverCount);
+
+            if (wasIncrease) {
+                // Automatically reload to display newly arrived extra food cards
+                location.reload();
+            }
+        }
+    } catch (e) {}
+}
+
+setInterval(pollLiveExtraFoodOrders, 4000);
+</script>
+{% endblock %}

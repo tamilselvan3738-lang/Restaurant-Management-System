@@ -1,0 +1,253 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Digital Waiting List &amp; Live Table Queue | {{ RESTAURANT_NAME|default:"Growwpark" }}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Culinary Theme -->
+    <link rel="stylesheet" href="{% static 'css/culinary-theme.css' %}?v=20261124a">
+    <style>
+        :root {
+            --rms-primary: #e65100;
+            --rms-gradient-primary: linear-gradient(135deg, #e65100 0%, #ff7043 100%);
+            --queue-bg: #0f172a;
+        }
+        body {
+            background-color: #f8fafc;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+        [data-bs-theme="dark"] body {
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+        .queue-header-hero {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            padding: 38px 20px 32px 20px;
+            border-bottom-left-radius: 28px;
+            border-bottom-right-radius: 28px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+            position: relative;
+        }
+        .queue-card {
+            border-radius: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: #ffffff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+        [data-bs-theme="dark"] .queue-card {
+            background-color: #151d2f;
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .estimate-pod {
+            border-radius: 14px;
+            padding: 12px 14px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: #f8fafc;
+            text-align: center;
+        }
+        [data-bs-theme="dark"] .estimate-pod {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+        .pulse-live {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #10b981;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulseDot 1.8s infinite;
+        }
+        @keyframes pulseDot {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Hero -->
+    <div class="queue-header-hero text-center">
+        <div class="container" style="max-width: 600px;">
+            <div class="d-inline-flex align-items-center gap-2 bg-white bg-opacity-10 border border-white border-opacity-20 px-3 py-1 rounded-pill small mb-3">
+                <span class="pulse-live"></span>
+                <span class="fw-semibold">Live Table Queue</span>
+            </div>
+            <h1 class="h3 fw-bold mb-1">{{ RESTAURANT_NAME|default:"Growwpark" }}</h1>
+            <p class="text-white-50 small mb-0">Join the digital waiting line and track live table availability from your phone.</p>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="container py-4" style="max-width: 600px;">
+
+        <!-- Django Alerts -->
+        {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Existing Active Entry Banner -->
+        {% if existing_entry %}
+        <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color: #ffffff;">
+            <div class="card-body p-3.5 d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="badge bg-white text-dark rounded-pill fw-bold mb-1">Active Ticket</span>
+                    <h5 class="fw-bold mb-0">Token #{{ existing_entry.queue_token }}</h5>
+                    <small class="text-white-50">{{ existing_entry.customer_name }} &bull; Party of {{ existing_entry.guest_count }}</small>
+                </div>
+                <a href="{% url 'tables:queue_track' existing_entry.queue_token %}" class="btn btn-light rounded-pill fw-bold px-3 py-2 shadow-sm text-primary">
+                    <i class="bi bi-clock-history me-1"></i> Track Live
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Live Status Metrics -->
+        <div class="queue-card p-3.5 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-shop text-primary"></i> Floor Status
+                </h6>
+                {% if is_busy %}
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-1">
+                    <i class="bi bi-fire me-1"></i> Busy Dining Hour
+                </span>
+                {% else %}
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1">
+                    <i class="bi bi-check2-circle me-1"></i> Tables Ready
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-4">
+                    <div class="estimate-pod">
+                        <span class="text-body-secondary small d-block mb-1">Available</span>
+                        <h4 class="fw-bold text-success mb-0">{{ available_count }}</h4>
+                        <span class="text-muted" style="font-size: 0.72rem;">tables</span>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="estimate-pod">
+                        <span class="text-body-secondary small d-block mb-1">Occupied</span>
+                        <h4 class="fw-bold text-primary mb-0">{{ occupied_count }}</h4>
+                        <span class="text-muted" style="font-size: 0.72rem;">dining now</span>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="estimate-pod">
+                        <span class="text-body-secondary small d-block mb-1">Waiting</span>
+                        <h4 class="fw-bold text-warning mb-0">{{ waiting_groups_count }}</h4>
+                        <span class="text-muted" style="font-size: 0.72rem;">groups ahead</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wait time range estimates by party size -->
+            <div class="small fw-semibold text-body-secondary mb-2">Estimated Wait Times:</div>
+            <div class="row g-2">
+                <div class="col-4">
+                    <div class="estimate-pod py-2">
+                        <div class="text-body-secondary" style="font-size: 0.75rem;"><i class="bi bi-people me-1"></i>1-2 Guests</div>
+                        <div class="fw-bold text-dark fs-7" style="color: var(--bs-body-color) !important;">{{ estimates.couple.range_display }}</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="estimate-pod py-2">
+                        <div class="text-body-secondary" style="font-size: 0.75rem;"><i class="bi bi-people-fill me-1"></i>3-4 Guests</div>
+                        <div class="fw-bold text-dark fs-7" style="color: var(--bs-body-color) !important;">{{ estimates.family.range_display }}</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="estimate-pod py-2">
+                        <div class="text-body-secondary" style="font-size: 0.75rem;"><i class="bi bi-people-fill me-1"></i>5+ Guests</div>
+                        <div class="fw-bold text-dark fs-7" style="color: var(--bs-body-color) !important;">{{ estimates.large.range_display }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration Form Card -->
+        <div class="queue-card p-4">
+            <h5 class="fw-bold mb-1">
+                <i class="bi bi-ticket-perforated-fill text-primary me-2"></i>Join Digital Waiting List
+            </h5>
+            <p class="text-body-secondary small mb-4">Enter your details to receive an instant queue number and real-time updates.</p>
+
+            <form method="POST" action="{% url 'tables:queue_join' %}">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Your Name <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-body-tertiary"><i class="bi bi-person"></i></span>
+                        <input type="text" name="customer_name" class="form-control" placeholder="e.g. Rahul Sharma" required maxlength="100">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Mobile Number <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-body-tertiary"><i class="bi bi-telephone"></i></span>
+                        <input type="tel" name="customer_phone" class="form-control" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="15">
+                    </div>
+                    <div class="form-text small">We will send an alert when your table is ready.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Number of Guests <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-body-tertiary"><i class="bi bi-people"></i></span>
+                        <select name="guest_count" class="form-select" required>
+                            <option value="1">1 Person (Solo)</option>
+                            <option value="2" selected>2 Persons (Couple)</option>
+                            <option value="3">3 Persons</option>
+                            <option value="4">4 Persons (Family)</option>
+                            <option value="5">5 Persons</option>
+                            <option value="6">6 Persons</option>
+                            <option value="7">7 Persons</option>
+                            <option value="8">8+ Persons (Large Group)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-semibold">Special Requests (Optional)</label>
+                    <textarea name="special_requirements" class="form-control" rows="2" placeholder="e.g., High chair needed, booth preferred, wheelchair access..." maxlength="255"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-warning text-dark w-100 py-3 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" style="background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color: #ffffff !important; border: none;">
+                    <i class="bi bi-check2-circle fs-5"></i> Get My Queue Token
+                </button>
+            </form>
+        </div>
+
+        <!-- Footer Help -->
+        <div class="text-center text-body-secondary small mt-4">
+            <p class="mb-1">&copy; {{ RESTAURANT_NAME|default:"Growwpark RMS" }} &bull; Smart Hospitality</p>
+            <p class="text-muted" style="font-size: 0.75rem;">Already have a table? Scan the QR code placed on your table to view menu &amp; order.</p>
+        </div>
+
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

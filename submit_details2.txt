@@ -1,0 +1,119 @@
+                alertBox.className = 'alert alert-danger alert-dismissible fade show rounded-3 py-2 px-3 small';
+
+                alertBox.innerHTML = `
+
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Network error. Please try again or wave to your waiter.
+
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+
+                `;
+
+            }
+
+        } finally {
+
+            if (btn) {
+
+                btn.disabled = false;
+
+                btn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Send Request to Waiter';
+
+            }
+
+        }
+
+    };
+
+
+
+    // Cancel an active request
+
+    window.cancelServiceRequest = async function(reqId) {
+
+        if (!confirm('Are you sure you want to cancel this assistance request?')) return;
+
+        const cancelUrl = `/tables/${tableNumber}/service-request/${reqId}/cancel/`;
+
+        try {
+
+            const res = await fetch(cancelUrl, {
+
+                method: 'POST',
+
+                headers: {
+
+                    'X-CSRFToken': getCsrfToken(),
+
+                    'X-Requested-With': 'XMLHttpRequest'
+
+                }
+
+            });
+
+            pollServiceStatus();
+
+        } catch (e) {
+
+            console.error('Cancel request error:', e);
+
+        }
+
+    };
+
+
+
+    // Re-notice staff for active request (after 2+ minutes waiting)
+
+    window.renoticeServiceRequest = async function(reqId) {
+
+        const btn = document.getElementById(`renoticeBtn-${reqId}`);
+
+        if (btn) {
+
+            btn.disabled = true;
+
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Re-notifying...';
+
+        }
+
+
+
+        const renoticeUrl = `/tables/${tableNumber}/service-request/${reqId}/renotice/`;
+
+        try {
+
+            const res = await fetch(renoticeUrl, {
+
+                method: 'POST',
+
+                headers: {
+
+                    'X-CSRFToken': getCsrfToken(),
+
+                    'X-Requested-With': 'XMLHttpRequest'
+
+                }
+
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+
+                const alertBox = document.getElementById('serviceRequestAlertBox');
+
+                if (alertBox) {
+
+                    alertBox.className = 'alert alert-success alert-dismissible fade show rounded-3 py-2 px-3 small';
+
+                    alertBox.innerHTML = `
+
+                        <i class="bi bi-bell-fill me-1"></i> ${data.message}
+
+                        <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+
+                    `;
+
+                    alertBox.classList.remove('d-none');
+
+                }

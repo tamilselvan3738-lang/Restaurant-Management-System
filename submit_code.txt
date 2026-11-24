@@ -1,0 +1,3 @@
+427: <button type="button" class="btn btn-warning w-100 py-2.5 fw-bold text-dark rounded-pill d-flex align-items-center justify-content-center gap-2 shadow-sm" id="submitServiceRequestBtn" onclick="submitServiceRequest()">
+654: window.submitServiceRequest = async function() {
+655: const btn = document.getElementById('submitServiceRequestBtn');

@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Restaurant Details{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-shop me-2 text-primary"></i> Restaurant Business Details</h5>
+                <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+                    <i class="bi bi-arrow-left"></i> <span>Back</span>
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted small mb-3">Update official brand details, address, default currency, and tax parameters applied to all customer invoices.</p>
+
+                <!-- Quick Currency Selection Banner -->
+                <div class="alert alert-light border d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                    <div>
+                        <div class="fw-bold mb-1"><i class="bi bi-cash-stack me-1 text-primary"></i> Operating Currency: <span class="badge bg-primary fs-6">{{ RESTAURANT_CURRENCY }}</span></div>
+                        <div class="text-muted small">Decide whether amounts across dishes, POS, receipts, and analytics are based on <strong>Rupees (₹)</strong> or <strong>Dollars ($)</strong>.</div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'superadmin:switch_currency' %}?currency=%E2%82%B9" class="btn btn-sm {% if RESTAURANT_CURRENCY == '₹' %}btn-success active fw-bold{% else %}btn-outline-success{% endif %}">
+                            <i class="bi bi-currency-rupee me-1"></i> Rupees (₹)
+                        </a>
+                        <a href="{% url 'superadmin:switch_currency' %}?currency=$" class="btn btn-sm {% if RESTAURANT_CURRENCY == '$' %}btn-primary active fw-bold{% else %}btn-outline-primary{% endif %}">
+                            <i class="bi bi-currency-dollar me-1"></i> Dollar ($)
+                        </a>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label fw-semibold">Restaurant Name</label>
+                            {{ form.restaurant_name }}
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">Currency Format</label>
+                            {{ form.currency }}
+                            <div class="form-text small">Select <strong>Rupees (₹)</strong> or <strong>Dollar ($)</strong>.</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tagline / Motto</label>
+                        {{ form.tagline }}
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Contact Phone</label>
+                            {{ form.phone }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Official Email</label>
+                            {{ form.email }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Physical Location / Address</label>
+                        {{ form.address }}
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Default Tax Rate (e.g. 0.0825 for 8.25%)</label>
+                            {{ form.tax_rate }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Service Charge Rate (e.g. 0.05 for 5%)</label>
+                            {{ form.service_charge_rate }}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end pt-3 border-top">
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-check2 me-1"></i> Save Restaurant Details
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Restaurant Status{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Status Switch Form -->
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-toggles me-2 text-primary"></i> Operating Status & Business Hours</h5>
+                <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+                    <i class="bi bi-arrow-left"></i> <span>Back</span>
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="alert {% if config.is_open %}alert-success border-success{% else %}alert-danger border-danger{% endif %} d-flex align-items-center mb-4 p-3">
+                        <i class="bi {% if config.is_open %}bi-door-open-fill text-success{% else %}bi-door-closed-fill text-danger{% endif %} fs-2 me-3"></i>
+                        <div>
+                            <div class="fw-bold fs-6">
+                                Restaurant is currently: {% if config.is_open %}OPEN FOR ORDERS{% else %}CLOSED{% endif %}
+                            </div>
+                            <div class="small text-muted">{{ config.status_message|default:"No announcement set" }}</div>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3 p-0 ms-4">
+                        {{ form.is_open }}
+                        <label class="form-check-label fw-bold ms-2" for="{{ form.is_open.id_for_label }}">
+                            Open For Business & Accept Orders
+                        </label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Customer Announcement / Status Message</label>
+                        {{ form.status_message }}
+                        <div class="form-text small">e.g., 'Now Serving Dinner - Happy Hour till 7 PM!'</div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Daily Opening Time</label>
+                            {{ form.opening_time }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Daily Closing Time</label>
+                            {{ form.closing_time }}
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-4 p-0 ms-4">
+                        {{ form.maintenance_mode }}
+                        <label class="form-check-label fw-bold text-danger ms-2" for="{{ form.maintenance_mode.id_for_label }}">
+                            Enable Maintenance Mode (Restricts order placement)
+                        </label>
+                    </div>
+
+                    <div class="pt-3 border-top text-end">
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            Update Operational Status
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Status Overview -->
+    <div class="col-lg-5">
+        <div class="card mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-speedometer me-2 text-primary"></i> Live Seating & Capacity</h6>
+            </div>
+            <div class="card-body p-4 text-center">
+                <div class="display-4 fw-bold text-primary mb-2">{{ occupancy_pct }}%</div>
+                <p class="text-muted small mb-3">Current Dining Hall Occupancy</p>
+                <div class="progress mb-3" style="height: 12px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ occupancy_pct }}%;"></div>
+                </div>
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>Occupied: <strong>{{ occupied_tables }} tables</strong></span>
+                    <span>Total: <strong>{{ total_tables }} tables</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i> Operating Schedule</h6>
+            </div>
+            <div class="card-body small">
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted">Kitchen Opening:</span>
+                    <span class="fw-bold">{{ config.opening_time|time:"h:i A" }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted">Last Call / Closing:</span>
+                    <span class="fw-bold">{{ config.closing_time|time:"h:i A" }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-2">
+                    <span class="text-muted">POS Order State:</span>
+                    <span class="badge {% if config.is_open and not config.maintenance_mode %}bg-success{% else %}bg-danger{% endif %}">
+                        {% if config.is_open and not config.maintenance_mode %}Active & Accepting{% else %}Paused / Closed{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

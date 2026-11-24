@@ -1,0 +1,382 @@
+{% extends 'chef/base_chef.html' %}
+{% load static %}
+
+{% block title %}Kitchen Operations Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+
+    <!-- DASHBOARD HEADER -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h4 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-speedometer2 text-primary"></i> Chef Command Center
+            </h4>
+            <p class="text-muted small mb-0">
+                Live Kitchen Dispatch & Order Preparation Pipeline • {{ today|date:"l, F d, Y" }}
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'chef:report_unavailable' %}" class="btn btn-outline-warning btn-sm rounded-pill px-3 fw-semibold">
+                <i class="bi bi-slash-circle me-1"></i> Report 86 Item
+            </a>
+            <a href="{% url 'chef:orders' %}" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                <i class="bi bi-list-check me-1"></i> View All Orders
+            </a>
+        </div>
+    </div>
+
+    <!-- 1. SUMMARY METRIC CARDS (REAL DATABASE COUNTS) -->
+    <div class="row g-3 mb-4">
+        <!-- 0. My Orders -->
+        <div class="col-6 col-md-4 col-xl-auto flex-xl-fill">
+            <a href="{% url 'chef:orders' %}?status=my_orders" class="card text-decoration-none border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-lift transition border-start border-4 border-primary">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-primary small fw-semibold text-uppercase" style="font-size: 0.7rem;">My Orders</span>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill"><i class="bi bi-person-check-fill"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0 text-primary">{{ my_orders_count }}</div>
+                <div class="small text-muted mt-1" style="font-size: 0.72rem;">Assigned to you</div>
+            </a>
+        </div>
+
+        <!-- 1. Total Orders Today -->
+        <div class="col-6 col-md-4 col-xl-auto flex-xl-fill">
+            <a href="{% url 'chef:orders' %}?status=today" class="card text-decoration-none border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-lift transition">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem;">Today's Orders</span>
+                    <span class="badge bg-secondary-subtle text-secondary rounded-pill"><i class="bi bi-calendar-event"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0 text-dark">{{ total_orders_today }}</div>
+                <div class="small text-muted mt-1" style="font-size: 0.72rem;">Total orders received</div>
+            </a>
+        </div>
+
+        <!-- 2. New Orders -->
+        <div class="col-6 col-md-4 col-xl-auto flex-xl-fill">
+            <a href="{% url 'chef:orders_new' %}" class="card text-decoration-none border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-lift transition border-start border-4 border-warning">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-warning small fw-semibold text-uppercase" style="font-size: 0.7rem;">New Orders</span>
+                    <span class="badge bg-warning-subtle text-warning rounded-pill"><i class="bi bi-bell-fill"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0 text-dark">{{ new_orders_count }}</div>
+                <div class="small text-muted mt-1" style="font-size: 0.72rem;">Awaiting acceptance</div>
+            </a>
+        </div>
+
+        <!-- 3. Pending Orders -->
+        <div class="col-6 col-md-4 col-xl-auto flex-xl-fill">
+            <a href="{% url 'chef:orders' %}?status=pending" class="card text-decoration-none border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-lift transition">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-secondary small fw-semibold text-uppercase" style="font-size: 0.7rem;">Pending</span>
+                    <span class="badge bg-secondary-subtle text-secondary rounded-pill"><i class="bi bi-hourglass-split"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0 text-dark">{{ pending_orders_count }}</div>
+                <div class="small text-muted mt-1" style="font-size: 0.72rem;">Queued for prep</div>
+            </a>
+        </div>
+
+        <!-- 4. Preparing Orders -->
+        <div class="col-6 col-md-4 col-xl-auto flex-xl-fill">
+            <a href="{% url 'chef:orders_preparing' %}" class="card text-decoration-none border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-lift transition border-start border-4 border-primary">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-primary small fw-semibold text-uppercase" style="font-size: 0.7rem;">In Kitchen</span>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill"><i class="bi bi-fire"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0 text-dark">{{ preparing_orders_count }}</div>
+                <div class="small text-muted mt-1" style="font-size: 0.72rem;">Cooking on stove/oven</div>
+            </a>
+        </div>
+
+        <!-- 5. Ready Orders -->
+        <div class="col-6 col-md-4 col-xl-auto flex-xl-fill">
+            <a href="{% url 'chef:orders_ready' %}" class="card text-decoration-none border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-lift transition border-start border-4 border-success">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-success small fw-semibold text-uppercase" style="font-size: 0.7rem;">Ready to Serve</span>
+                    <span class="badge bg-success-subtle text-success rounded-pill"><i class="bi bi-check2-circle"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0 text-dark">{{ ready_orders_count }}</div>
+                <div class="small text-muted mt-1" style="font-size: 0.72rem;">Hot on the pass</div>
+            </a>
+        </div>
+
+        <!-- 6. Cancelled Orders -->
+        <div class="col-6 col-md-4 col-xl-auto flex-xl-fill">
+            <a href="{% url 'chef:orders_cancelled' %}" class="card text-decoration-none border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-lift transition border-start border-4 border-danger">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="text-danger small fw-semibold text-uppercase" style="font-size: 0.7rem;">Cancelled Today</span>
+                    <span class="badge bg-danger-subtle text-danger rounded-pill"><i class="bi bi-x-octagon"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0 text-dark">{{ cancelled_today_count }}</div>
+                <div class="small text-muted mt-1" style="font-size: 0.72rem;">Voided or returned</div>
+            </a>
+        </div>
+
+        <!-- 7. Delayed Orders -->
+        <div class="col-6 col-md-4 col-xl-auto flex-xl-fill">
+            <a href="{% url 'chef:orders' %}?status=delayed" class="card text-decoration-none border-0 shadow-sm rounded-3 h-100 p-3 bg-white hover-lift transition border-start border-4 {% if delayed_orders_count > 0 %}border-danger bg-danger-subtle bg-opacity-25{% else %}border-secondary{% endif %}">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="{% if delayed_orders_count > 0 %}text-danger fw-bold{% else %}text-muted{% endif %} small text-uppercase" style="font-size: 0.7rem;">Delayed Orders</span>
+                    <span class="badge {% if delayed_orders_count > 0 %}bg-danger text-white{% else %}bg-secondary-subtle text-secondary{% endif %} rounded-pill"><i class="bi bi-alarm-fill"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0 {% if delayed_orders_count > 0 %}text-danger{% else %}text-dark{% endif %}">{{ delayed_orders_count }}</div>
+                <div class="small text-muted mt-1" style="font-size: 0.72rem;">&gt; 30 mins in prep</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. MAIN ACTIVE PIPELINE WORKFLOW (4 SECTIONS) -->
+    <div class="row g-4">
+        
+        <!-- SECTION A: INCOMING NEW & ACCEPTED ORDERS -->
+        <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-warning text-dark"><i class="bi bi-bell-fill"></i></span>
+                        <h6 class="fw-bold mb-0 text-dark">Recent Incoming Orders</h6>
+                    </div>
+                    <a href="{% url 'chef:orders_new' %}" class="small text-decoration-none fw-semibold">View All ({{ new_orders_count }})</a>
+                </div>
+                <div class="card-body p-3">
+                    {% if recent_incoming %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for order in recent_incoming %}
+                            <div class="p-3 rounded-3 border bg-light position-relative">
+                                <div class="d-flex align-items-start justify-content-between mb-2">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold text-dark">{{ order.order_number }}</span>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                                Table {{ order.table.table_number|default:"Takeaway" }}
+                                            </span>
+                                            {% if order.has_extra_items %}
+                                                <span class="badge bg-info text-white"><i class="bi bi-plus-circle me-1"></i>Extra Item</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            <i class="bi bi-person me-1"></i> {{ order.customer_name }} • {{ order.created_at|date:"h:i A" }}
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-{{ order.badge_class }}">{{ order.get_status_display }}</span>
+                                </div>
+
+                                <!-- Item List Snapshot -->
+                                <div class="small bg-white p-2 rounded border mb-2">
+                                    {% for item in order.items.all %}
+                                        {% if not item.is_combo_header %}
+                                        <div class="d-flex justify-content-between align-items-center py-0.5 {% if not forloop.last %}border-bottom border-light{% endif %}">
+                                            <span>
+                                                <strong>{{ item.quantity }}x</strong> {{ item.menu_item.name }}
+                                                {% if item.is_combo_component %}<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1" style="font-size:0.65rem;">[{{ item.combo_name|default:"Combo" }}]</span>{% endif %}
+                                                {% if item.is_extra %}<span class="badge bg-info-subtle text-info ms-1" style="font-size:0.65rem;">EXTRA</span>{% endif %}
+                                            </span>
+                                            <span class="badge bg-{{ item.badge_class }}" style="font-size: 0.68rem;">{{ item.get_status_display }}</span>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if order.special_instructions %}
+                                        <div class="text-danger small mt-1 pt-1 border-top" style="font-size: 0.72rem;">
+                                            <i class="bi bi-chat-quote-fill me-1"></i>Note: {{ order.special_instructions }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="d-flex gap-2 justify-content-end align-items-center">
+                                    <a href="{% url 'chef:order_detail' order.id %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        <i class="bi bi-eye me-1"></i> Details
+                                    </a>
+                                    {% if not order.accepted_by and order.status in 'PENDING,PLACED' and profile.can_accept_orders %}
+                                    <form method="post" action="{% url 'chef:order_accept' order.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-warning btn-sm rounded-pill px-3 fw-bold shadow-xs">
+                                            <i class="bi bi-check-lg me-1"></i> Accept Order
+                                        </button>
+                                    </form>
+                                    {% elif order.accepted_by and order.accepted_by != user %}
+                                        <span class="badge bg-secondary-subtle text-secondary border px-2 py-1 align-self-center small">
+                                            <i class="bi bi-lock-fill me-1"></i>Accepted by {{ order.accepted_by_name }}
+                                        </span>
+                                    {% elif order.accepted_by == user and profile.can_update_status %}
+                                        <form method="post" action="{% url 'chef:order_status' order.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="PREPARING">
+                                            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold shadow-xs">
+                                                <i class="bi bi-fire me-1"></i> Start Cooking
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-check2-circle fs-1 text-success mb-2 d-block"></i>
+                            <div class="fw-semibold">No pending orders waiting</div>
+                            <div class="small">Incoming orders from QR menu will show up here immediately with alert sounds.</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION B: ORDERS CURRENTLY BEING PREPARED -->
+        <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-primary"><i class="bi bi-fire"></i></span>
+                        <h6 class="fw-bold mb-0 text-dark">Orders in Preparation</h6>
+                    </div>
+                    <a href="{% url 'chef:orders_preparing' %}" class="small text-decoration-none fw-semibold">View All ({{ preparing_orders_count }})</a>
+                </div>
+                <div class="card-body p-3">
+                    {% if orders_in_preparation %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for order in orders_in_preparation %}
+                            <div class="p-3 rounded-3 border bg-light {% if order.is_delayed %}border-danger bg-danger-subtle bg-opacity-10{% endif %}">
+                                <div class="d-flex align-items-start justify-content-between mb-2">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-bold text-dark">{{ order.order_number }}</span>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                                Table {{ order.table.table_number|default:"Takeaway" }}
+                                            </span>
+                                            {% if order.is_delayed %}
+                                                <span class="badge bg-danger text-white"><i class="bi bi-alarm-fill me-1"></i>DELAYED</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            Started: {{ order.created_at|date:"h:i A" }} • {{ order.items.count }} items
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary">PREPARING</span>
+                                </div>
+
+                                <!-- Item List Snapshot -->
+                                <div class="small bg-white p-2 rounded border mb-2">
+                                    {% for item in order.items.all %}
+                                        {% if not item.is_combo_header %}
+                                        <div class="d-flex justify-content-between align-items-center py-0.5 {% if not forloop.last %}border-bottom border-light{% endif %}">
+                                            <span>
+                                                <strong>{{ item.quantity }}x</strong> {{ item.menu_item.name }}
+                                                {% if item.is_combo_component %}<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1" style="font-size:0.65rem;">[{{ item.combo_name|default:"Combo" }}]</span>{% endif %}
+                                            </span>
+                                            <span class="badge bg-{{ item.badge_class }}" style="font-size: 0.68rem;">{{ item.get_status_display }}</span>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="d-flex gap-2 justify-content-end align-items-center">
+                                    <a href="{% url 'chef:order_detail' order.id %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        <i class="bi bi-eye me-1"></i> Details
+                                    </a>
+                                    {% if order.accepted_by and order.accepted_by != user and not user.is_admin_or_manager %}
+                                        <span class="badge bg-secondary-subtle text-secondary border px-2 py-1 align-self-center small">
+                                            <i class="bi bi-person me-1"></i>Cook: {{ order.accepted_by_name }}
+                                        </span>
+                                    {% elif profile.can_mark_ready %}
+                                    <form method="post" action="{% url 'chef:order_status' order.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="status" value="READY">
+                                        <button type="submit" class="btn btn-success btn-sm rounded-pill px-3 fw-bold shadow-xs">
+                                            <i class="bi bi-check2-circle me-1"></i> COOK COMPLETE – MARK AS READY
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-cup-hot fs-1 text-muted mb-2 d-block"></i>
+                            <div class="fw-semibold">No orders currently cooking</div>
+                            <div class="small">Accept incoming orders to begin cooking.</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION C: ORDERS READY FOR SERVING -->
+        <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success"><i class="bi bi-check2-circle"></i></span>
+                        <h6 class="fw-bold mb-0 text-dark">Ready for Serving (Pass)</h6>
+                    </div>
+                    <a href="{% url 'chef:orders_ready' %}" class="small text-decoration-none fw-semibold">View All ({{ ready_orders_count }})</a>
+                </div>
+                <div class="card-body p-3">
+                    {% if orders_ready %}
+                        <div class="d-flex flex-column gap-2">
+                            {% for order in orders_ready %}
+                            <div class="p-2.5 rounded-3 border bg-light d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="fw-bold text-dark small">{{ order.order_number }} • Table {{ order.table.table_number|default:"-" }}</div>
+                                    <div class="text-muted" style="font-size: 0.72rem;">{{ order.customer_name }} • {{ order.items.count }} items ready</div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-success">READY</span>
+                                    <a href="{% url 'chef:order_detail' order.id %}" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2.5" style="font-size: 0.75rem;">
+                                        View
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted small">
+                            No dishes sitting on the ready pass.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION D: RECENTLY CANCELLED ORDERS -->
+        <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-danger"><i class="bi bi-x-octagon"></i></span>
+                        <h6 class="fw-bold mb-0 text-dark">Recently Cancelled Today</h6>
+                    </div>
+                    <a href="{% url 'chef:orders_cancelled' %}" class="small text-decoration-none fw-semibold">View All ({{ cancelled_today_count }})</a>
+                </div>
+                <div class="card-body p-3">
+                    {% if recent_cancelled %}
+                        <div class="d-flex flex-column gap-2">
+                            {% for order in recent_cancelled %}
+                            <div class="p-2.5 rounded-3 border border-danger-subtle bg-danger-subtle bg-opacity-10 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <div class="fw-bold text-danger small">{{ order.order_number }} • Table {{ order.table.table_number|default:"-" }}</div>
+                                    <div class="text-muted" style="font-size: 0.72rem;">
+                                        Reason: {{ order.cancellation_reason|default:"Cancelled by staff/customer"|truncatechars:45 }}
+                                    </div>
+                                </div>
+                                <a href="{% url 'chef:order_detail' order.id %}" class="btn btn-sm btn-outline-danger rounded-pill py-0 px-2.5" style="font-size: 0.75rem;">
+                                    View
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted small">
+                            No cancelled orders recorded today.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

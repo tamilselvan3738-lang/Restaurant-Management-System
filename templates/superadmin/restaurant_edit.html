@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Restaurant - {{ restaurant.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-1"><i class="bi bi-pencil-square me-2 text-primary"></i> Edit Restaurant Details</h3>
+                <p class="text-muted small mb-0">{{ restaurant.name }} &bull; Tenant Code: <code>{{ restaurant.code }}</code></p>
+            </div>
+            <a href="{% url 'superadmin:restaurant_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-xs">
+                <i class="bi bi-arrow-left me-1"></i> Back to Restaurants
+            </a>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-8">
+                        <label class="form-label small fw-bold">Company / Restaurant Name</label>
+                        <input type="text" name="name" class="form-control" value="{{ restaurant.name }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Tenant Code (Read-Only)</label>
+                        <input type="text" class="form-control" value="{{ restaurant.code }}" disabled readonly>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Operational Status</label>
+                        <select name="status" class="form-select">
+                            {% for val, label in status_choices %}
+                                <option value="{{ val }}" {% if restaurant.status == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Subscription Plan Tier</label>
+                        <select name="plan" class="form-select">
+                            {% for val, label in plan_choices %}
+                                <option value="{{ val }}" {% if restaurant.plan == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Contact Phone Number</label>
+                        <input type="text" name="phone" class="form-control" value="{{ restaurant.phone }}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Contact Email Address</label>
+                        <input type="email" name="email" class="form-control" value="{{ restaurant.email }}">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small fw-bold">Physical Address</label>
+                        <textarea name="address" class="form-control" rows="2">{{ restaurant.address }}</textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small fw-bold">Suspension Reason (if Suspended)</label>
+                        <textarea name="suspension_reason" class="form-control" rows="2" placeholder="Leave empty if not suspended">{{ restaurant.suspension_reason }}</textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small fw-bold">Company Brand Logo</label>
+                        {% if restaurant.logo %}
+                            <div class="mb-2">
+                                <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}" class="rounded-3 shadow-xs" style="max-height: 60px;">
+                            </div>
+                        {% endif %}
+                        <input type="file" name="logo" class="form-control" accept="image/png, image/jpeg, image/webp">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'superadmin:restaurant_list' %}" class="btn btn-secondary rounded-pill px-4">Cancel</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

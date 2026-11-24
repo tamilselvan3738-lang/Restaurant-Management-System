@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Group Bill Splitting - Table {{ table.table_number }} • {{ session.session_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            padding-bottom: 40px;
+        }
+        .pay-header {
+            background: linear-gradient(135deg, #ff5e14 0%, #ea580c 100%);
+            color: white;
+            padding: 24px 16px 44px;
+            text-align: center;
+            border-bottom-left-radius: 28px;
+            border-bottom-right-radius: 28px;
+        }
+        .pay-card {
+            margin-top: -28px;
+            background: white;
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .split-tab {
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+            width: 100%;
+            text-align: left;
+        }
+        .split-tab.active {
+            border-color: #ff5e14;
+            background: rgba(255, 94, 20, 0.04);
+            box-shadow: 0 4px 12px rgba(255, 94, 20, 0.1);
+        }
+        .method-btn {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+            background: white;
+            width: 100%;
+            text-align: left;
+        }
+        .method-btn.active, .method-btn:hover {
+            border-color: #ff5e14;
+            background: rgba(255, 94, 20, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="pay-header">
+        <div class="d-inline-flex align-items-center gap-1.5 bg-white bg-opacity-20 px-3 py-1 rounded-pill small mb-2 fw-semibold">
+            <i class="bi bi-pie-chart-fill"></i> Group Bill Splitting & Settlement
+        </div>
+        <h3 class="fw-bold mb-1">Table {{ table.table_number }} &bull; {{ session.session_name }}</h3>
+        <p class="mb-0 text-white-50 small">
+            Invoice: #{{ invoice.invoice_number }} &bull; Paying as: <strong class="text-white">{{ member_name }}</strong>
+        </p>
+    </div>
+
+    <div class="container px-3">
+        <div class="pay-card">
+            <!-- Group Total Summary Box -->
+            <div class="p-3 bg-light rounded-4 mb-3 border">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small">Total Group Bill</span>
+                    <span class="fw-bold font-monospace text-dark fs-5">₹{{ invoice.total_amount }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center text-muted small mb-1">
+                    <span>Already Paid so far</span>
+                    <span class="font-monospace text-success fw-semibold">₹{{ invoice.total_paid }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top text-danger fw-bold">
+                    <span>Remaining Balance Due</span>
+                    <span class="font-monospace fs-5">₹{{ invoice.balance_due }}</span>
+                </div>
+            </div>
+
+            <!-- 3 BILL SPLITTING OPTIONS -->
+            <label class="form-label small fw-bold text-dark text-uppercase mb-2" style="letter-spacing: 0.5px;">
+                <i class="bi bi-sliders me-1 text-primary"></i> Select Payment Allocation
+            </label>
+
+            <form method="post" action="{% url 'tables:customer_pay_bill' table.table_number session.session_token %}">
+                {% csrf_token %}
+                <input type="hidden" name="payment_method" id="selectedMethod" value="UPI">
+                <input type="hidden" name="split_type" id="selectedSplitType" value="MY_ITEMS">
+                <input type="hidden" name="amount" id="actualAmountInput" value="{{ my_balance_due|default:invoice.balance_due }}">
+
+                <div class="d-flex flex-column gap-2 mb-3">
+                    <!-- OPTION A: PAY FOR MY ITEMS -->
+                    <div class="split-tab active" onclick="selectSplitOption('MY_ITEMS', {{ my_balance_due|default:invoice.balance_due }}, this)">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-person-check-fill text-primary fs-5"></i>
+                                <div>
+                                    <div class="fw-bold text-dark">Option A: Pay for My Items</div>
+                                    <div class="small text-muted">Pay for dishes you personally added</div>
+                                </div>
+                            </div>
+                            <span class="fw-bold text-primary font-monospace fs-5">₹{{ my_balance_due|default:"0.00" }}</span>
+                        </div>
+                        {% if my_items %}
+                        <div class="mt-2 pt-2 border-top small text-muted">
+                            <div class="fw-semibold mb-1 text-dark">Your dishes:</div>
+                            {% for it in my_items %}
+                            <div class="d-flex justify-content-between py-0.5">
+                                <span>{{ it.quantity }}x {{ it.menu_item.name }}</span>
+                                <span class="font-monospace">₹{{ it.total_price }}</span>
+                            </div>
+                            {% endfor %}
+                            <div class="d-flex justify-content-between pt-1 border-top mt-1 text-muted" style="font-size: 0.72rem;">
+                                <span>Subtotal: ₹{{ my_subtotal }} + Taxes & Service</span>
+                                <span class="fw-bold text-dark font-monospace">₹{{ my_share_total }}</span>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="small text-muted mt-1 fst-italic">No individual items found for {{ member_name }}.</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- OPTION B: SPLIT EQUALLY -->
+                    <div class="split-tab" onclick="selectSplitOption('EQUAL', {{ equal_balance_due|default:invoice.balance_due }}, this)">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-people-fill text-success fs-5"></i>
+                                <div>
+                                    <div class="fw-bold text-dark">Option B: Split Equally</div>
+                                    <div class="small text-muted">Divided evenly among {{ active_member_count }} group member{{ active_member_count|pluralize }}</div>
+                                </div>
+                            </div>
+                            <span class="fw-bold text-success font-monospace fs-5">₹{{ equal_balance_due|default:"0.00" }}</span>
+                        </div>
+                    </div>
+
+                    <!-- OPTION C: CUSTOM SPLIT -->
+                    <div class="split-tab" onclick="selectSplitOption('CUSTOM', null, this)">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-pencil-square text-info fs-5"></i>
+                                <div>
+                                    <div class="fw-bold text-dark">Option C: Custom Contribution</div>
+                                    <div class="small text-muted">Enter any amount towards the group bill</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2 pt-2 border-top" id="customInputBox" style="display: none;">
+                            <label class="form-label small text-muted mb-1">Enter your contribution amount (₹)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white fw-bold">₹</span>
+                                <input type="number" step="0.01" min="1" max="{{ invoice.balance_due }}" class="form-control fw-bold font-monospace" id="customAmountInput" placeholder="Amount" value="{{ my_balance_due|default:invoice.balance_due }}" oninput="updateCustomAmount(this.value)">
+                            </div>
+                            <div class="form-text small text-muted">Maximum remaining balance is ₹{{ invoice.balance_due }}</div>
+                        </div>
+                    </div>
+
+                    <!-- OPTION D: PAY ENTIRE REMAINING BILL -->
+                    <div class="split-tab" onclick="selectSplitOption('FULL', {{ invoice.balance_due }}, this)">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-wallet2 text-dark fs-5"></i>
+                                <div>
+                                    <div class="fw-bold text-dark">Pay Entire Remaining Bill</div>
+                                    <div class="small text-muted">Clear the total outstanding balance</div>
+                                </div>
+                            </div>
+                            <span class="fw-bold text-dark font-monospace fs-5">₹{{ invoice.balance_due }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PAYMENT METHOD SELECTION -->
+                <label class="form-label small fw-bold text-dark text-uppercase mb-2" style="letter-spacing: 0.5px;">
+                    Payment Method
+                </label>
+                <div class="d-flex flex-column gap-2 mb-3">
+                    <button type="button" class="method-btn active" onclick="selectMethod('UPI', this)">
+                        <i class="bi bi-qr-code text-success fs-4"></i>
+                        <div>
+                            <div class="fw-bold">QR Card / UPI</div>
+                            <div class="small text-muted">Pay instantly via GPay, PhonePe, Paytm</div>
+                        </div>
+                    </button>
+
+                    <button type="button" class="method-btn" onclick="selectMethod('CASH', this)">
+                        <i class="bi bi-cash-stack text-warning fs-4"></i>
+                        <div>
+                            <div class="fw-bold">Cash at Counter / Table</div>
+                            <div class="small text-muted">Pay cash directly to server or cashier</div>
+                        </div>
+                    </button>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-bold fs-6 d-flex align-items-center justify-content-center gap-2" id="submitPaymentBtn">
+                    <i class="bi bi-check2-circle"></i>
+                    <span>Pay <span id="displayPayAmount">₹{{ my_balance_due|default:invoice.balance_due }}</span></span>
+                </button>
+            </form>
+
+            <div class="text-center mt-3">
+                <a href="{% url 'tables:customer_shop' table.table_number %}" class="small text-muted text-decoration-none">
+                    <i class="bi bi-arrow-left"></i> Return to My Shop
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectMethod(method, btn) {
+            document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('selectedMethod').value = method;
+        }
+
+        function selectSplitOption(type, amount, element) {
+            document.querySelectorAll('.split-tab').forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById('selectedSplitType').value = type;
+
+            const customBox = document.getElementById('customInputBox');
+            if (type === 'CUSTOM') {
+                customBox.style.display = 'block';
+                const val = parseFloat(document.getElementById('customAmountInput').value) || 0;
+                updateDisplayAmount(val);
+            } else {
+                customBox.style.display = 'none';
+                updateDisplayAmount(amount);
+            }
+        }
+
+        function updateCustomAmount(val) {
+            const num = parseFloat(val) || 0;
+            updateDisplayAmount(num);
+        }
+
+        function updateDisplayAmount(amt) {
+            const fixed = (amt !== null && amt !== undefined) ? parseFloat(amt).toFixed(2) : "0.00";
+            document.getElementById('actualAmountInput').value = fixed;
+            document.getElementById('displayPayAmount').innerText = '₹' + fixed;
+        }
+    </script>
+</body>
+</html>

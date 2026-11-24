@@ -1,0 +1,1449 @@
+<!-- ============================================================================
+     SMART WAITER SERVICE ASSISTANCE FLOATING WIDGET & MODAL
+     Accessible from Menu, Shop, and Order Status pages.
+============================================================================ -->
+<style>
+.floating-waiter-btn {
+    position: fixed;
+    bottom: 74px;
+    right: 18px;
+    z-index: 1025;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+    border: none;
+    color: #ffffff !important;
+    box-shadow: 0 8px 24px rgba(234, 88, 12, 0.45);
+}
+.floating-waiter-btn:hover, .floating-waiter-btn:focus {
+    transform: translateY(-3px) scale(1.04);
+    box-shadow: 0 12px 28px rgba(234, 88, 12, 0.6);
+    color: #ffffff !important;
+}
+.floating-waiter-btn.has-active {
+    animation: pulse-ring 2s infinite;
+}
+@keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+    70% { box-shadow: 0 0 0 14px rgba(245, 158, 11, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+/* Ensure modal dialog and body have solid opaque background */
+#serviceAssistanceModal .modal-content {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28) !important;
+}
+#serviceAssistanceModal .modal-header,
+#serviceAssistanceModal .modal-body {
+    background: #ffffff !important;
+}
+[data-bs-theme="dark"] #serviceAssistanceModal .modal-content,
+[data-bs-theme="dark"] #serviceAssistanceModal .modal-header,
+[data-bs-theme="dark"] #serviceAssistanceModal .modal-body {
+    background: #181d26 !important;
+    border-color: #2b3544 !important;
+    color: #f1f5f9 !important;
+}
+
+.service-option-card {
+    cursor: pointer;
+    border-radius: 14px;
+    border: 1.5px solid rgba(0, 0, 0, 0.08);
+    background: #ffffff !important;
+    padding: 10px 8px;
+    text-align: center;
+    transition: all 0.18s ease;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+.service-option-card:hover {
+    border-color: #ea580c;
+    background: rgba(234, 88, 12, 0.04) !important;
+    transform: translateY(-2px);
+}
+.service-option-card.selected {
+    border-color: #ea580c !important;
+    background: rgba(234, 88, 12, 0.08) !important;
+    box-shadow: 0 0 0 1.5px #ea580c;
+}
+.service-option-card.selected .service-option-title {
+    color: #ea580c !important;
+    font-weight: 700;
+}
+.service-option-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    margin: 0 auto 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    background: rgba(245, 158, 11, 0.12);
+    color: #ea580c;
+    transition: all 0.15s ease;
+}
+.service-option-card.selected .service-option-icon {
+    background: #ea580c !important;
+    color: #ffffff !important;
+}
+[data-bs-theme="dark"] .service-option-card {
+    background: #1f2733 !important;
+    border-color: #2e3848 !important;
+}
+[data-bs-theme="dark"] .service-option-card:hover {
+    background: rgba(234, 88, 12, 0.15) !important;
+}
+
+.cat-filter-pill {
+    cursor: pointer;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    white-space: nowrap;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: var(--bs-body-bg, #f8fafc);
+    color: var(--bs-body-color, #475569);
+    transition: all 0.15s ease;
+}
+.cat-filter-pill.active {
+    background: #ea580c !important;
+    color: #ffffff !important;
+    border-color: #ea580c !important;
+}
+
+.priority-pill {
+    cursor: pointer;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 14px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    transition: all 0.15s ease;
+}
+.priority-pill.selected-normal {
+    background: #3b82f6 !important;
+    color: #ffffff !important;
+    border-color: #3b82f6 !important;
+}
+.priority-pill.selected-high {
+    background: #f59e0b !important;
+    color: #ffffff !important;
+    border-color: #f59e0b !important;
+}
+.priority-pill.selected-urgent {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    border-color: #ef4444 !important;
+    animation: urgentPulseAnim 1.5s infinite;
+}
+
+.quick-chip {
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #475569;
+    border-radius: 9999px;
+    padding: 3px 10px;
+    transition: all 0.15s ease;
+}
+.quick-chip:hover {
+    background: #ffedd5;
+    border-color: #fdba74;
+    color: #c2410c;
+}
+@media (max-width: 576px) {
+    /* Hide floating button on mobile to avoid overlapping bottom bar; Service tab is in bottom nav */
+    .floating-waiter-btn {
+        display: none !important;
+    }
+}
+</style>
+
+<!-- Floating "Call Waiter" Button -->
+<button type="button" class="btn rounded-pill px-3.5 py-2.5 d-inline-flex align-items-center gap-2 fw-bold floating-waiter-btn" id="floatingWaiterBtn" data-bs-toggle="modal" data-bs-target="#serviceAssistanceModal" title="Call Waiter or Request Assistance">
+    <i class="bi bi-bell-fill fs-5" id="floatingWaiterIcon"></i>
+    <span class="d-none d-sm-inline" id="floatingWaiterLabel">Call Waiter</span>
+    <span class="badge bg-danger rounded-pill px-2 py-0.5 d-none font-monospace" id="floatingActiveCountBadge">0</span>
+</button>
+
+<!-- Service Assistance Interactive Modal -->
+<div class="modal fade" id="serviceAssistanceModal" tabindex="-1" aria-labelledby="serviceAssistanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 540px;">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="background: #ffffff !important;">
+            
+            <!-- Modal Header -->
+            <div class="modal-header border-bottom border-secondary-subtle py-3 px-3.5" style="background: #ffffff !important;">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2 mb-0" id="serviceAssistanceModalLabel">
+                        <i class="bi bi-bell-fill text-warning"></i> Customer Assistance &amp; Service
+                    </h5>
+                    <div class="text-muted small mt-0.5 d-flex align-items-center gap-1.5" style="font-size: 0.74rem;">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5 rounded-pill fw-bold">
+                            Table {{ table.table_number }}
+                        </span>
+                        {% if current_session and current_session.session_name and current_session.session_name != table.table_number and table.table_number not in current_session.session_name %}
+                            <span class="fw-semibold text-secondary opacity-75">&bull; {{ current_session.session_name }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Nav Tabs -->
+            <ul class="nav nav-tabs nav-fill border-bottom border-secondary-subtle px-3 pt-2" id="serviceModalTabs" role="tablist" style="background: #ffffff !important;">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold small py-2 d-flex align-items-center justify-content-center gap-1.5" id="tab-request-link" data-bs-toggle="tab" data-bs-target="#tab-request-pane" type="button" role="tab">
+                        <i class="bi bi-plus-circle-fill text-primary"></i> New Request
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold small py-2 d-flex align-items-center justify-content-center gap-1.5" id="tab-history-link" data-bs-toggle="tab" data-bs-target="#tab-history-pane" type="button" role="tab">
+                        <i class="bi bi-clock-history text-secondary"></i> Active &amp; History
+                        <span class="badge bg-warning text-dark rounded-pill d-none ms-1 font-monospace" id="tabActiveBadge">0</span>
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-3.5 tab-content" style="background: #ffffff !important;">
+                
+                <!-- TAB 1: NEW SERVICE REQUEST -->
+                <div class="tab-pane fade show active" id="tab-request-pane" role="tabpanel">
+                    <!-- Category Filter Chips -->
+                    <div class="d-flex gap-1.5 overflow-x-auto pb-2 mb-2.5 no-scrollbar" id="categoryChipsBar">
+                        <span class="cat-filter-pill active" onclick="filterServiceCategory('ALL', this)">All Items</span>
+                        <span class="cat-filter-pill" onclick="filterServiceCategory('WATER', this)">Water</span>
+                        <span class="cat-filter-pill" onclick="filterServiceCategory('CUTLERY', this)">Plates &amp; Cutlery</span>
+                        <span class="cat-filter-pill" onclick="filterServiceCategory('TISSUE_CONDIMENT', this)">Tissues &amp; Sauces</span>
+                        <span class="cat-filter-pill" onclick="filterServiceCategory('TABLE_ASSIST', this)">Table Care</span>
+                        <span class="cat-filter-pill" onclick="filterServiceCategory('WAITER_ASSIST', this)">Call Waiter</span>
+                        <span class="cat-filter-pill" onclick="filterServiceCategory('BILLING', this)">Bill &amp; Pay</span>
+                    </div>
+
+                    <!-- Alert placeholder for quick feedback inside modal -->
+                    <div id="serviceRequestAlertBox" class="d-none mb-3"></div>
+
+                    <!-- Predefined Service Options Grid -->
+                    <div class="row g-2 mb-3" id="serviceOptionsGrid">
+                        <!-- Category A: Drinking Water -->
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="WATER">
+                            <div class="service-option-card selected" data-type="WATER" data-category="WATER" data-unit="Glasses" onclick="selectServiceOption(this, 'WATER', 'WATER', 'Glasses')">
+                                <div class="service-option-icon" style="background: rgba(14, 165, 233, 0.15); color: #0284c7;">
+                                    <i class="bi bi-droplet-fill"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Drinking Water</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Normal Water</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="WATER">
+                            <div class="service-option-card" data-type="COLD_WATER" data-category="WATER" data-unit="Glasses" onclick="selectServiceOption(this, 'COLD_WATER', 'WATER', 'Glasses')">
+                                <div class="service-option-icon" style="background: rgba(6, 182, 212, 0.15); color: #0891b2;">
+                                    <i class="bi bi-snow"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Cold Water</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Chilled Glasses</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="WATER">
+                            <div class="service-option-card" data-type="BOTTLED_WATER" data-category="WATER" data-unit="Bottles" onclick="selectServiceOption(this, 'BOTTLED_WATER', 'WATER', 'Bottles')">
+                                <div class="service-option-icon" style="background: rgba(59, 130, 246, 0.15); color: #2563eb;">
+                                    <i class="bi bi-water"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Bottled Water</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Sealed Mineral Bottle</div>
+                            </div>
+                        </div>
+
+                        <!-- Category B: Plates and Cutlery -->
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="CUTLERY">
+                            <div class="service-option-card" data-type="PLATES" data-category="CUTLERY" data-unit="Plates" onclick="selectServiceOption(this, 'PLATES', 'CUTLERY', 'Plates')">
+                                <div class="service-option-icon" style="background: rgba(234, 88, 12, 0.12); color: #ea580c;">
+                                    <i class="bi bi-disc fs-5"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Extra Plates</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Sharing / Quarter</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="CUTLERY">
+                            <div class="service-option-card" data-type="SPOONS" data-category="CUTLERY" data-unit="Spoons" onclick="selectServiceOption(this, 'SPOONS', 'CUTLERY', 'Spoons')">
+                                <div class="service-option-icon" style="background: rgba(139, 92, 246, 0.12); color: #7c3aed;">
+                                    <i class="bi bi-cup"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Extra Spoons</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Dining Spoons</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="CUTLERY">
+                            <div class="service-option-card" data-type="FORKS" data-category="CUTLERY" data-unit="Forks" onclick="selectServiceOption(this, 'FORKS', 'CUTLERY', 'Forks')">
+                                <div class="service-option-icon" style="background: rgba(139, 92, 246, 0.12); color: #7c3aed;">
+                                    <i class="bi bi-slash-lg"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Extra Forks</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Cutlery Set</div>
+                            </div>
+                        </div>
+
+                        <!-- Category C: Tissues & Condiments -->
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="TISSUE_CONDIMENT">
+                            <div class="service-option-card" data-type="TISSUE" data-category="TISSUE_CONDIMENT" data-unit="" onclick="selectServiceOption(this, 'TISSUE', 'TISSUE_CONDIMENT', '')">
+                                <div class="service-option-icon" style="background: rgba(16, 185, 129, 0.12); color: #059669;">
+                                    <i class="bi bi-file-text-fill"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Paper Tissues</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Napkins Pack</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="TISSUE_CONDIMENT">
+                            <div class="service-option-card" data-type="SAUCE" data-category="TISSUE_CONDIMENT" data-unit="" onclick="selectServiceOption(this, 'SAUCE', 'TISSUE_CONDIMENT', '')">
+                                <div class="service-option-icon" style="background: rgba(217, 70, 239, 0.12); color: #c026d3;">
+                                    <i class="bi bi-droplet-half"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Ketchup &amp; Sauces</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Tomato / Dips</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="TISSUE_CONDIMENT">
+                            <div class="service-option-card" data-type="GRAVY" data-category="TISSUE_CONDIMENT" data-unit="Bowls" onclick="selectServiceOption(this, 'GRAVY', 'TISSUE_CONDIMENT', 'Bowls')">
+                                <div class="service-option-icon" style="background: rgba(239, 68, 68, 0.12); color: #dc2626;">
+                                    <i class="bi bi-cup-hot-fill"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Additional Gravy</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Curry / Sambar</div>
+                            </div>
+                        </div>
+
+                        <!-- Category D: Table Assistance -->
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="TABLE_ASSIST">
+                            <div class="service-option-card" data-type="CLEANING" data-category="TABLE_ASSIST" data-unit="" onclick="selectServiceOption(this, 'CLEANING', 'TABLE_ASSIST', '')">
+                                <div class="service-option-icon" style="background: rgba(100, 116, 139, 0.15); color: #475569;">
+                                    <i class="bi bi-brush-fill"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Clean Table</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Wipe or Clear</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="TABLE_ASSIST">
+                            <div class="service-option-card" data-type="REMOVE_PLATES" data-category="TABLE_ASSIST" data-unit="" onclick="selectServiceOption(this, 'REMOVE_PLATES', 'TABLE_ASSIST', '')">
+                                <div class="service-option-icon" style="background: rgba(100, 116, 139, 0.15); color: #475569;">
+                                    <i class="bi bi-stack"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Remove Plates</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Clear Used Dishes</div>
+                            </div>
+                        </div>
+
+                        <!-- Category E: Waiter Assistance -->
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="WAITER_ASSIST">
+                            <div class="service-option-card" data-type="WAITER" data-category="WAITER_ASSIST" data-unit="" onclick="selectServiceOption(this, 'WAITER', 'WAITER_ASSIST', '')">
+                                <div class="service-option-icon" style="background: rgba(245, 158, 11, 0.15); color: #d97706;">
+                                    <i class="bi bi-bell-fill"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Call Waiter</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Server to Table</div>
+                            </div>
+                        </div>
+
+                        <!-- Category F: Billing Assistance -->
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="BILLING">
+                            <div class="service-option-card" data-type="BILL" data-category="BILLING" data-unit="" onclick="selectServiceOption(this, 'BILL', 'BILLING', '')">
+                                <div class="service-option-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                                    <i class="bi bi-receipt"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Request Bill</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Bring Printed Invoice</div>
+                            </div>
+                        </div>
+
+                        <!-- Category G: Other Assistance -->
+                        <div class="col-6 col-sm-4 service-card-wrapper" data-category="OTHER">
+                            <div class="service-option-card" data-type="OTHER" data-category="OTHER" data-unit="" onclick="selectServiceOption(this, 'OTHER', 'OTHER', '')">
+                                <div class="service-option-icon" style="background: rgba(71, 85, 105, 0.12); color: #334155;">
+                                    <i class="bi bi-chat-dots-fill"></i>
+                                </div>
+                                <div class="small fw-bold service-option-title">Other Help</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">Custom Request</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Selected Request Type & Category -->
+                    <input type="hidden" id="selectedRequestType" value="WATER">
+                    <input type="hidden" id="selectedRequestCategory" value="WATER">
+                    <input type="hidden" id="selectedRequestUnit" value="Glasses">
+
+                    <!-- Quantity Stepper Row (Hidden for Call Waiter, Request Bill, Remove Plates, Clean Table, Other Help, Paper Tissues, Ketchup & Sauces) -->
+                    <div class="d-flex align-items-center justify-content-between p-2.5 mb-2.5 rounded-3 bg-light border border-light-subtle" id="serviceQuantityRow">
+                        <!-- Quantity Stepper -->
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="form-label small fw-bold text-muted mb-0" style="font-size: 0.72rem;">Quantity:</label>
+                            <div class="input-group input-group-sm" style="width: 110px;">
+                                <button type="button" class="btn btn-outline-secondary px-2" onclick="adjustServiceQuantity(-1)">-</button>
+                                <input type="number" id="serviceQuantityInput" class="form-control text-center fw-bold p-0" value="1" min="1" max="20" readonly>
+                                <button type="button" class="btn btn-outline-secondary px-2" onclick="adjustServiceQuantity(1)">+</button>
+                            </div>
+                            <span class="badge bg-secondary-subtle text-body-secondary small" id="serviceUnitLabel">Glasses</span>
+                        </div>
+                        <input type="hidden" id="selectedPriority" value="NORMAL">
+                    </div>
+
+                    <!-- Quick Pre-fill Suggestions -->
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">
+                            Quick Tap Options
+                        </label>
+                        <div class="d-flex flex-wrap gap-1.5">
+                            <span class="quick-chip" onclick="quickSelectWithQty('WATER', 'WATER', 2, 'Glasses', 'Please bring 2 glasses of cold water')">+ 2 Cold Waters</span>
+                            <span class="quick-chip" onclick="quickSelectWithQty('PLATES', 'CUTLERY', 2, 'Plates', '2 extra sharing plates please')">+ 2 Extra Plates</span>
+                            <span class="quick-chip" onclick="quickSelectWithQty('SPOONS', 'CUTLERY', 2, 'Spoons', 'Extra dining spoons please')">+ Spoons</span>
+                            <span class="quick-chip" onclick="quickSelectWithQty('TISSUE', 'TISSUE_CONDIMENT', 1, '', 'Extra paper napkins')">+ Tissues</span>
+                            <span class="quick-chip" onclick="quickSelectWithQty('CLEANING', 'TABLE_ASSIST', 1, '', 'Please wipe table surface')">+ Table Cleaning</span>
+                        </div>
+                    </div>
+
+                    <!-- Custom Message Field -->
+                    <div class="mb-3">
+                        <label for="serviceCustomMessage" class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 0.68rem; letter-spacing: 0.5px;">
+                            Optional Note or Specific Instructions
+                        </label>
+                        <input type="text" id="serviceCustomMessage" class="form-control rounded-3" placeholder="e.g. Please bring two glasses of water, extra spoon..." maxlength="255">
+                        <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.68rem;">
+                            <span>Keep it concise for rapid server response</span>
+                            <span id="charCountDisplay">0 / 255</span>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="button" class="btn btn-warning w-100 py-2.5 fw-bold text-dark rounded-pill d-flex align-items-center justify-content-center gap-2 shadow-sm" id="submitServiceRequestBtn" onclick="submitServiceRequest()">
+                        <i class="bi bi-send-fill"></i> Send Request to Waiter
+                    </button>
+                    <div class="text-center text-muted small mt-2 d-flex align-items-center justify-content-center gap-1.5" style="font-size: 0.72rem;">
+                        <i class="bi bi-shield-check text-success"></i>
+                        <span>All dining assistance requests are <strong>Complimentary</strong> (No extra charge)</span>
+                    </div>
+                </div>
+
+                <!-- TAB 2: ACTIVE & PAST REQUESTS -->
+                <div class="tab-pane fade" id="tab-history-pane" role="tabpanel">
+                    <div id="serviceRequestsHistoryList">
+                        <div class="text-center py-4 text-muted small">
+                            <div class="spinner-border spinner-border-sm text-warning mb-2" role="status"></div>
+                            <div>Loading active requests...</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Customer Feedback / Star Rating Modal -->
+<div class="modal fade" id="serviceFeedbackModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content border-0 shadow-lg rounded-4 p-3">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-star-fill text-warning"></i> Rate Your Service
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-2">
+                <p class="text-muted small mb-2" id="feedbackRequestLabel">How satisfied were you with this request?</p>
+                
+                <!-- 5 Interactive Stars -->
+                <div class="d-flex justify-content-center gap-2 my-2 fs-3" id="feedbackStarsContainer">
+                    <i class="bi bi-star-fill text-warning cursor-pointer" data-val="1" onclick="setFeedbackRating(1)"></i>
+                    <i class="bi bi-star-fill text-warning cursor-pointer" data-val="2" onclick="setFeedbackRating(2)"></i>
+                    <i class="bi bi-star-fill text-warning cursor-pointer" data-val="3" onclick="setFeedbackRating(3)"></i>
+                    <i class="bi bi-star-fill text-warning cursor-pointer" data-val="4" onclick="setFeedbackRating(4)"></i>
+                    <i class="bi bi-star-fill text-warning cursor-pointer" data-val="5" onclick="setFeedbackRating(5)"></i>
+                </div>
+                <input type="hidden" id="feedbackRatingValue" value="5">
+
+                <div class="mt-2">
+                    <label class="form-label small text-muted mb-1">Optional comments:</label>
+                    <textarea id="feedbackNotesInput" class="form-control rounded-3 small" rows="2" placeholder="Prompt and friendly service..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-warning rounded-pill fw-bold text-dark px-3" onclick="submitFeedback()">Submit Rating</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Report Not Fulfilled Modal -->
+<div class="modal fade" id="serviceReportModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content border-0 shadow-lg rounded-4 p-3">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold text-danger d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Report Request Not Received
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-2">
+                <p class="text-muted small mb-2">
+                    Let us know if your request <strong id="reportRequestLabel"></strong> was marked completed but you never received it. We will alert management immediately.
+                </p>
+                <div class="mb-2">
+                    <label class="form-label small text-muted mb-1">Reason / Note:</label>
+                    <textarea id="reportReasonInput" class="form-control rounded-3 small" rows="2" placeholder="e.g. Waiter never brought the water glasses..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-danger rounded-pill fw-bold px-3" onclick="submitReportNotFulfilled()">Alert Supervisor</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Apology & Delay Acknowledgment Popup Modal -->
+<div class="modal fade" id="serviceApologyModal" tabindex="-1" aria-hidden="true" style="z-index: 1075;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px; margin: 1.25rem auto;">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="background: #ffffff !important; border: 2px solid #f59e0b !important;">
+            <div class="modal-body text-center p-4">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3 shadow-sm" style="width: 64px; height: 64px; background: rgba(245, 158, 11, 0.15); color: #d97706; font-size: 2rem;">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">We Are On It!</h5>
+                <p class="text-body-secondary fs-6 mb-3" id="serviceApologyMessageText" style="line-height: 1.5;">
+                    Sorry for the delay, your particular requirement will come soon!
+                </p>
+                <div class="p-2.5 rounded-3 bg-light border text-start d-flex align-items-center gap-2 mb-3">
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px;">
+                        <i class="bi bi-bell-fill fs-6"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <div class="fw-bold text-dark small text-truncate" id="serviceApologyRequestType">Service Request</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">Staff acknowledged and prioritized your request</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-warning rounded-pill px-4 py-2.5 fw-bold w-100 shadow-sm text-dark" data-bs-dismiss="modal">
+                    <i class="bi bi-check2-circle me-1"></i> Okay, Got It
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Service Assistance Interactive JavaScript Controller -->
+<script>
+(function() {
+    const tableNumber = "{{ table.table_number }}";
+    const sessionToken = "{{ current_session.session_token|default:'' }}";
+    const memberToken = "{{ current_member.member_token|default:'' }}";
+    const createUrl = "{% url 'tables:customer_service_request_create' table.table_number %}";
+    const statusUrl = "{% url 'tables:customer_service_request_status' table.table_number %}" + (sessionToken ? ("?token=" + encodeURIComponent(sessionToken)) : "");
+
+    let selectedType = 'WATER';
+    let selectedCategory = 'WATER';
+    let selectedUnit = 'Glasses';
+    let selectedPriorityVal = 'NORMAL';
+    let currentFeedbackReqId = null;
+    let currentReportReqId = null;
+
+    // Filter categories
+    window.filterServiceCategory = function(cat, el) {
+        document.querySelectorAll('.cat-filter-pill').forEach(p => p.classList.remove('active'));
+        if (el) el.classList.add('active');
+
+        const wrappers = document.querySelectorAll('.service-card-wrapper');
+        wrappers.forEach(w => {
+            if (cat === 'ALL' || w.dataset.category === cat) {
+                w.classList.remove('d-none');
+            } else {
+                w.classList.add('d-none');
+            }
+        });
+    };
+
+    // Quantity stepper
+    window.adjustServiceQuantity = function(delta) {
+        const input = document.getElementById('serviceQuantityInput');
+        if (!input) return;
+        let val = parseInt(input.value) || 1;
+        val += delta;
+        if (val < 1) val = 1;
+        if (val > 20) val = 20;
+        input.value = val;
+    };
+
+    // Select Priority (defaults to NORMAL)
+    window.selectPriority = function(pri) {
+        selectedPriorityVal = pri || 'NORMAL';
+        const input = document.getElementById('selectedPriority');
+        if (input) input.value = selectedPriorityVal;
+        const normPill = document.getElementById('priorityPillNormal');
+        const highPill = document.getElementById('priorityPillHigh');
+        const urgPill = document.getElementById('priorityPillUrgent');
+
+        if (normPill) normPill.className = 'priority-pill' + (pri === 'NORMAL' ? ' selected-normal' : '');
+        if (highPill) highPill.className = 'priority-pill' + (pri === 'HIGH' ? ' selected-high' : '');
+        if (urgPill) urgPill.className = 'priority-pill' + (pri === 'URGENT' ? ' selected-urgent' : '');
+    };
+
+    // Character counter for custom message
+    const msgInput = document.getElementById('serviceCustomMessage');
+    const charDisplay = document.getElementById('charCountDisplay');
+    if (msgInput && charDisplay) {
+        msgInput.addEventListener('input', function() {
+            charDisplay.textContent = `${this.value.length} / 255`;
+        });
+    }
+
+    // Request types where quantity is removed / not applicable:
+    // other help, request Bill, remove plates, call waiter, clear table, paper tissues, ketchup & sauces
+    const NO_QUANTITY_TYPES = [
+        'OTHER',
+        'BILL',
+        'REMOVE_PLATES',
+        'WAITER',
+        'CLEANING',
+        'CLEAN_TABLE',
+        'TISSUE',
+        'SAUCE',
+        'KETCHUP'
+    ];
+
+    function updateQuantityVisibility(typeCode) {
+        const isNoQuantity = NO_QUANTITY_TYPES.includes(typeCode);
+        const qtyRow = document.getElementById('serviceQuantityRow');
+        const qtyInput = document.getElementById('serviceQuantityInput');
+        const unitLbl = document.getElementById('serviceUnitLabel');
+
+        if (qtyRow) {
+            if (isNoQuantity) {
+                qtyRow.classList.add('d-none');
+            } else {
+                qtyRow.classList.remove('d-none');
+            }
+        }
+        if (isNoQuantity) {
+            if (qtyInput) qtyInput.value = 1;
+            selectedUnit = '';
+            if (unitLbl) unitLbl.textContent = '';
+        }
+    }
+
+    // Select predefined service option
+    window.selectServiceOption = function(el, typeCode, catCode, unitName) {
+        document.querySelectorAll('.service-option-card').forEach(c => c.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+        selectedType = typeCode;
+        selectedCategory = catCode || 'OTHER';
+
+        const isNoQuantity = NO_QUANTITY_TYPES.includes(typeCode);
+        selectedUnit = isNoQuantity ? '' : (unitName || 'Items');
+
+        updateQuantityVisibility(typeCode);
+
+        const unitLbl = document.getElementById('serviceUnitLabel');
+        if (unitLbl && !isNoQuantity) unitLbl.textContent = selectedUnit;
+
+        document.getElementById('selectedRequestType').value = selectedType;
+        document.getElementById('selectedRequestCategory').value = selectedCategory;
+        document.getElementById('selectedRequestUnit').value = selectedUnit;
+    };
+
+    // Quick-tap chips helper
+    window.quickSelectWithQty = function(typeCode, catCode, qty, unitName, text) {
+        const card = document.querySelector(`.service-option-card[data-type="${typeCode}"]`);
+        if (card) {
+            window.selectServiceOption(card, typeCode, catCode, unitName);
+        } else {
+            selectedType = typeCode;
+            selectedCategory = catCode || 'OTHER';
+            updateQuantityVisibility(typeCode);
+        }
+        const isNoQuantity = NO_QUANTITY_TYPES.includes(typeCode);
+        const qtyInput = document.getElementById('serviceQuantityInput');
+        if (qtyInput) qtyInput.value = isNoQuantity ? 1 : qty;
+        if (msgInput) {
+            msgInput.value = text;
+            if (charDisplay) charDisplay.textContent = `${text.length} / 255`;
+        }
+    };
+
+    // Submit service request via AJAX
+    window.submitServiceRequest = async function() {
+        const btn = document.getElementById('submitServiceRequestBtn');
+        const alertBox = document.getElementById('serviceRequestAlertBox');
+        const customMsg = document.getElementById('serviceCustomMessage').value.trim();
+        const isNoQuantity = NO_QUANTITY_TYPES.includes(selectedType);
+        const qty = isNoQuantity ? 1 : (parseInt(document.getElementById('serviceQuantityInput').value) || 1);
+        const finalUnit = isNoQuantity ? '' : selectedUnit;
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Notifying Waiter...';
+        }
+
+        try {
+            const res = await fetch(createUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    request_type: selectedType,
+                    request_category: selectedCategory,
+                    quantity: qty,
+                    unit: finalUnit,
+                    priority: selectedPriorityVal,
+                    custom_message: customMsg,
+                    session_token: sessionToken,
+                    member_token: memberToken
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                if (msgInput) {
+                    msgInput.value = '';
+                    if (charDisplay) charDisplay.textContent = '0 / 255';
+                }
+
+                if (alertBox) {
+                    alertBox.className = 'alert alert-success alert-dismissible fade show rounded-3 py-2 px-3 small';
+                    alertBox.innerHTML = `
+                        <i class="bi bi-check-circle-fill me-1"></i> ${data.message}
+                        <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+                    `;
+                }
+
+                const historyTab = document.getElementById('tab-history-link');
+                if (historyTab && window.bootstrap && bootstrap.Tab) {
+                    new bootstrap.Tab(historyTab).show();
+                }
+
+                pollServiceStatus();
+            } else {
+                if (alertBox) {
+                    alertBox.className = 'alert alert-danger alert-dismissible fade show rounded-3 py-2 px-3 small';
+                    alertBox.innerHTML = `
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> ${data.message || 'Failed to submit request.'}
+                        <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+                    `;
+                }
+            }
+        } catch (err) {
+            console.error('Service request error:', err);
+            if (alertBox) {
+                alertBox.className = 'alert alert-danger alert-dismissible fade show rounded-3 py-2 px-3 small';
+                alertBox.innerHTML = `
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Network error. Please try again or wave to your waiter.
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+                `;
+            }
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Send Request to Waiter';
+            }
+        }
+    };
+
+    // Cancel an active request
+    window.cancelServiceRequest = async function(reqId) {
+        if (!confirm('Are you sure you want to cancel this assistance request?')) return;
+        const cancelUrl = `/tables/${tableNumber}/service-request/${reqId}/cancel/`;
+        try {
+            const res = await fetch(cancelUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            pollServiceStatus();
+        } catch (e) {
+            console.error('Cancel request error:', e);
+        }
+    };
+
+    // Re-notify 3-minute cooldown helpers (localStorage persisted)
+    function getRenoticeCooldownSeconds(reqId) {
+        try {
+            const key = 'rms_renotice_cooldown_' + reqId;
+            const targetStr = localStorage.getItem(key);
+            if (!targetStr) return 0;
+            const targetTs = parseInt(targetStr, 10);
+            if (isNaN(targetTs)) return 0;
+            const diff = Math.ceil((targetTs - Date.now()) / 1000);
+            if (diff <= 0) {
+                localStorage.removeItem(key);
+                return 0;
+            }
+            return diff;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    function setRenoticeCooldown(reqId, seconds) {
+        try {
+            const sec = (typeof seconds === 'number' && seconds > 0) ? seconds : 180;
+            const targetTs = Date.now() + (sec * 1000);
+            localStorage.setItem('rms_renotice_cooldown_' + reqId, targetTs.toString());
+        } catch (e) {}
+    }
+
+    function clearRenoticeCooldown(reqId) {
+        try {
+            localStorage.removeItem('rms_renotice_cooldown_' + reqId);
+        } catch (e) {}
+    }
+
+    function formatCooldownTime(seconds) {
+        const total = Math.max(0, Math.floor(seconds));
+        const m = Math.floor(total / 60);
+        const s = total % 60;
+        return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // Re-notify staff for active request
+    window.renoticeServiceRequest = async function(reqId) {
+        const btn = document.getElementById(`renoticeBtn-${reqId}`);
+        const cooldownBox = document.getElementById(`renoticeCooldown-${reqId}`);
+
+        // 1. Immediately hide the Re-notify button
+        if (btn) btn.classList.add('d-none');
+
+        // 2. Restart the 3-minute cooldown immediately (persisted across refreshes)
+        setRenoticeCooldown(reqId, 180);
+
+        // 3. Immediately display the cooldown message with live countdown timer
+        if (cooldownBox) {
+            cooldownBox.classList.remove('d-none');
+            const countdownEls = document.querySelectorAll(`.renotice-countdown-${reqId}`);
+            countdownEls.forEach(el => el.textContent = '03:00');
+        }
+
+        const renoticeUrl = `/tables/${tableNumber}/service-request/${reqId}/renotice/`;
+        try {
+            const res = await fetch(renoticeUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                // If backend provided remaining cooldown, sync with it
+                if (data.cooldown_seconds) {
+                    setRenoticeCooldown(reqId, data.cooldown_seconds);
+                }
+                pollServiceStatus();
+            } else {
+                if (data.message) {
+                    alert(data.message);
+                }
+                const rem = getRenoticeCooldownSeconds(reqId);
+                if (rem <= 0) {
+                    if (btn) btn.classList.remove('d-none');
+                    if (cooldownBox) cooldownBox.classList.add('d-none');
+                }
+            }
+        } catch (e) {
+            console.error('Re-notice error:', e);
+            alert('Network error while re-notifying waiter.');
+            const rem = getRenoticeCooldownSeconds(reqId);
+            if (rem <= 0) {
+                if (btn) btn.classList.remove('d-none');
+                if (cooldownBox) cooldownBox.classList.add('d-none');
+            }
+        }
+    };
+
+    // Repeat Previous Request ("Request Again")
+    window.repeatServiceRequest = async function(reqId) {
+        const repeatUrl = `/tables/${tableNumber}/service-request/${reqId}/repeat/`;
+        try {
+            const res = await fetch(repeatUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                pollServiceStatus();
+            } else {
+                alert(data.message || 'Unable to repeat request.');
+            }
+        } catch (e) {
+            console.error('Repeat request error:', e);
+        }
+    };
+
+    // Feedback helpers
+    window.openFeedbackModal = function(reqId, typeDisplay) {
+        currentFeedbackReqId = reqId;
+        document.getElementById('feedbackRequestLabel').textContent = `Rate your experience for ${typeDisplay}:`;
+        setFeedbackRating(5);
+        document.getElementById('feedbackNotesInput').value = '';
+        new bootstrap.Modal(document.getElementById('serviceFeedbackModal')).show();
+    };
+
+    window.setFeedbackRating = function(stars) {
+        document.getElementById('feedbackRatingValue').value = stars;
+        const starIcons = document.querySelectorAll('#feedbackStarsContainer i');
+        starIcons.forEach((icon, idx) => {
+            if (idx < stars) {
+                icon.className = 'bi bi-star-fill text-warning cursor-pointer';
+            } else {
+                icon.className = 'bi bi-star text-muted cursor-pointer';
+            }
+        });
+    };
+
+    window.submitFeedback = async function() {
+        if (!currentFeedbackReqId) return;
+        const stars = parseInt(document.getElementById('feedbackRatingValue').value) || 5;
+        const notes = document.getElementById('feedbackNotesInput').value.trim();
+        const url = `/tables/${tableNumber}/service-request/${currentFeedbackReqId}/feedback/`;
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ rating: stars, notes: notes })
+            });
+            const data = await res.json();
+            bootstrap.Modal.getInstance(document.getElementById('serviceFeedbackModal')).hide();
+            pollServiceStatus();
+        } catch (e) {
+            console.error('Feedback submit error:', e);
+        }
+    };
+
+    // Report Not Fulfilled helpers
+    window.openReportNotFulfilledModal = function(reqId, typeDisplay) {
+        currentReportReqId = reqId;
+        document.getElementById('reportRequestLabel').textContent = typeDisplay;
+        document.getElementById('reportReasonInput').value = '';
+        new bootstrap.Modal(document.getElementById('serviceReportModal')).show();
+    };
+
+    window.submitReportNotFulfilled = async function() {
+        if (!currentReportReqId) return;
+        const reason = document.getElementById('reportReasonInput').value.trim();
+        const url = `/tables/${tableNumber}/service-request/${currentReportReqId}/report-not-fulfilled/`;
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ reason: reason })
+            });
+            const data = await res.json();
+            bootstrap.Modal.getInstance(document.getElementById('serviceReportModal')).hide();
+            pollServiceStatus();
+        } catch (e) {
+            console.error('Report not fulfilled submit error:', e);
+        }
+    };
+
+    let latestRequests = [];
+
+    function getSeenSignatures() {
+        let list = [];
+        try {
+            const loc = localStorage.getItem('rms_seen_service_reqs_' + tableNumber);
+            if (loc) list = JSON.parse(loc);
+        } catch (e) {}
+        try {
+            const ses = sessionStorage.getItem('rms_seen_service_reqs_' + tableNumber);
+            if (ses) {
+                const arr = JSON.parse(ses);
+                for (const s of arr) {
+                    if (!list.includes(s)) list.push(s);
+                }
+            }
+        } catch (e) {}
+        return list;
+    }
+
+    function saveSeenSignatures(sigs) {
+        try {
+            localStorage.setItem('rms_seen_service_reqs_' + tableNumber, JSON.stringify(sigs));
+        } catch (e) {}
+        try {
+            sessionStorage.setItem('rms_seen_service_reqs_' + tableNumber, JSON.stringify(sigs));
+        } catch (e) {}
+    }
+
+    function getReqSignature(r) {
+        return `${r.id}_${r.status}_${r.waiter_name || ''}`;
+    }
+
+    // Helper: update all notification badges across bottom nav, modal tabs, and floating button
+    function updateBadges(count) {
+        const floatingBadge = document.getElementById('floatingActiveCountBadge');
+        const tabBadge = document.getElementById('tabActiveBadge');
+        const navBadge = document.getElementById('navServiceBadge');
+        const shopNavBadge = document.getElementById('shopNavServiceBadge');
+        const floatingBtn = document.getElementById('floatingWaiterBtn');
+
+        if (count > 0) {
+            if (floatingBtn) floatingBtn.classList.add('has-active');
+            if (floatingBadge) { 
+                floatingBadge.textContent = count; 
+                floatingBadge.classList.remove('d-none'); 
+                floatingBadge.style.display = ''; 
+            }
+            if (tabBadge) { 
+                tabBadge.textContent = count; 
+                tabBadge.classList.remove('d-none'); 
+                tabBadge.style.display = ''; 
+            }
+            if (navBadge) { 
+                navBadge.textContent = count; 
+                navBadge.classList.remove('d-none'); 
+                navBadge.style.display = ''; 
+            }
+            if (shopNavBadge) { 
+                shopNavBadge.textContent = count; 
+                shopNavBadge.classList.remove('d-none'); 
+                shopNavBadge.style.display = ''; 
+            }
+        } else {
+            if (floatingBtn) floatingBtn.classList.remove('has-active');
+            if (floatingBadge) { 
+                floatingBadge.textContent = '0'; 
+                floatingBadge.classList.add('d-none'); 
+                floatingBadge.style.display = 'none'; 
+            }
+            if (tabBadge) { 
+                tabBadge.textContent = '0'; 
+                tabBadge.classList.add('d-none'); 
+                tabBadge.style.display = 'none'; 
+            }
+            if (navBadge) { 
+                navBadge.textContent = '0'; 
+                navBadge.classList.add('d-none'); 
+                navBadge.style.display = 'none'; 
+            }
+            if (shopNavBadge) { 
+                shopNavBadge.textContent = '0'; 
+                shopNavBadge.classList.add('d-none'); 
+                shopNavBadge.style.display = 'none'; 
+            }
+        }
+    }
+
+    // Mark all notifications as seen when customer opens the service modal
+    window.markAllServiceNotificationsAsSeen = function() {
+        updateBadges(0);
+        const seen = getSeenSignatures();
+        if (latestRequests && latestRequests.length > 0) {
+            for (const r of latestRequests) {
+                const sig = getReqSignature(r);
+                if (!seen.includes(sig)) {
+                    seen.push(sig);
+                }
+            }
+        }
+        try {
+            const nowStr = Date.now().toString();
+            localStorage.setItem('rms_service_seen_until_' + tableNumber, nowStr);
+            sessionStorage.setItem('rms_service_seen_until_' + tableNumber, nowStr);
+        } catch (e) {}
+        saveSeenSignatures(seen);
+    };
+
+    function handleServiceModalOpened() {
+        window.markAllServiceNotificationsAsSeen();
+        if (!liveTimerInterval) {
+            liveTimerInterval = setInterval(updateLiveTimers, 1000);
+        }
+        updateLiveTimers();
+        pollServiceStatus();
+        const activeRequests = latestRequests.filter(r => r.is_pending || r.is_accepted || r.is_in_progress);
+        if (activeRequests.length > 0) {
+            const historyTabBtn = document.getElementById('tab-history-link');
+            if (historyTabBtn && window.bootstrap && bootstrap.Tab) {
+                const tabInstance = bootstrap.Tab.getOrCreateInstance ? bootstrap.Tab.getOrCreateInstance(historyTabBtn) : new bootstrap.Tab(historyTabBtn);
+                tabInstance.show();
+            }
+        }
+    }
+
+    // Show delay apology popup modal for customer
+    function showCustomerApologyPopup(r) {
+        const modalEl = document.getElementById('serviceApologyModal');
+        if (!modalEl) return;
+        const msgEl = document.getElementById('serviceApologyMessageText');
+        const typeEl = document.getElementById('serviceApologyRequestType');
+        if (msgEl) {
+            msgEl.textContent = r.staff_apology_message || "Sorry for the delay, your particular requirement will come soon!";
+        }
+        if (typeEl) {
+            typeEl.textContent = `${r.type_display} (#${r.request_number})`;
+        }
+        if (window.bootstrap && bootstrap.Modal) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        } catch (e) {}
+    }
+
+    // Poll live service request status
+    async function pollServiceStatus() {
+        try {
+            const res = await fetch(statusUrl, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            latestRequests = data.requests || [];
+
+            // Check for staff delay apology message and show popup to customer
+            if (latestRequests && latestRequests.length) {
+                for (const r of latestRequests) {
+                    if (r.staff_apology_message && r.staff_apology_at_ts) {
+                        const apologyKey = `seen_apology_${r.id}_${r.staff_apology_at_ts}`;
+                        if (!localStorage.getItem(apologyKey)) {
+                            localStorage.setItem(apologyKey, 'true');
+                            showCustomerApologyPopup(r);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            const listEl = document.getElementById('serviceRequestsHistoryList');
+            const modalEl = document.getElementById('serviceAssistanceModal');
+            const isModalOpen = modalEl && (modalEl.classList.contains('show') || modalEl.style.display === 'block');
+
+            if (isModalOpen) {
+                window.markAllServiceNotificationsAsSeen();
+            } else {
+                const seenSigs = getSeenSignatures();
+                const unseenRequests = latestRequests.filter(r => {
+                    const isActive = r.is_pending || r.is_accepted || r.is_in_progress;
+                    const sig = getReqSignature(r);
+                    return isActive && !seenSigs.includes(sig);
+                });
+                updateBadges(unseenRequests.length);
+            }
+
+            // Render requests in History Tab
+            if (listEl) {
+                if (!data.requests || data.requests.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-bell-slash fs-1 text-secondary opacity-50 d-block mb-2"></i>
+                            <div class="fw-semibold text-body">No requests yet</div>
+                            <div class="small">Choose an option under "New Request" to get waiter assistance.</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '<div class="d-flex flex-column gap-2.5">';
+                for (const r of data.requests) {
+                    const priorityBadge = r.priority === 'URGENT' 
+                        ? `<span class="badge bg-danger rounded-pill px-2 py-0.5 text-uppercase fs-9 fw-bold">URGENT</span>`
+                        : (r.priority === 'HIGH' ? `<span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 text-uppercase fs-9 fw-bold">HIGH</span>` : '');
+
+                    // Sync and check Re-notify 3-minute cooldown
+                    let cooldownSec = getRenoticeCooldownSeconds(r.id);
+                    if (r.renotice_cooldown_seconds && r.renotice_cooldown_seconds > 0) {
+                        if (cooldownSec <= 0) {
+                            setRenoticeCooldown(r.id, r.renotice_cooldown_seconds);
+                            cooldownSec = r.renotice_cooldown_seconds;
+                        }
+                    }
+                    const isCooldownActive = (cooldownSec > 0) && (r.is_pending || r.is_accepted || r.is_in_progress);
+                    const countdownDisplayStr = isCooldownActive ? formatCooldownTime(cooldownSec) : '03:00';
+
+                    html += `
+                        <div class="card border rounded-3 p-2.5 bg-body shadow-xs">
+                            <div class="d-flex justify-content-between align-items-start mb-1.5 gap-2">
+                                <div class="d-flex align-items-center gap-2 min-w-0">
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px;">
+                                        <i class="bi ${r.icon_class} fs-6"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                            <span class="fw-bold text-body small">${r.type_display}</span>
+                                            ${r.quantity > 1 || r.unit ? `<span class="badge bg-secondary-subtle text-body-secondary rounded-pill px-1.5 py-0.5 font-monospace" style="font-size: 0.65rem;">${r.quantity} ${r.unit || ''}</span>` : ''}
+                                            ${priorityBadge}
+                                        </div>
+                                        <div class="text-muted d-flex align-items-center gap-1.5 flex-wrap mt-0.5" style="font-size: 0.68rem;">
+                                            <span class="font-monospace">#${r.request_number}</span>
+                                            <span class="opacity-50">&bull;</span>
+                                            <span class="text-nowrap">${r.requested_at_time}</span>
+                                            ${r.estimated_time ? `<span class="text-nowrap"><span class="opacity-50 me-1">&bull;</span><i class="bi bi-stopwatch me-0.5"></i>Est: ${r.estimated_time}</span>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-${r.badge_class} rounded-pill px-2.5 py-1 small fw-bold flex-shrink-0">
+                                    ${r.status_display}
+                                </span>
+                            </div>
+
+                            ${r.custom_message ? `<div class="bg-body-secondary p-2 rounded-2 small text-muted mb-1.5 font-monospace" style="font-size: 0.72rem;">"${r.custom_message}"</div>` : ''}
+
+                            ${r.is_unable ? `
+                                <div class="bg-warning-subtle text-warning-emphasis p-2 rounded-2 small mb-1.5" style="font-size: 0.72rem;">
+                                    <strong><i class="bi bi-slash-circle me-1"></i>Unable to fulfil:</strong> ${r.unable_reason || 'Unavailable'}
+                                    ${r.alternative_suggestion ? `<div class="fst-italic mt-0.5">Alt: ${r.alternative_suggestion}</div>` : ''}
+                                </div>
+                            ` : ''}
+
+                            ${r.reported_not_fulfilled ? `
+                                <div class="bg-danger-subtle text-danger p-1.5 rounded-2 small mb-1.5 fw-semibold" style="font-size: 0.7rem;">
+                                    <i class="bi bi-exclamation-octagon-fill me-1"></i>Escalation sent to supervisor
+                                </div>
+                            ` : ''}
+
+                            ${r.staff_apology_message ? `
+                                <div class="bg-warning-subtle text-warning-emphasis p-2 rounded-2 small mb-1.5 border border-warning-subtle d-flex align-items-center gap-2" style="font-size: 0.74rem;">
+                                    <i class="bi bi-clock-history text-warning fs-5 flex-shrink-0"></i>
+                                    <div>
+                                        <span class="fw-bold">Staff Update:</span> ${r.staff_apology_message}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Re-notify Cooldown Message Box -->
+                            <div class="renotice-cooldown-box bg-warning-subtle text-warning-emphasis border border-warning-subtle p-2 rounded-2 small mb-1.5 ${isCooldownActive ? '' : 'd-none'}" id="renoticeCooldown-${r.id}">
+                                <div class="d-flex align-items-start gap-1.5" style="font-size: 0.72rem;">
+                                    <i class="bi bi-bell-fill text-warning fs-6 mt-0.5 flex-shrink-0"></i>
+                                    <div class="min-w-0 flex-grow-1">
+                                        <div class="fw-bold">Notification sent successfully! You can send another notification in 3 minutes.</div>
+                                        <div class="text-body-secondary small d-flex align-items-center gap-1 font-monospace mt-0.5">
+                                            <i class="bi bi-stopwatch text-warning"></i>
+                                            <span>You can re-notify again in <strong class="text-body fw-bold font-monospace renotice-countdown-${r.id}">${countdownDisplayStr}</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center pt-2 mt-1 border-top border-secondary-subtle flex-wrap gap-2" style="font-size: 0.72rem;">
+                                <div class="d-flex align-items-center flex-wrap gap-2 text-muted service-waiting-timer" id="waitingTimer-${r.id}" data-req-id="${r.id}" data-requested-ts="${r.requested_at_ts}" data-initial-seconds="${r.waiting_seconds || 0}" data-fetch-ts="${Date.now()}" data-status="${r.status}">
+                                    ${r.waiter_name ? `
+                                        <span class="d-inline-flex align-items-center me-1"><i class="bi bi-person-check text-primary me-1 fs-6"></i><span>Attending: <strong class="text-body">${r.waiter_name}</strong></span></span>
+                                    ` : `
+                                        <span class="d-inline-flex align-items-center text-secondary me-1"><i class="bi bi-clock me-1"></i><span>Unassigned</span></span>
+                                    `}
+                                    ${(r.is_pending || r.is_accepted || r.is_in_progress) ? `
+                                        <span class="text-muted opacity-50">&bull;</span>
+                                        <span class="d-inline-flex align-items-center"><i class="bi bi-hourglass-split text-warning me-1 fs-6"></i><span>Waiting: <strong class="text-body font-monospace timer-display">${r.waiting_duration || '0s'}</strong></span></span>
+                                    ` : (r.waiting_duration ? `
+                                        <span class="text-muted opacity-50">&bull;</span>
+                                        <span class="d-inline-flex align-items-center text-muted"><i class="bi bi-check2 me-1"></i><span>Duration: <strong class="font-monospace">${r.waiting_duration}</strong></span></span>
+                                    ` : '')}
+                                </div>
+                                
+                                <div class="d-flex align-items-center gap-1.5 ms-auto" id="cardActions-${r.id}">
+                                    <!-- Re-notify Button: Appears after 2 mins (120s) of waiting for active requests, hidden while on 3-min cooldown -->
+                                    ${(r.is_pending || r.is_accepted || r.is_in_progress) ? `
+                                        <button type="button" class="btn btn-warning btn-sm rounded-pill py-0.5 px-2.5 fw-bold text-dark d-inline-flex align-items-center gap-1 shadow-xs ${(r.waiting_seconds >= 120 && !isCooldownActive) ? '' : 'd-none'}" id="renoticeBtn-${r.id}" onclick="renoticeServiceRequest(${r.id})" title="Re-alert staff about this request">
+                                            <i class="bi bi-bell-fill"></i>
+                                            <span>Re-notify</span>
+                                            ${r.re_notice_count > 0 ? `<span class="badge bg-dark text-white rounded-pill px-1 ms-0.5" style="font-size: 0.6rem;">${r.re_notice_count}</span>` : ''}
+                                        </button>
+                                    ` : ''}
+
+                                    ${r.is_pending ? `
+                                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill py-0.5 px-2.5 d-inline-flex align-items-center gap-1" onclick="cancelServiceRequest(${r.id})">
+                                            <i class="bi bi-x-circle"></i><span>Cancel</span>
+                                        </button>
+                                    ` : ''}
+
+                                    ${r.is_completed ? `
+                                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill py-0.5 px-2 fw-semibold d-inline-flex align-items-center gap-1" onclick="repeatServiceRequest(${r.id})" title="Request Again">
+                                            <i class="bi bi-arrow-repeat"></i><span>Again</span>
+                                        </button>
+                                        ${r.rating ? `
+                                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill py-0.5 px-2">★ ${r.rating}</span>
+                                        ` : `
+                                            <button type="button" class="btn btn-outline-warning btn-sm rounded-pill py-0.5 px-2 fw-semibold text-dark d-inline-flex align-items-center gap-1" onclick="openFeedbackModal(${r.id}, '${r.type_display}')">
+                                                <i class="bi bi-star-fill text-warning"></i><span>Rate</span>
+                                            </button>
+                                        `}
+                                        ${!r.reported_not_fulfilled ? `
+                                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill py-0.5 px-1.5" onclick="openReportNotFulfilledModal(${r.id}, '${r.type_display}')" title="Report Not Received">
+                                                <i class="bi bi-flag"></i>
+                                            </button>
+                                        ` : ''}
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                listEl.innerHTML = html;
+                updateLiveTimers();
+            }
+
+        } catch (e) {
+            console.error('Service status poll error:', e);
+        }
+    }
+
+    // Live 1-second interval timer for active waiting requests
+    let liveTimerInterval = null;
+    function updateLiveTimers() {
+        const timerEls = document.querySelectorAll('.service-waiting-timer');
+        if (!timerEls.length) return;
+        const now = Date.now();
+
+        timerEls.forEach(el => {
+            const reqTs = parseInt(el.getAttribute('data-requested-ts'), 10);
+            const status = el.getAttribute('data-status');
+            const reqId = el.getAttribute('data-req-id');
+            const initialSec = parseInt(el.getAttribute('data-initial-seconds'), 10);
+            const fetchTs = parseInt(el.getAttribute('data-fetch-ts'), 10);
+
+            // Only tick for active statuses
+            if (status === 'PENDING' || status === 'ACCEPTED' || status === 'IN_PROGRESS') {
+                let diffSec = 0;
+                if (!isNaN(initialSec) && !isNaN(fetchTs) && fetchTs > 0) {
+                    diffSec = Math.max(0, initialSec + Math.floor((now - fetchTs) / 1000));
+                } else if (!isNaN(reqTs) && reqTs > 0) {
+                    diffSec = Math.max(0, Math.floor((now - reqTs) / 1000));
+                }
+
+                const mins = Math.floor(diffSec / 60);
+                const secs = diffSec % 60;
+                const displayStr = mins > 0 ? `${mins}m ${secs < 10 ? '0' : ''}${secs}s` : `${secs}s`;
+
+                const displayEl = el.querySelector('.timer-display');
+                if (displayEl) {
+                    displayEl.textContent = displayStr;
+                }
+
+                // Handle 3-minute Re-notify cooldown
+                if (reqId) {
+                    const cooldownSec = getRenoticeCooldownSeconds(reqId);
+                    const cooldownBox = document.getElementById(`renoticeCooldown-${reqId}`);
+                    const renoticeBtn = document.getElementById(`renoticeBtn-${reqId}`);
+
+                    if (cooldownSec > 0) {
+                        // Cooldown is active: update live countdown timer
+                        const timeStr = formatCooldownTime(cooldownSec);
+                        const countEls = document.querySelectorAll(`.renotice-countdown-${reqId}`);
+                        countEls.forEach(c => c.textContent = timeStr);
+
+                        if (cooldownBox && cooldownBox.classList.contains('d-none')) {
+                            cooldownBox.classList.remove('d-none');
+                        }
+                        if (renoticeBtn && !renoticeBtn.classList.contains('d-none')) {
+                            renoticeBtn.classList.add('d-none');
+                        }
+                    } else {
+                        // Cooldown expired: automatically hide cooldown message and make Re-notify button visible
+                        if (cooldownBox && !cooldownBox.classList.contains('d-none')) {
+                            cooldownBox.classList.add('d-none');
+                        }
+                        // Make Re-notify button visible again if request has been waiting >= 120s
+                        if (diffSec >= 120 && renoticeBtn && renoticeBtn.classList.contains('d-none')) {
+                            renoticeBtn.classList.remove('d-none');
+                        }
+                    }
+                }
+            } else if (reqId) {
+                // If request is completed/cancelled, clear cooldown
+                clearRenoticeCooldown(reqId);
+                const cooldownBox = document.getElementById(`renoticeCooldown-${reqId}`);
+                if (cooldownBox && !cooldownBox.classList.contains('d-none')) {
+                    cooldownBox.classList.add('d-none');
+                }
+            }
+        });
+    }
+
+    // Helper: CSRF token retrieval
+    function getCsrfToken() {
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+        return cookieValue || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    }
+
+    // Initialization: setup polling and event listeners
+    function initServiceWidget() {
+        pollServiceStatus();
+        setInterval(pollServiceStatus, 4500);
+        if (!liveTimerInterval) {
+            liveTimerInterval = setInterval(updateLiveTimers, 1000);
+        }
+
+        const modalEl = document.getElementById('serviceAssistanceModal');
+        if (modalEl) {
+            modalEl.addEventListener('show.bs.modal', handleServiceModalOpened);
+            modalEl.addEventListener('shown.bs.modal', handleServiceModalOpened);
+        }
+
+        const triggerBtns = document.querySelectorAll('[data-bs-target="#serviceAssistanceModal"], #floatingWaiterBtn');
+        triggerBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                handleServiceModalOpened();
+            });
+        });
+
+        const historyTabLink = document.getElementById('tab-history-link');
+        if (historyTabLink) {
+            historyTabLink.addEventListener('click', function() {
+                window.markAllServiceNotificationsAsSeen();
+            });
+            historyTabLink.addEventListener('shown.bs.tab', function() {
+                window.markAllServiceNotificationsAsSeen();
+            });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initServiceWidget);
+    } else {
+        initServiceWidget();
+    }
+})();
+</script>

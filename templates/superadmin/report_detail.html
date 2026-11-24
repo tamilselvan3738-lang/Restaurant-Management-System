@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Report {{ report.report_id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h3 class="fw-bold mb-0">Report: {{ report.report_id }}</h3>
+            <span class="badge bg-{{ report.priority_badge_class }}">{{ report.get_priority_display }} Priority</span>
+            <span class="badge bg-{{ report.status_badge_class }}">{{ report.get_status_display }}</span>
+        </div>
+        <p class="text-muted small mb-0">
+            Filed on {{ report.created_at|date:"F d, Y @ h:i A" }} by <strong>{{ report.submitted_by.get_full_name|default:report.submitted_by.username }}</strong>
+        </p>
+    </div>
+    
+    <a href="{% url 'superadmin:report_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back to Reports
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Report Contents -->
+    <div class="col-lg-7">
+        <div class="card mb-4">
+            <div class="card-header bg-body-tertiary py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-card-text me-2 text-primary"></i> Report Details</h6>
+            </div>
+            <div class="card-body p-4">
+                <h5 class="fw-bold text-body mb-2">{{ report.title }}</h5>
+                <div class="badge bg-body-secondary text-body border mb-3">{{ report.get_report_type_display }}</div>
+                
+                <div class="p-3 bg-body-tertiary rounded-3 mb-3 border">
+                    <h6 class="fw-bold small text-secondary text-uppercase mb-2">Description / Details:</h6>
+                    <p class="mb-0 text-body" style="white-space: pre-line;">{{ report.description }}</p>
+                </div>
+
+                {% if report.super_admin_notes %}
+                <div class="p-3 bg-success-subtle border border-success rounded-3">
+                    <h6 class="fw-bold small text-success text-uppercase mb-2"><i class="bi bi-shield-check me-1"></i> Super Admin Resolution Notes:</h6>
+                    <p class="mb-0 text-body" style="white-space: pre-line;">{{ report.super_admin_notes }}</p>
+                    <div class="text-muted small mt-2">
+                        Reviewed by: <strong>{{ report.reviewed_by.username|default:"Super Admin" }}</strong>
+                        {% if report.resolved_at %}&bull; Resolved on {{ report.resolved_at|date:"M d, Y h:i A" }}{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Super Admin Action / Review Form -->
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-pencil-square me-2 text-primary"></i> Super Admin Review Action</h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Report Status</label>
+                        {{ form.status }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Super Admin Feedback / Action Taken</label>
+                        {{ form.super_admin_notes }}
+                        <div class="form-text small">Enter instructions or note how the issue was resolved.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                        <i class="bi bi-check2-circle me-1"></i> Update Report Status
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

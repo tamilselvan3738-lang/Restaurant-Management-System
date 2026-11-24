@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Table {{ table.table_number }} | Dining Setup</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-orange: #ff5e14;
+            --primary-dark: #e04803;
+            --primary-light: #fff5ee;
+            --bg-light: #f4f6f9;
+            --border-color: #e2e8f0;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-light);
+            color: #0f172a;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .hero-banner {
+            background: linear-gradient(135deg, #ff5e14 0%, #ff7b2b 100%);
+            color: white;
+            padding: 24px 20px 42px;
+            border-bottom-left-radius: 28px;
+            border-bottom-right-radius: 28px;
+            box-shadow: 0 12px 28px rgba(255, 94, 20, 0.22);
+            text-align: center;
+        }
+        .brand-logo-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 6px 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            margin-bottom: 12px;
+        }
+        .top-restaurant-logo {
+            max-height: 44px;
+            max-width: 140px;
+            object-fit: contain;
+        }
+        .table-title {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+            margin: 0 0 8px 0;
+            color: #ffffff;
+        }
+        .table-badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            color: #ffffff;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 4px 14px;
+            border-radius: 20px;
+        }
+        .main-card-container {
+            margin-top: -26px;
+            padding: 0 16px 32px;
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+        }
+        .setup-card {
+            background: #ffffff;
+            border-radius: 22px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.07);
+            padding: 22px 20px 20px;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .guest-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .guest-btn {
+            height: 64px;
+            border-radius: 14px;
+            border: 1.5px solid var(--border-color);
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            padding: 6px 2px;
+            width: 100%;
+        }
+        .guest-btn:hover:not(:disabled) {
+            border-color: var(--primary-orange);
+            background: #fff8f5;
+            transform: translateY(-1px);
+        }
+        .guest-btn.selected {
+            background: linear-gradient(135deg, #ff5e14 0%, #ff7324 100%) !important;
+            border-color: #ff5e14 !important;
+            color: #ffffff !important;
+            box-shadow: 0 6px 18px rgba(255, 94, 20, 0.32);
+            transform: translateY(-2px);
+        }
+        .guest-btn.selected .guest-num,
+        .guest-btn.selected .guest-label {
+            color: #ffffff !important;
+        }
+        .guest-btn.disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            background: #f1f5f9;
+            border-color: #e2e8f0;
+        }
+        .guest-num {
+            font-size: 1.3rem;
+            font-weight: 800;
+            line-height: 1.1;
+            color: #0f172a;
+        }
+        .guest-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .split-join-card {
+            background: #fbfcfe;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            margin-bottom: 18px;
+        }
+        .split-join-card:hover {
+            border-color: #cbd5e1;
+        }
+        .split-join-card.open {
+            border-color: var(--primary-orange);
+            box-shadow: 0 4px 18px rgba(255, 94, 20, 0.08);
+        }
+        .split-join-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .split-join-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #fff4ed;
+            color: var(--primary-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .split-join-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+        .split-join-subtitle {
+            font-size: 0.72rem;
+            color: #64748b;
+            margin-top: 1px;
+        }
+        .split-join-btn {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            color: #334155;
+            font-size: 0.74rem;
+            font-weight: 700;
+            border-radius: 20px;
+            padding: 5px 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .split-join-btn:hover {
+            border-color: var(--primary-orange);
+            color: var(--primary-orange);
+        }
+        .split-join-body {
+            padding: 14px;
+            border-top: 1px solid #f1f5f9;
+            background: #ffffff;
+        }
+        .premium-code-input {
+            font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            text-align: center;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 12px !important;
+            padding: 10px 12px;
+            color: #0f172a;
+            transition: all 0.15s ease;
+        }
+        .premium-code-input:focus {
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 0 3px rgba(255, 94, 20, 0.16);
+            outline: none;
+        }
+        .premium-name-input {
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 12px !important;
+            padding: 10px 14px;
+            color: #0f172a;
+            background: #ffffff;
+            transition: all 0.15s ease;
+        }
+        .premium-name-input:focus {
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 0 3px rgba(255, 94, 20, 0.16);
+            outline: none;
+        }
+        .btn-start-order {
+            background: linear-gradient(135deg, #ff5e14 0%, #ff7324 100%);
+            border: none;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 1.05rem;
+            padding: 15px 24px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(255, 94, 20, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .btn-start-order:hover, .btn-start-order:focus {
+            background: linear-gradient(135deg, #e04803 0%, #ff5e14 100%);
+            box-shadow: 0 10px 28px rgba(255, 94, 20, 0.45);
+            transform: translateY(-1.5px);
+            color: #ffffff;
+        }
+        .btn-start-order:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(255, 94, 20, 0.25);
+        }
+        .table-notice-footer {
+            text-align: center;
+            margin-top: 14px;
+            font-size: 0.73rem;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            line-height: 1.3;
+            padding: 0 10px;
+        }
+        .code-display-box {
+            background: #fff7ed;
+            border: 2px dashed #fdba74;
+            border-radius: 16px;
+            padding: 18px;
+            text-align: center;
+        }
+        .six-digit-code {
+            letter-spacing: 8px;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP HERO BANNER WITH BRAND LOGO & TABLE INFO -->
+    <div class="hero-banner">
+        {% if restaurant_logo_url %}
+            <div class="brand-logo-card">
+                <img src="{{ restaurant_logo_url }}" alt="{{ restaurant_name }}" class="top-restaurant-logo">
+            </div>
+        {% elif RESTAURANT_LOGO_URL %}
+            <div class="brand-logo-card">
+                <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ restaurant_name }}" class="top-restaurant-logo">
+            </div>
+        {% else %}
+            <div class="table-badge-pill mb-2">
+                <i class="bi bi-shop"></i> {{ restaurant_name|default:"The Grand Bistro" }}
+            </div>
+        {% endif %}
+
+        <h1 class="table-title">TABLE {{ table.table_number }}</h1>
+        
+        <div class="table-badge-pill">
+            <i class="bi bi-people-fill"></i>
+            <span>{{ available_seats_count }} of {{ table.capacity }} Seats Available</span>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="main-card-container">
+
+        <!-- Flash messages -->
+        <div id="flashMessagesBox">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-4 shadow-sm mb-3" role="alert">
+                        <i class="bi bi-info-circle-fill me-1"></i> {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- SETUP CARD -->
+        <div class="setup-card" id="mainSetupCard">
+            
+            {% if available_seats_count == 0 %}
+            <!-- Table is Full Warning -->
+            <div class="alert alert-danger rounded-4 p-3 mb-3 text-center">
+                <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Table is Currently Full</h6>
+                <p class="small mb-2">All {{ table.capacity }} seats at Table {{ table.table_number }} are occupied. If your friends gave you an invitation code, enter it below to join.</p>
+            </div>
+            
+            <!-- Quick Join for Full Table -->
+            <form method="POST" action="{% url 'tables:customer_order' table.table_number %}" class="mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="join_group">
+                <div class="mb-2.5">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Six-Digit Invitation Code</label>
+                    <input type="text" name="join_code" class="form-control rounded-3 py-2.5 premium-code-input w-100" placeholder="E.G. 209977" maxlength="8" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Your Name</label>
+                    <input type="text" name="customer_name" class="form-control rounded-3 py-2.5 premium-name-input w-100" placeholder="Enter your name" maxlength="50" required>
+                </div>
+                <button type="submit" class="btn btn-start-order">
+                    <span>Join Table Group</span>
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+            </form>
+
+            {% else %}
+
+            <!-- PARTY SIZE SELECTION -->
+            <div class="section-header">
+                <span class="section-title">
+                    <i class="bi bi-people-fill text-primary"></i>
+                    <span>How many guests?</span>
+                </span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small fw-bold">
+                    <span id="partySizeDisplay">{% if available_seats_count >= 2 %}2{% else %}1{% endif %}</span> Selected
+                </span>
+            </div>
+
+            <!-- Responsive 4-Column Guest Buttons Grid -->
+            <div class="guest-grid" id="partySizePillsRow">
+                {% for i in "12345678"|make_list %}
+                    {% if forloop.counter <= table.capacity %}
+                        {% with num=forloop.counter %}
+                        <button type="button"
+                                class="guest-btn {% if num == 2 and available_seats_count >= 2 %}selected{% elif num == 1 and available_seats_count < 2 %}selected{% endif %} {% if num > available_seats_count %}disabled{% endif %}"
+                                data-size="{{ num }}"
+                                onclick="handlePartySizeSelect({{ num }})"
+                                {% if num > available_seats_count %}disabled{% endif %}>
+                            <span class="guest-num">{{ num }}</span>
+                            <span class="guest-label">{% if num == 1 %}Guest{% else %}Guests{% endif %}</span>
+                        </button>
+                        {% endwith %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- OPTION TO JOIN SPLIT TABLE -->
+            <div class="split-join-card" id="splitJoinCard">
+                <div class="split-join-header" onclick="toggleSplitTableJoin()">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <div class="split-join-icon">
+                            <i class="bi bi-person-plus-fill"></i>
+                        </div>
+                        <div>
+                            <div class="split-join-title">Join Split Table</div>
+                            <div class="split-join-subtitle">Have an invite code from friends?</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm split-join-btn" id="btnToggleSplit">
+                        <span id="btnToggleSplitText">Enter Code</span>
+                        <i class="bi bi-chevron-down" id="splitChevron"></i>
+                    </button>
+                </div>
+
+                <!-- Expandable Split Table Form (Asks Code & Name) -->
+                <div id="splitTableCollapseArea" class="split-join-body d-none">
+                    <form method="POST" action="{% url 'tables:customer_order' table.table_number %}" id="formSplitTable" onsubmit="handleSplitTableSubmit(event)">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="join_group">
+                        
+                        <div class="mb-2.5">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                6-Digit Invitation Code
+                            </label>
+                            <input type="text"
+                                   name="join_code"
+                                   id="splitJoinCodeInput"
+                                   class="form-control premium-code-input w-100"
+                                   placeholder="E.G. 209977"
+                                   maxlength="8"
+                                   autocomplete="off"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Your Name
+                            </label>
+                            <input type="text"
+                                   name="customer_name"
+                                   id="splitCustomerNameInput"
+                                   class="form-control premium-name-input w-100"
+                                   placeholder="Enter your name"
+                                   maxlength="50"
+                                   autocomplete="name"
+                                   required>
+                        </div>
+
+                        <button type="submit" class="btn btn-dark w-100 py-2.5 rounded-3 fw-bold fs-6 shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnSplitJoinSubmit" style="height: 48px;">
+                            <span>Join Table Group</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+
+                        <div id="splitTableErrorAlert" class="alert alert-danger rounded-3 py-2 px-3 small mt-2.5 mb-0 d-none">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>
+                            <span id="splitTableErrorMessage"></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- PRIMARY CTA: START ORDERING FOOD / CONTINUE TO MENU (HIDDEN WHEN JOIN IS OPEN) -->
+            <form method="POST" action="{% url 'tables:customer_order' table.table_number %}" id="formStartOrdering" onsubmit="handleStartOrderingSubmit(event)">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_group">
+                <input type="hidden" name="party_size" id="inputPartySize" value="{% if available_seats_count >= 2 %}2{% else %}1{% endif %}">
+                <input type="hidden" name="guest_count" id="inputGuestCount" value="{% if available_seats_count >= 2 %}2{% else %}1{% endif %}">
+                <input type="hidden" name="customer_name" id="inputCustomerName" value="Guest">
+
+                <button type="submit" class="btn-start-order" id="btnStartOrderingSubmit">
+                    <i class="bi bi-basket-fill"></i>
+                    <span id="btnStartOrderingText">{% if available_seats_count >= 2 %}Start Ordering Food{% else %}Continue to Menu{% endif %}</span>
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+            </form>
+
+            {% endif %}
+
+        </div>
+
+        <!-- Safe Table Occupancy Notice Footer -->
+        <div class="table-notice-footer">
+            <i class="bi bi-shield-check text-success"></i>
+            <span>Table seats are reserved only when you submit your food order to the kitchen.</span>
+        </div>
+
+    </div>
+
+    <!-- DINE TOGETHER INVITATION CODE MODAL (SHOWN ON CREATING SHARED GROUP) -->
+    <div class="modal fade" id="dineTogetherSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered px-3" style="max-width: 440px;">
+            <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+                <div class="modal-body p-4 text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 56px; height: 56px; background: rgba(16, 185, 129, 0.12); color: #10b981; font-size: 1.8rem;">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+
+                    <h4 class="fw-bold mb-1">Your dining group is ready!</h4>
+                    <p class="text-muted small mb-3">Share this invitation code with your friends so they can order food together in your shared cart.</p>
+
+                    <!-- Six-Digit Code Box -->
+                    <div class="code-display-box mb-3">
+                        <span class="text-muted small text-uppercase fw-bold d-block mb-1" style="font-size: 0.7rem; letter-spacing: 1px;">Group Invitation Code</span>
+                        <div class="six-digit-code" id="modalSixDigitCode">------</div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill py-2 flex-grow-1 fw-semibold small d-flex align-items-center justify-content-center gap-1.5" onclick="copyModalCode()">
+                            <i class="bi bi-copy" id="modalCopyIcon"></i>
+                            <span id="modalCopyText">Copy Code</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-success rounded-pill py-2 flex-grow-1 fw-semibold small d-flex align-items-center justify-content-center gap-1.5" onclick="shareModalCode()">
+                            <i class="bi bi-share-fill"></i>
+                            <span>Share Code</span>
+                        </button>
+                    </div>
+
+                    <a href="{% url 'tables:customer_order' table.table_number %}" class="btn-start-order text-decoration-none py-2.5 rounded-pill" id="modalContinueBtn">
+                        <span>Continue to Menu</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    (function() {
+        const tableCapacity = parseInt("{{ table.capacity|default:4 }}") || 4;
+        const availableSeats = parseInt("{{ available_seats_count|default:table.capacity }}") || 0;
+        
+        let selectedPartySize = Math.max(1, Math.min(availableSeats >= 2 ? 2 : 1, availableSeats || 1));
+        let currentJoinCode = '';
+
+        // 1. Party Size Selection Controller
+        window.handlePartySizeSelect = function(size) {
+            if (size > availableSeats && availableSeats > 0) return;
+            selectedPartySize = size;
+
+            // Highlight chosen pill
+            document.querySelectorAll('.guest-btn').forEach(btn => {
+                btn.classList.toggle('selected', parseInt(btn.dataset.size) === size);
+            });
+
+            // Update counter displays
+            const displayEl = document.getElementById('partySizeDisplay');
+            if (displayEl) displayEl.textContent = size;
+
+            const partySizeInput = document.getElementById('inputPartySize');
+            if (partySizeInput) partySizeInput.value = size;
+
+            const guestCountInput = document.getElementById('inputGuestCount');
+            if (guestCountInput) guestCountInput.value = size;
+
+            const startText = document.getElementById('btnStartOrderingText');
+            if (startText) {
+                if (size === 1) {
+                    startText.textContent = "Continue to Menu";
+                } else {
+                    startText.textContent = "Start Ordering Food";
+                }
+            }
+
+            // If Join Split Table is open, selecting party size closes it and restores Start Ordering button
+            const area = document.getElementById('splitTableCollapseArea');
+            const card = document.getElementById('splitJoinCard');
+            const btnText = document.getElementById('btnToggleSplitText');
+            const chevron = document.getElementById('splitChevron');
+            const startOrderingForm = document.getElementById('formStartOrdering');
+            if (area && !area.classList.contains('d-none')) {
+                area.classList.add('d-none');
+                if (card) card.classList.remove('open');
+                if (btnText) btnText.textContent = 'Enter Code';
+                if (chevron) {
+                    chevron.classList.remove('bi-chevron-up');
+                    chevron.classList.add('bi-chevron-down');
+                }
+            }
+            if (startOrderingForm) {
+                startOrderingForm.classList.remove('d-none');
+            }
+        };
+
+        // 2. Toggle Join Split Table Section (Hides "Continue to Menu / Start Ordering Food" when open)
+        window.toggleSplitTableJoin = function() {
+            const area = document.getElementById('splitTableCollapseArea');
+            const card = document.getElementById('splitJoinCard');
+            const btnText = document.getElementById('btnToggleSplitText');
+            const chevron = document.getElementById('splitChevron');
+            const codeInput = document.getElementById('splitJoinCodeInput');
+            const startOrderingForm = document.getElementById('formStartOrdering');
+            if (!area) return;
+
+            const isHidden = area.classList.contains('d-none');
+            if (isHidden) {
+                // User opened Join Split Table:
+                area.classList.remove('d-none');
+                if (card) card.classList.add('open');
+                if (btnText) btnText.textContent = 'Close';
+                if (chevron) {
+                    chevron.classList.remove('bi-chevron-down');
+                    chevron.classList.add('bi-chevron-up');
+                }
+                // HIDE the "Continue to Menu / Start Ordering Food" button!
+                if (startOrderingForm) startOrderingForm.classList.add('d-none');
+                if (codeInput) setTimeout(() => codeInput.focus(), 150);
+            } else {
+                // User closed Join Split Table:
+                area.classList.add('d-none');
+                if (card) card.classList.remove('open');
+                if (btnText) btnText.textContent = 'Enter Code';
+                if (chevron) {
+                    chevron.classList.remove('bi-chevron-up');
+                    chevron.classList.add('bi-chevron-down');
+                }
+                // RESTORE the "Continue to Menu / Start Ordering Food" button!
+                if (startOrderingForm) startOrderingForm.classList.remove('d-none');
+            }
+        };
+
+        // 3. Primary CTA Submit (Default Dine Mode)
+        window.handleStartOrderingSubmit = function(e) {
+            // For 1 Person, let standard form POST handle direct redirect to menu
+            if (selectedPartySize === 1) {
+                return; // Standard form submission
+            }
+
+            // For 2+ People, create shared group via AJAX and show modal with 6-digit code
+            e.preventDefault();
+            const btn = document.getElementById('btnStartOrderingSubmit');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span> Setting Up Shared Group...`;
+
+            const formData = new FormData(document.getElementById('formStartOrdering'));
+
+            fetch("{% url 'tables:customer_order' table.table_number %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.group) {
+                    currentJoinCode = data.group.join_code;
+                    document.getElementById('modalSixDigitCode').textContent = currentJoinCode;
+                    if (data.redirect_url) {
+                        document.getElementById('modalContinueBtn').href = data.redirect_url;
+                    }
+                    const modalEl = document.getElementById('dineTogetherSuccessModal');
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                } else {
+                    document.getElementById('formStartOrdering').submit();
+                }
+            })
+            .catch(() => {
+                document.getElementById('formStartOrdering').submit();
+            });
+        };
+
+        // 4. Handle Split Table Submit (Joining with 6-Digit Code and Name)
+        window.handleSplitTableSubmit = function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSplitJoinSubmit');
+            const codeInput = document.getElementById('splitJoinCodeInput');
+            const nameInput = document.getElementById('splitCustomerNameInput');
+            const code = codeInput ? codeInput.value.trim().toUpperCase() : '';
+            const name = nameInput ? nameInput.value.trim() : '';
+            const errBox = document.getElementById('splitTableErrorAlert');
+            const errMsg = document.getElementById('splitTableErrorMessage');
+
+            if (!code || code.length < 6) {
+                errBox.classList.remove('d-none');
+                errMsg.textContent = "Please enter a valid 6-digit invitation code.";
+                if (codeInput) codeInput.focus();
+                return;
+            }
+
+            if (!name) {
+                errBox.classList.remove('d-none');
+                errMsg.textContent = "Please enter your name to join the group.";
+                if (nameInput) nameInput.focus();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span> Joining Group...`;
+            errBox.classList.add('d-none');
+
+            const formData = new FormData(document.getElementById('formSplitTable'));
+            formData.set('join_code', code);
+            formData.set('customer_name', name);
+
+            fetch("{% url 'tables:customer_order' table.table_number %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = data.redirect_url || "{% url 'tables:customer_order' table.table_number %}";
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>Join Table Group</span> <i class="bi bi-arrow-right"></i>`;
+                    errBox.classList.remove('d-none');
+                    errMsg.textContent = data.message || "Invalid invitation code. Please check the code and try again.";
+                }
+            })
+            .catch(() => {
+                document.getElementById('formSplitTable').submit();
+            });
+        };
+
+        // 5. Code Copy & Share Handlers
+        window.copyModalCode = function() {
+            if (!currentJoinCode) return;
+            navigator.clipboard.writeText(currentJoinCode).then(() => {
+                const icon = document.getElementById('modalCopyIcon');
+                const text = document.getElementById('modalCopyText');
+                icon.className = 'bi bi-check2';
+                text.textContent = 'Copied!';
+                setTimeout(() => {
+                    icon.className = 'bi bi-copy';
+                    text.textContent = 'Copy Code';
+                }, 2000);
+            });
+        };
+
+        window.shareModalCode = function() {
+            if (!currentJoinCode) return;
+            const shareText = `Join our dining group at Table {{ table.table_number }}! Our invitation code is ${currentJoinCode}`;
+            if (navigator.share) {
+                navigator.share({
+                    title: `Table {{ table.table_number }} Group Invite`,
+                    text: shareText
+                }).catch(() => {});
+            } else {
+                const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+                window.open(url, '_blank');
+            }
+        };
+
+        // Initialize state on page load
+        handlePartySizeSelect(selectedPartySize);
+
+        // Auto-dismiss notification popup alerts after 1 second
+        const alerts = document.querySelectorAll('.alert.alert-dismissible, [role="alert"].alert-dismissible, .alert:has(.btn-close)');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                if (alert && alert.parentNode) {
+                    alert.classList.remove('show');
+                    alert.classList.add('fade');
+                    alert.style.transition = 'opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease, margin 0.35s ease, padding 0.35s ease';
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-6px)';
+                    setTimeout(function() {
+                        if (window.bootstrap && bootstrap.Alert) {
+                            try {
+                                const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                                if (bsAlert) {
+                                    bsAlert.close();
+                                    return;
+                                }
+                            } catch (e) {}
+                        }
+                        if (alert.parentNode) alert.parentNode.removeChild(alert);
+                    }, 350);
+                }
+            }, 1000);
+        });
+
+    })();
+    </script>
+</body>
+</html>

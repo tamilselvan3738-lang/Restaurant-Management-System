@@ -1,0 +1,12 @@
+32: #serviceAssistanceModal .modal-content {
+37: #serviceAssistanceModal .modal-header,
+38: #serviceAssistanceModal .modal-body {
+41: [data-bs-theme="dark"] #serviceAssistanceModal .modal-content,
+42: [data-bs-theme="dark"] #serviceAssistanceModal .modal-header,
+43: [data-bs-theme="dark"] #serviceAssistanceModal .modal-body {
+174: <button type="button" class="btn rounded-pill px-3.5 py-2.5 d-inline-flex align-items-center gap-2 fw-bold floating-waiter-btn" id="floatingWaiterBtn" data-bs-toggle="modal" data-bs-target="#serviceAssistanceModal" title="Call Waiter or Request Assistance">
+181: <div class="modal fade" id="serviceAssistanceModal" tabindex="-1" aria-labelledby="serviceAssistanceModalLabel" aria-hidden="true">
+188: <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2 mb-0" id="serviceAssistanceModalLabel">
+1042: const modalEl = document.getElementById('serviceAssistanceModal');
+1223: const modalEl = document.getElementById('serviceAssistanceModal');
+1229: const triggerBtns = document.querySelectorAll('[data-bs-target="#serviceAssistanceModal"], #floatingWaiterBtn');

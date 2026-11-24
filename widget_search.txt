@@ -1,0 +1,11 @@
+438: <div id="serviceRequestsHistoryList">
+753: // Re-notice staff for active request (after 2+ minutes waiting)
+1041: const listEl = document.getElementById('serviceRequestsHistoryList');
+1092: <span>${r.requested_at_time}</span>
+1118: <div class="d-flex align-items-center text-muted service-waiting-timer" id="waitingTimer-${r.id}" data-req-id="${r.id}" data-requested-ts="${r.requested_at_ts}" data-status="${r.status}">
+1119: ${r.waiter_name ? `<i class="bi bi-person-check text-primary me-1 fs-6"></i><span>Attending: <strong class="text-body">${r.waiter_name}</strong></span>` : `<i class="bi bi-hourglass-split text-warning me-1 fs-6"></i><span>Waiting: <strong class="text-body font-monospace timer-display">${r.waiting_duration}</strong></span>`}
+1123: <!-- Re-notice Button: Appears after 2 mins (120s) of waiting for active requests -->
+1125: <button type="button" class="btn btn-warning btn-sm rounded-pill py-0.5 px-2.5 fw-bold text-dark d-inline-flex align-items-center gap-1 shadow-xs ${r.waiting_seconds >= 120 ? '' : 'd-none'}" id="renoticeBtn-${r.id}" onclick="renoticeServiceRequest(${r.id})" title="Re-alert staff about this request">
+1170: // Live 1-second interval timer for active waiting requests
+1173: const timerEls = document.querySelectorAll('.service-waiting-timer');
+1195: // If request has been waiting for 2 minutes (120s) or more, show the Re-notice button

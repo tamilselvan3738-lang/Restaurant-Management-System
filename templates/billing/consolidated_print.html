@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consolidated Invoice #{{ bill.bill_number }} - {{ RESTAURANT_NAME }}</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            color: #000;
+        }
+
+        .receipt-container {
+            max-width: 420px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px 20px;
+            border: 1px dashed #999;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 14px;
+        }
+
+        .header h2 {
+            margin: 0 0 4px;
+            font-size: 1.25rem;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            margin: 2px 0;
+            font-size: 0.8rem;
+        }
+
+        .divider {
+            border-top: 1px dashed #000;
+            margin: 10px 0;
+        }
+
+        .double-divider {
+            border-top: 2px dashed #000;
+            margin: 10px 0;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 3px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            margin: 6px 0;
+        }
+
+        th {
+            text-align: left;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 4px;
+        }
+
+        td {
+            padding: 3px 0;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 3px;
+        }
+
+        .totals-row.grand-total {
+            font-size: 1.05rem;
+            font-weight: bold;
+            margin: 6px 0;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 14px;
+            font-size: 0.8rem;
+        }
+
+        .no-print {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-print {
+            background-color: #ea580c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-family: sans-serif;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-back {
+            background-color: #64748b;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-family: sans-serif;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .receipt-container {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print">
+        <button class="btn-print" onclick="window.print()">Print Consolidated Receipt</button>
+        <a href="{% url 'billing:consolidated_detail' bill.id %}" class="btn-back">Back to Bill</a>
+    </div>
+
+    <div class="receipt-container">
+        <div class="header">
+            <h2>{{ bill.restaurant.name|default:RESTAURANT_NAME }}</h2>
+            <p>CONSOLIDATED SETTLEMENT INVOICE</p>
+            <p>Date: {{ bill.created_at|date:"d-m-Y H:i" }}</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="meta-row">
+            <span>Consolidated Bill ID:</span>
+            <strong>{{ bill.bill_number }}</strong>
+        </div>
+        <div class="meta-row">
+            <span>Tables Included:</span>
+            <span>{{ bill.table_numbers_display|default:"Walk-in" }}</span>
+        </div>
+        <div class="meta-row">
+            <span>Customer Groups:</span>
+            <span>{{ bill.customer_names_display|default:"Multiple" }}</span>
+        </div>
+        <div class="meta-row">
+            <span>Merged By Staff:</span>
+            <span>{{ bill.merged_by.get_full_name|default:bill.merged_by.username|default:"Staff" }}</span>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Merged Original Invoices Summary -->
+        <div style="font-weight: bold; font-size: 0.8rem; margin-bottom: 4px;">MERGED CUSTOMER BILLS:</div>
+        {% for inv in bill.original_invoices.all %}
+        <div class="meta-row">
+            <span>• {{ inv.invoice_number }} (T-{{ inv.table.table_number|default:"N/A" }})</span>
+            <span>₹{{ inv.total_amount|floatformat:2 }}</span>
+        </div>
+        {% endfor %}
+
+        <div class="double-divider"></div>
+
+        <!-- Consolidated Dishes Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Item & Table</th>
+                    <th class="text-center">Qty</th>
+                    <th class="text-right">Price</th>
+                    <th class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in combined_dishes %}
+                <tr>
+                    <td>{{ d.item_name }} <span style="font-size: 0.72rem;">(T-{{ d.table }})</span></td>
+                    <td class="text-center">{{ d.quantity }}</td>
+                    <td class="text-right">{{ d.unit_price|floatformat:2 }}</td>
+                    <td class="text-right">{{ d.total_price|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="divider"></div>
+
+        <div class="totals-row">
+            <span>Combined Subtotal:</span>
+            <span>₹{{ bill.subtotal|floatformat:2 }}</span>
+        </div>
+
+        {% if bill.discount_amount > 0 %}
+        <div class="totals-row">
+            <span>Consolidated Discount:</span>
+            <span>-₹{{ bill.discount_amount|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+
+        {% if bill.tax_amount > 0 %}
+        <div class="totals-row">
+            <span>Applicable Taxes:</span>
+            <span>+₹{{ bill.tax_amount|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+
+        {% if bill.service_charge_amount > 0 %}
+        <div class="totals-row">
+            <span>Service Charges:</span>
+            <span>+₹{{ bill.service_charge_amount|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+
+        <div class="double-divider"></div>
+
+        <div class="totals-row grand-total">
+            <span>FINAL CONSOLIDATED TOTAL:</span>
+            <span>₹{{ bill.total_amount|floatformat:2 }}</span>
+        </div>
+
+        <div class="totals-row">
+            <span>Total Paid Amount:</span>
+            <span>₹{{ bill.total_paid|floatformat:2 }}</span>
+        </div>
+
+        <div class="totals-row" style="font-weight: bold;">
+            <span>Remaining Balance:</span>
+            <span>₹{{ bill.balance_due|floatformat:2 }}</span>
+        </div>
+
+        <!-- Payments Details -->
+        {% if bill.payments.exists %}
+        <div class="divider"></div>
+        <div style="font-weight: bold; font-size: 0.8rem; margin-bottom: 4px;">PAYMENT RECEIPTS:</div>
+        {% for p in bill.payments.all %}
+        <div class="meta-row">
+            <span>{{ p.get_payment_method_display }} ({{ p.created_at|date:"H:i" }}):</span>
+            <span>₹{{ p.amount|floatformat:2 }}</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="divider"></div>
+
+        <div class="footer">
+            <p>Status: <strong>{{ bill.get_status_display|upper }}</strong></p>
+            <p>Original table sessions & customer accounts preserved.</p>
+            <p>Thank you for dining with us!</p>
+        </div>
+    </div>
+
+</body>
+</html>

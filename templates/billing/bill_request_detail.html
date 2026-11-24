@@ -1,0 +1,409 @@
+{% extends 'base.html' %}
+
+{% block title %}Bill Request {{ bill_req.request_number }} - {{ RESTAURANT_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.detail-card {
+    border-radius: 16px;
+    border: 1px solid var(--bs-border-color, rgba(255, 255, 255, 0.1));
+    background-color: var(--bs-card-bg, #151921);
+}
+.summary-highlight {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.04));
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 16px;
+    padding: 1.25rem;
+}
+[data-bs-theme="light"] .summary-highlight {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.03));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.dish-row:last-child {
+    border-bottom: 0 !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'billing:bill_request_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-2.5 py-1" title="Back to List">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h3 class="fw-bold mb-0 text-body">
+                Bill Request: <span class="font-monospace text-primary">{{ bill_req.request_number }}</span>
+            </h3>
+            <span class="badge bg-{{ bill_req.badge_class }} rounded-pill px-2.5 py-1 fs-6">
+                {{ bill_req.get_status_display }}
+            </span>
+        </div>
+        <p class="text-muted small mb-0 mt-1 ms-4 ps-2">
+            Table {{ bill_req.table.table_number }} &bull; {{ bill_req.session.session_name }} &bull; Requested {{ bill_req.requested_at|date:"M d, Y h:i A" }} ({{ bill_req.requested_at|timesince }} ago)
+        </p>
+    </div>
+
+    <div class="d-flex gap-2 align-items-center">
+        <a href="{% url 'billing:bill_request_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 shadow-xs">
+            <i class="bi bi-list-ul me-1"></i> All Requests
+        </a>
+        {% if bill_req.invoice %}
+        <a href="{% url 'billing:invoice_detail' bill_req.invoice.id %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 shadow-xs">
+            <i class="bi bi-receipt me-1"></i> View Invoice
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Alert Messages -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm mb-3 rounded-3" role="alert">
+            <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Staff Action Banner -->
+{% if bill_req.status == 'PENDING' %}
+<div class="card border border-warning rounded-4 shadow-sm mb-4 p-3 bg-body" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.04)) !important;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h5 class="fw-bold mb-1 text-warning d-flex align-items-center gap-2">
+                <i class="bi bi-hourglass-split"></i> Pending Staff Acceptance
+            </h5>
+            <p class="small text-muted mb-0">
+                Customer at <strong>Table {{ bill_req.table.table_number }} ({{ bill_req.session.session_name }})</strong> is ready for their bill. Click below to accept this request and assist the table.
+            </p>
+        </div>
+        <div class="d-flex gap-2 align-items-center flex-shrink-0">
+            <form method="post" action="{% url 'billing:bill_request_accept' bill_req.id %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-warning btn-lg fw-bold text-dark rounded-pill px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-check2-circle fs-5"></i> Accept Request
+                </button>
+            </form>
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+{% elif bill_req.status == 'ACCEPTED' %}
+<div class="card border border-primary rounded-4 shadow-sm mb-4 p-3 bg-body" style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(13, 110, 253, 0.03)) !important;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h5 class="fw-bold mb-1 text-primary d-flex align-items-center gap-2">
+                <i class="bi bi-person-check-fill"></i> Accepted by {{ bill_req.accepted_by.get_full_name|default:bill_req.accepted_by.username }}
+            </h5>
+            <p class="small text-muted mb-0">
+                Accepted at {{ bill_req.accepted_at|date:"h:i A" }} ({{ bill_req.accepted_at|timesince }} ago). Generate the final bill to prepare for customer payment settlement.
+            </p>
+        </div>
+        <div class="d-flex gap-2 align-items-center flex-shrink-0">
+            <form method="post" action="{% url 'billing:bill_request_generate_bill' bill_req.id %}" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-lg fw-bold rounded-pill px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-text-fill fs-5"></i> Generate Final Bill
+                </button>
+            </form>
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+{% elif bill_req.status == 'BILL_GENERATED' or bill_req.status == 'PAYMENT_PENDING' %}
+<div class="card border border-info rounded-4 shadow-sm mb-4 p-3 bg-body" style="background: linear-gradient(135deg, rgba(13, 202, 240, 0.1), rgba(13, 202, 240, 0.03)) !important;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <div>
+            <h5 class="fw-bold mb-1 text-info d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-check-fill"></i> Final Bill Generated: {{ bill_req.invoice.invoice_number }}
+            </h5>
+            <p class="small text-muted mb-0">
+                Total Amount: <strong>₹{{ bill_req.total_amount }}</strong> &bull; Outstanding Balance: <strong class="text-danger">₹{{ bill_req.balance_due }}</strong>
+            </p>
+        </div>
+        <div class="d-flex gap-2 align-items-center flex-shrink-0">
+            <a href="{% url 'billing:invoice_detail' bill_req.invoice.id %}" class="btn btn-success fw-bold rounded-pill px-4 py-2 shadow-sm d-inline-flex align-items-center gap-2">
+                <i class="bi bi-cash-coin fs-5"></i> Receive Payment
+            </a>
+            <a href="{% url 'billing:print_receipt' bill_req.invoice.id %}" target="_blank" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-printer"></i> Print
+            </a>
+        </div>
+    </div>
+</div>
+{% elif bill_req.status == 'PAID' or bill_req.status == 'COMPLETED' %}
+<div class="card border border-success rounded-4 shadow-sm mb-4 p-3 bg-body" style="background: linear-gradient(135deg, rgba(25, 135, 84, 0.1), rgba(25, 135, 84, 0.03)) !important;">
+    <div class="d-flex align-items-center justify-content-between">
+        <div>
+            <h5 class="fw-bold mb-1 text-success d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill"></i> Payment Settled in Full
+            </h5>
+            <p class="small text-muted mb-0">
+                Paid: <strong>₹{{ bill_req.paid_amount }}</strong> &bull; Completed at {{ bill_req.completed_at|date:"M d, Y h:i A"|default:"Recently" }}
+            </p>
+        </div>
+        {% if bill_req.invoice %}
+        <a href="{% url 'billing:print_receipt' bill_req.invoice.id %}" target="_blank" class="btn btn-outline-success rounded-pill px-3">
+            <i class="bi bi-printer me-1"></i> Print Receipt
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <!-- LEFT: Customer Information & Order Breakdown -->
+    <div class="col-lg-8">
+        
+        <!-- Card 1: Customer & Table Information -->
+        <div class="card detail-card shadow-sm mb-4">
+            <div class="card-header border-bottom py-3 px-3 px-md-4 bg-body d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-body">
+                    <i class="bi bi-info-circle text-warning me-2"></i>Customer & Table Information
+                </h6>
+                <span class="badge bg-secondary-subtle text-body rounded-pill font-monospace" style="font-size: 0.72rem;">
+                    Session Token: #{{ bill_req.session.join_code|default:"Direct" }}
+                </span>
+            </div>
+            <div class="card-body p-3 p-md-4">
+                <div class="row g-3">
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted small d-block" style="font-size: 0.72rem; text-transform: uppercase;">Table Number</span>
+                        <div class="fw-bold fs-6 text-primary">Table {{ bill_req.table.table_number }}</div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted small d-block" style="font-size: 0.72rem; text-transform: uppercase;">Customer Group</span>
+                        <div class="fw-bold fs-6 text-body">{{ bill_req.session.session_name }}</div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted small d-block" style="font-size: 0.72rem; text-transform: uppercase;">Primary Guest</span>
+                        <div class="fw-bold fs-6 text-body">{{ bill_req.session.customer_name|default:"Guest" }}</div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted small d-block" style="font-size: 0.72rem; text-transform: uppercase;">Session Started</span>
+                        <div class="small font-monospace">{{ bill_req.session.created_at|date:"h:i A" }}</div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted small d-block" style="font-size: 0.72rem; text-transform: uppercase;">Bill Requested</span>
+                        <div class="small font-monospace text-warning">{{ bill_req.requested_at|date:"h:i A" }}</div>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted small d-block" style="font-size: 0.72rem; text-transform: uppercase;">Accepted By Staff</span>
+                        <div class="small font-monospace text-body">
+                            {% if bill_req.accepted_by %}
+                                {{ bill_req.accepted_by.get_full_name|default:bill_req.accepted_by.username }}
+                            {% else %}
+                                <span class="text-muted fst-italic">Pending acceptance</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-3 border-top d-flex align-items-center gap-2 small text-muted">
+                    <i class="bi bi-shield-lock-fill text-success"></i>
+                    <span>Group Isolation: Only orders and charges belonging to <strong>{{ bill_req.session.session_name }}</strong> are included. Other groups at Table {{ bill_req.table.table_number }} remain completely separate.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Itemized Food Dishes for this Session -->
+        <div class="card detail-card shadow-sm mb-4">
+            <div class="card-header border-bottom py-3 px-3 px-md-4 bg-body d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-body">
+                    <i class="bi bi-egg-fried text-warning me-2"></i>Ordered Food Dishes ({{ orders|length }} Orders)
+                </h6>
+                <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 fw-bold">
+                    Session {{ bill_req.session.session_name }}
+                </span>
+            </div>
+            <div class="card-body p-0">
+                {% for ord in orders %}
+                <div class="p-3 border-bottom bg-body-tertiary">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge {% if forloop.first %}bg-primary{% else %}bg-warning text-dark{% endif %} font-monospace fw-bold" style="font-size: 0.74rem;">
+                                {% if forloop.first %}Initial Order{% else %}Additional Order{% endif %} #{{ ord.order_number }}
+                            </span>
+                            <span class="text-muted small">{{ ord.created_at|date:"h:i A" }}</span>
+                        </div>
+                        <span class="badge bg-{{ ord.badge_class }}" style="font-size: 0.72rem;">{{ ord.get_status_display }}</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless align-middle mb-0">
+                            <thead class="text-muted border-bottom" style="font-size: 0.7rem; text-transform: uppercase;">
+                                <tr>
+                                    <th style="width: 50%;">Dish</th>
+                                    <th class="text-center" style="width: 15%;">Qty</th>
+                                    <th class="text-end" style="width: 15%;">Unit Price</th>
+                                    <th class="text-end" style="width: 20%;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for it in ord.items.all %}
+                                <tr class="dish-row border-bottom border-secondary-subtle {% if it.status == 'CANCELLED' %}opacity-50 text-decoration-line-through{% endif %}">
+                                    <td class="py-2">
+                                        <div class="fw-semibold text-body">{{ it.menu_item.name }}</div>
+                                        <div class="text-muted small" style="font-size: 0.7rem;">
+                                            Prep: <span class="badge bg-secondary-subtle text-body border px-1.5 py-0.5" style="font-size: 0.65rem;">{{ it.get_status_display }}</span>
+                                            {% if it.special_notes %}&bull; <span class="text-danger fst-italic">{{ it.special_notes }}</span>{% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-center py-2">
+                                        <span class="badge bg-secondary-subtle text-body border font-monospace px-2 py-1 rounded-pill">
+                                            ×{{ it.quantity }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end py-2 text-muted font-monospace">
+                                        ₹{{ it.unit_price|floatformat:2 }}
+                                    </td>
+                                    <td class="text-end py-2 fw-bold font-monospace text-body">
+                                        ₹{{ it.total_price|floatformat:2 }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-4 text-center text-muted">No orders found for this session.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT: Billing Breakdown & Financial Actions -->
+    <div class="col-lg-4">
+        
+        <!-- Consolidated Financial Summary -->
+        <div class="card detail-card shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-header border-bottom py-3 bg-body">
+                <h6 class="fw-bold mb-0 text-body d-flex align-items-center gap-2">
+                    <i class="bi bi-calculator text-warning fs-5"></i>Billing & Settlement
+                </h6>
+            </div>
+            <div class="card-body p-3 p-xl-4">
+                <div class="summary-highlight mb-4">
+                    <div class="d-flex justify-content-between mb-2 small text-muted">
+                        <span>Dishes Subtotal</span>
+                        <strong class="font-monospace text-body">₹{{ invoice.subtotal|default:bill_req.total_amount|floatformat:2 }}</strong>
+                    </div>
+
+                    {% if invoice and invoice.discount_amount > 0 %}
+                    <div class="d-flex justify-content-between mb-2 small text-success">
+                        <span>Discount</span>
+                        <strong class="font-monospace">-₹{{ invoice.discount_amount|floatformat:2 }}</strong>
+                    </div>
+                    {% endif %}
+
+                    {% if invoice and invoice.tax_amount > 0 %}
+                    <div class="d-flex justify-content-between mb-2 small text-muted">
+                        <span>Applicable Tax (GST)</span>
+                        <strong class="font-monospace text-body">+₹{{ invoice.tax_amount|floatformat:2 }}</strong>
+                    </div>
+                    {% endif %}
+
+                    {% if invoice and invoice.service_charge_amount > 0 %}
+                    <div class="d-flex justify-content-between mb-2 small text-muted">
+                        <span>Service Charges</span>
+                        <strong class="font-monospace text-body">+₹{{ invoice.service_charge_amount|floatformat:2 }}</strong>
+                    </div>
+                    {% endif %}
+
+                    <hr class="my-3 border-secondary-subtle">
+
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                            <span class="fw-bold text-body fs-6 d-block">Grand Total</span>
+                            <span class="text-muted small" style="font-size: 0.72rem;">{{ bill_req.session.session_name }}</span>
+                        </div>
+                        <span class="fw-bolder text-warning fs-4 font-monospace">
+                            ₹{{ bill_req.total_amount|floatformat:2 }}
+                        </span>
+                    </div>
+
+                    <div class="d-flex justify-content-between small text-success mt-2 pt-2 border-top border-secondary-subtle">
+                        <span>Paid So Far</span>
+                        <span class="font-monospace">₹{{ bill_req.paid_amount|floatformat:2 }}</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between small text-danger fw-bold mt-1">
+                        <span>Remaining Balance Due</span>
+                        <span class="font-monospace fs-6">₹{{ bill_req.balance_due|floatformat:2 }}</span>
+                    </div>
+                </div>
+
+                <!-- Primary Action Buttons -->
+                <div class="d-grid gap-2">
+                    {% if bill_req.status == 'PENDING' %}
+                        <form method="post" action="{% url 'billing:bill_request_accept' bill_req.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning btn-lg fw-bold text-dark rounded-pill py-2.5 w-100 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-check2-circle"></i> Accept Request
+                            </button>
+                        </form>
+                    {% elif bill_req.status == 'ACCEPTED' %}
+                        <form method="post" action="{% url 'billing:bill_request_generate_bill' bill_req.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold rounded-pill py-2.5 w-100 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-file-earmark-text-fill"></i> Generate Bill
+                            </button>
+                        </form>
+                    {% elif bill_req.invoice %}
+                        <a href="{% url 'billing:invoice_detail' bill_req.invoice.id %}" class="btn btn-success btn-lg fw-bold rounded-pill py-2.5 w-100 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-credit-card-2-front"></i> Process Payment
+                        </a>
+                        <a href="{% url 'billing:print_receipt' bill_req.invoice.id %}" target="_blank" class="btn btn-outline-secondary rounded-pill py-2 w-100">
+                            <i class="bi bi-printer me-1"></i> Print Invoice
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- Table Seat Safeguard Notice -->
+                <div class="mt-4 p-2.5 rounded-3 border bg-body-tertiary small text-muted">
+                    <i class="bi bi-info-circle text-primary me-1"></i>
+                    <strong>Table Seat Safeguard:</strong> Settling this bill request will not automatically release physical seats. Staff will confirm customer departure independently.
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal: Cancel Request -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger">Cancel Bill Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'billing:bill_request_cancel' bill_req.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        Are you sure you want to cancel bill request <strong>{{ bill_req.request_number }}</strong>?
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Cancellation Reason</label>
+                        <input type="text" name="cancellation_reason" class="form-control rounded-3" placeholder="e.g. Customer decided to order more food" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger btn-sm rounded-pill px-3 fw-bold">Confirm Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

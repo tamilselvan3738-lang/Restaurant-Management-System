@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Reports & Incidents{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-file-earmark-text me-2 text-primary"></i> Admin Incident Reports</h3>
+        <p class="text-muted small mb-0">Review reports, equipment disruptions, and operational escalations submitted by managers and admins</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-arrow-left"></i> <span>Back</span>
+        </a>
+        <a href="{% url 'superadmin:report_create' %}" class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1.5">
+            <i class="bi bi-plus-circle me-1"></i> File New Report
+        </a>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card mb-4">
+    <div class="card-body p-3">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="text-muted small fw-bold me-2">Status:</span>
+            <a href="{% url 'superadmin:report_list' %}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                All Reports
+            </a>
+            <a href="?status=PENDING" class="btn btn-sm {% if status_filter == 'PENDING' %}btn-warning text-dark fw-bold{% else %}btn-outline-secondary{% endif %}">
+                Pending Review ({{ pending_count }})
+            </a>
+            <a href="?status=IN_REVIEW" class="btn btn-sm {% if status_filter == 'IN_REVIEW' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                Under Review
+            </a>
+            <a href="?status=RESOLVED" class="btn btn-sm {% if status_filter == 'RESOLVED' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                Resolved
+            </a>
+            <a href="?status=DISMISSED" class="btn btn-sm {% if status_filter == 'DISMISSED' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                Dismissed
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Report ID</th>
+                    <th>Report Title & Category</th>
+                    <th>Submitted By</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Date Filed</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td>
+                        <a href="{% url 'superadmin:report_detail' report.id %}" class="fw-bold text-decoration-none">
+                            {{ report.report_id }}
+                        </a>
+                    </td>
+                    <td>
+                        <div class="fw-bold">{{ report.title }}</div>
+                        <div class="text-muted small">{{ report.get_report_type_display }}</div>
+                    </td>
+                    <td>
+                        <div class="fw-semibold">{{ report.submitted_by.get_full_name|default:report.submitted_by.username }}</div>
+                        <div class="text-muted small">@{{ report.submitted_by.username }} ({{ report.submitted_by.get_role_display }})</div>
+                    </td>
+                    <td>
+                        <span class="badge bg-{{ report.priority_badge_class }}">{{ report.get_priority_display }}</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-{{ report.status_badge_class }}">{{ report.get_status_display }}</span>
+                    </td>
+                    <td class="small text-muted">
+                        {{ report.created_at|date:"M d, Y" }}<br>
+                        {{ report.created_at|date:"h:i A" }}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'superadmin:report_detail' report.id %}" class="btn btn-sm btn-outline-primary">
+                            Review &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                        No admin reports found for this filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

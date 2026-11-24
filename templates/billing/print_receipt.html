@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt #{{ invoice.invoice_number }} - {{ RESTAURANT_NAME }}</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            color: #000;
+        }
+
+        .receipt-container {
+            max-width: 340px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px 20px;
+            border: 1px dashed #ccc;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .header h2 {
+            margin: 0 0 4px;
+            font-size: 1.3rem;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            margin: 2px 0;
+            font-size: 0.85rem;
+        }
+
+        .divider {
+            border-top: 1px dashed #000;
+            margin: 12px 0;
+        }
+
+        .double-divider {
+            border-top: 2px dashed #000;
+            margin: 12px 0;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin: 8px 0;
+        }
+
+        th {
+            text-align: left;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 4px;
+        }
+
+        td {
+            padding: 4px 0;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .totals-row.grand-total {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.85rem;
+        }
+
+        .no-print {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: #212529;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+            .receipt-container {
+                border: none;
+                box-shadow: none;
+                max-width: 100%;
+                width: 100%;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print">
+    <button class="btn" onclick="window.print()">Print Receipt</button>
+</div>
+
+<div class="receipt-container">
+    <div class="header">
+        <h2>{{ RESTAURANT_NAME }}</h2>
+        <p>123 Gourmet Boulevard, Food District</p>
+        <p>Tel: (555) 019-2834</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="meta-row">
+        <span>Receipt: {{ invoice.invoice_number }}</span>
+        {% if invoice.session %}
+            <span>Session: {{ invoice.session.session_name }}</span>
+        {% elif order %}
+            <span>Order: {{ order.order_number }}</span>
+        {% endif %}
+    </div>
+    <div class="meta-row">
+        <span>Date: {{ invoice.created_at|date:"Y-m-d" }}</span>
+        <span>Time: {{ invoice.created_at|date:"H:i" }}</span>
+    </div>
+    <div class="meta-row">
+        {% if invoice.session %}
+            <span>Table: {{ invoice.session.table.table_number }}</span>
+            <span>Join Code: #{{ invoice.session.join_code }}</span>
+        {% elif order.table %}
+            <span>Table: {{ order.table.table_number }}</span>
+        {% endif %}
+    </div>
+    <div class="meta-row">
+        <span>Customer: {{ invoice.customer_name }}</span>
+        <span>Type: {{ invoice.get_invoice_type_display }}</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="text-right">Qty</th>
+                <th class="text-right">Price</th>
+                <th class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ord in orders %}
+                {% for item in ord.items.all %}
+                <tr>
+                    <td>
+                        {{ item.menu_item.name }}
+                        {% if item.added_by_name %}
+                            <div style="font-size: 10px; color: #666;">Added by: {{ item.added_by_name }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="text-right">{{ item.quantity }}</td>
+                    <td class="text-right">{{ item.unit_price|floatformat:2 }}</td>
+                    <td class="text-right">{{ item.total_price|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center">No items</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <div class="totals-row">
+        <span>Subtotal</span>
+        <span>{{ RESTAURANT_CURRENCY }}{{ invoice.subtotal|floatformat:2 }}</span>
+    </div>
+    <div class="totals-row">
+        <span>Tax ({{ invoice.tax_rate|floatformat:2 }}%)</span>
+        <span>{{ RESTAURANT_CURRENCY }}{{ invoice.tax_amount|floatformat:2 }}</span>
+    </div>
+    <div class="totals-row">
+        <span>Service Charge ({{ invoice.service_charge_rate|floatformat:2 }}%)</span>
+        <span>{{ RESTAURANT_CURRENCY }}{{ invoice.service_charge_amount|floatformat:2 }}</span>
+    </div>
+    {% if invoice.discount_amount > 0 %}
+    <div class="totals-row">
+        <span>Discount ({{ invoice.discount_notes }})</span>
+        <span>-{{ RESTAURANT_CURRENCY }}{{ invoice.discount_amount|floatformat:2 }}</span>
+    </div>
+    {% endif %}
+
+    <div class="double-divider"></div>
+
+    <div class="totals-row grand-total">
+        <span>TOTAL AMOUNT:</span>
+        <span>{{ RESTAURANT_CURRENCY }}{{ invoice.total_amount|floatformat:2 }}</span>
+    </div>
+
+    {% for payment in invoice.payments.all %}
+    <div class="totals-row">
+        <span>Paid ({{ payment.get_payment_method_display }}):</span>
+        <span>{{ RESTAURANT_CURRENCY }}{{ payment.amount|floatformat:2 }}</span>
+    </div>
+    {% if payment.change_returned > 0 %}
+    <div class="totals-row">
+        <span>Change Returned:</span>
+        <span>{{ RESTAURANT_CURRENCY }}{{ payment.change_returned|floatformat:2 }}</span>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <div class="double-divider"></div>
+
+    <div class="footer">
+        <p>Thank you for dining with us!</p>
+        <p>Please visit again soon.</p>
+    </div>
+</div>
+
+</body>
+</html>

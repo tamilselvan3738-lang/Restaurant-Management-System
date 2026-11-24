@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Print All Table QR Codes - {{ RESTAURANT_NAME }}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background-color: #f1f5f9;
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 20px;
+        }
+        .qr-card-tent {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border: 2px dashed #cbd5e1;
+            border-radius: 18px;
+            padding: 24px 20px;
+            text-align: center;
+            page-break-inside: avoid;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        }
+        .qr-card-tent * {
+            color: #0f172a;
+        }
+        .qr-card-tent .text-muted {
+            color: #64748b !important;
+        }
+        .qr-card-tent .badge {
+            color: #ffffff !important;
+        }
+        .qr-img-box {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 8px;
+            display: inline-block;
+        }
+        .qr-direct-link {
+            font-size: 0.68rem;
+            color: #475569 !important;
+            word-break: break-all;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 4px 8px;
+            margin-top: 8px;
+            font-family: monospace;
+        }
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .qr-card-tent {
+                border: 2px solid #000;
+                box-shadow: none;
+                margin-bottom: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mb-4 no-print">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="bi bi-printer text-primary me-2"></i> Print All Table QR Stands</h4>
+                <div class="small text-muted">
+                    {{ tables_data|length }} active dining tables ready for printing.
+                    {% if is_persistent %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle ms-2">
+                            <i class="bi bi-shield-check me-1"></i> Life-Long Domain: {{ persistent_domain }}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-2">
+                            <i class="bi bi-wifi me-1"></i> Wi-Fi Mode: {{ active_host }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'tables:floor_plan' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Floor Plan
+                </a>
+                <button type="button" class="btn btn-primary fw-bold" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i> Print All Stands Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row g-4">
+            {% for item in tables_data %}
+            <div class="col-md-6 col-lg-4">
+                <div class="qr-card-tent">
+                    {% if RESTAURANT_LOGO_URL %}
+                        <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }}" style="max-height: 36px; max-width: 120px; object-fit: contain;" class="mb-1">
+                        <h5 class="fw-bold mb-0" style="color: #0f172a;">{{ RESTAURANT_NAME }}</h5>
+                    {% else %}
+                        <h5 class="fw-bold mb-0" style="color: #0f172a;">{{ RESTAURANT_NAME }}</h5>
+                    {% endif %}
+                    <div class="text-muted small mb-2">Contactless Digital Ordering</div>
+
+                    <div class="badge bg-dark text-white rounded-pill px-3 py-1 fs-6 mb-2 shadow-xs">
+                        TABLE {{ item.table.table_number }}
+                    </div>
+                    <div class="text-muted small mb-2">{{ item.table.capacity }} Seats • {{ item.table.get_location_display }}</div>
+
+                    <div class="my-2">
+                        <div class="qr-img-box">
+                            <img src="{{ item.qr_base64 }}" alt="QR Table {{ item.table.table_number }}" style="width: 175px; height: 175px; display: block;" class="img-fluid">
+                        </div>
+                    </div>
+
+                    <div class="fw-bold small text-dark mt-2">SCAN TO ORDER</div>
+                    <div class="text-muted" style="font-size: 0.72rem;">Browse menu & send dishes straight to the kitchen.</div>
+
+                    <div class="qr-direct-link">
+                        {{ item.order_url }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</body>
+</html>

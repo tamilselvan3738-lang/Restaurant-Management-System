@@ -1,0 +1,405 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-body-tertiary py-3 border-bottom d-flex justify-content-between align-items-center gap-3">
+                <div class="min-w-0 flex-grow-1">
+                    <h5 class="card-title mb-0 fw-bold"><i class="bi bi-shield-lock me-2 text-primary"></i> {{ title }}</h5>
+                    <p class="text-muted small mb-0">Configure company branding, administrator credentials, operational scope, and system permissions</p>
+                </div>
+                <div class="flex-shrink-0">
+                    <a href="{% url 'superadmin:admin_list' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 text-nowrap" style="white-space: nowrap;">
+                        <i class="bi bi-arrow-left"></i> <span>Back to Admins</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <!-- 1. Company / Restaurant Identity & Branding -->
+                    <div class="bg-light p-3 rounded-3 border mb-4">
+                        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+                            <h6 class="fw-bold text-body mb-0">
+                                <i class="bi bi-building text-primary me-2"></i> 1. Restaurant / Company Branding
+                            </h6>
+                            <span class="badge bg-primary text-white">Multi-Tenant Branding</span>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Company / Restaurant Name <span class="text-danger">*</span></label>
+                                {{ form.restaurant_name }}
+                                <div class="form-text small">This name appears in this Admin & their employees' navbar & invoices.</div>
+                                {% if form.restaurant_name.errors %}<div class="text-danger small mt-1">{{ form.restaurant_name.errors|striptags }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Official Restaurant Email</label>
+                                {{ form.restaurant_email }}
+                                <div class="form-text small">Primary contact for customer inquiries & receipts.</div>
+                                {% if form.restaurant_email.errors %}<div class="text-danger small mt-1">{{ form.restaurant_email.errors|striptags }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Restaurant Phone Number</label>
+                                {{ form.restaurant_phone }}
+                                {% if form.restaurant_phone.errors %}<div class="text-danger small mt-1">{{ form.restaurant_phone.errors|striptags }}</div>{% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Physical Location / Address</label>
+                                {{ form.restaurant_address }}
+                                {% if form.restaurant_address.errors %}<div class="text-danger small mt-1">{{ form.restaurant_address.errors|striptags }}</div>{% endif %}
+                            </div>
+
+                            <!-- Logo Upload & Live Preview Area -->
+                            <div class="col-12 mt-3 pt-3 border-top">
+                                <label class="form-label fw-semibold d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <i class="bi bi-image me-1 text-primary"></i> Company Logo Upload
+                                    </span>
+                                    <span class="text-muted small">PNG, JPG, WEBP or SVG (Max 5MB)</span>
+                                </label>
+
+                                <div class="row align-items-center g-3">
+                                    <div class="col-auto">
+                                        <!-- Logo Preview Container -->
+                                        <div id="logoPreviewContainer" class="border rounded-3 p-2 bg-white text-center position-relative shadow-sm" style="width: 90px; height: 90px; display: flex; align-items: center; justify-content: center;">
+                                            {% if admin_user.restaurant.logo %}
+                                                <img id="logoPreview" src="{{ admin_user.restaurant.logo.url }}" data-initial="{{ admin_user.restaurant.logo.url }}" alt="Company Logo Preview" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                                <div id="logoPlaceholder" class="text-muted d-none">
+                                                    <i class="bi bi-building fs-1"></i>
+                                                </div>
+                                            {% else %}
+                                                <img id="logoPreview" src="" data-initial="" alt="Company Logo Preview" class="d-none" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                                <div id="logoPlaceholder" class="text-muted">
+                                                    <i class="bi bi-image fs-1 text-secondary"></i>
+                                                    <div style="font-size: 0.65rem;">No Logo</div>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="col">
+                                        {{ form.restaurant_logo }}
+                                        <div class="d-flex align-items-center justify-content-between mt-2">
+                                            <span id="fileInfoText" class="text-muted small">
+                                                {% if admin_user.restaurant.logo %}
+                                                    Current: {{ admin_user.restaurant.name }} logo (select a new file to replace)
+                                                {% else %}
+                                                    Select an image file to preview before saving
+                                                {% endif %}
+                                            </span>
+                                            <button type="button" id="clearLogoBtn" class="btn btn-sm btn-outline-danger d-none" onclick="clearLogoInput()">
+                                                <i class="bi bi-x-circle me-1"></i> Clear
+                                            </button>
+                                        </div>
+                                        {% if form.restaurant_logo.errors %}<div class="text-danger small mt-1">{{ form.restaurant_logo.errors|striptags }}</div>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Administrator Identity -->
+                    <h6 class="fw-bold text-body border-bottom pb-2 mb-3">
+                        <i class="bi bi-person-badge text-primary me-2"></i> 2. Administrator Identity & Contact
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}<div class="text-danger small mt-1">{{ form.first_name.errors|striptags }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}<div class="text-danger small mt-1">{{ form.last_name.errors|striptags }}</div>{% endif %}
+                        </div>
+
+                        {% if form.username %}
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Login Username <span class="text-danger">*</span></label>
+                            {{ form.username }}
+                            {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors|striptags }}</div>{% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Admin Personal Email Address <span class="text-danger">*</span></label>
+                            {{ form.email }}
+                            <div class="form-text small">Used for individual admin login, password resets & direct alerts.</div>
+                            {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors|striptags }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Admin Direct Phone</label>
+                            {{ form.phone_number }}
+                            {% if form.phone_number.errors %}<div class="text-danger small mt-1">{{ form.phone_number.errors|striptags }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Job Title / Designation</label>
+                            {{ form.job_title }}
+                            <div class="form-text small">e.g. Managing Director, General Manager</div>
+                            {% if form.job_title.errors %}<div class="text-danger small mt-1">{{ form.job_title.errors|striptags }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 3. Administrative Role & Access Scope -->
+                    <h6 class="fw-bold text-body border-bottom pb-2 mb-3">
+                        <i class="bi bi-shield-check text-primary me-2"></i> 3. Administrative Role & Access Level
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">System Role <span class="text-danger">*</span></label>
+                            {{ form.role }}
+                            {% if form.role.errors %}<div class="text-danger small mt-1">{{ form.role.errors|striptags }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Operational Access Level <span class="text-danger">*</span></label>
+                            {{ form.admin_access_level }}
+                            {% if form.admin_access_level.errors %}<div class="text-danger small mt-1">{{ form.admin_access_level.errors|striptags }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 4. Granular Administrative Privileges -->
+                    <h6 class="fw-bold text-body border-bottom pb-2 mb-3">
+                        <i class="bi bi-key-fill text-primary me-2"></i> 4. Administrative Privileges
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="form-check p-3 border rounded-3 bg-light h-100">
+                                {{ form.can_manage_staff }}
+                                <label class="form-check-label fw-semibold ms-2" for="{{ form.can_manage_staff.id_for_label }}">
+                                    Staff Management
+                                </label>
+                                <div class="text-muted small ps-4">Can add, edit, and assign roles to restaurant personnel</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check p-3 border rounded-3 bg-light h-100">
+                                {{ form.can_view_financials }}
+                                <label class="form-check-label fw-semibold ms-2" for="{{ form.can_view_financials.id_for_label }}">
+                                    Financials & Reports
+                                </label>
+                                <div class="text-muted small ps-4">Can view total revenue, sales analytics, and invoice history</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check p-3 border rounded-3 bg-light h-100">
+                                {{ form.can_manage_discounts }}
+                                <label class="form-check-label fw-semibold ms-2" for="{{ form.can_manage_discounts.id_for_label }}">
+                                    Bill Discount Approvals
+                                </label>
+                                <div class="text-muted small ps-4">Authorized to apply discounts & promotions at checkout</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check p-3 border rounded-3 bg-light h-100">
+                                {{ form.can_edit_menu }}
+                                <label class="form-check-label fw-semibold ms-2" for="{{ form.can_edit_menu.id_for_label }}">
+                                    Menu & Inventory Control
+                                </label>
+                                <div class="text-muted small ps-4">Can create dishes, change prices, and restock inventory</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Security Credentials (Password) -->
+                    {% if form.password1 and form.password2 %}
+                    <h6 class="fw-bold text-body border-bottom pb-2 mb-3">
+                        <i class="bi bi-lock-fill text-primary me-2"></i> 5. Login Credentials
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold" for="{{ form.password1.id_for_label }}">
+                                Password <span class="text-danger">*</span>
+                            </label>
+                            <div class="position-relative">
+                                {{ form.password1 }}
+                                <button type="button" class="btn btn-sm btn-link text-muted position-absolute end-0 top-50 translate-middle-y pe-2.5 py-0 border-0 text-decoration-none" tabindex="-1" onclick="togglePasswordVisibility('{{ form.password1.id_for_label }}', this)" title="Show/Hide password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            {% if form.password1.errors %}
+                                <div class="text-danger small mt-1">{{ form.password1.errors|striptags }}</div>
+                            {% endif %}
+
+                            <!-- Live Dynamic Password Security Checklist -->
+                            {% include 'includes/password_checklist.html' with prefix='' %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold" for="{{ form.password2.id_for_label }}">
+                                Confirm Password <span class="text-danger">*</span>
+                            </label>
+                            <div class="position-relative">
+                                {{ form.password2 }}
+                                <button type="button" class="btn btn-sm btn-link text-muted position-absolute end-0 top-50 translate-middle-y pe-2.5 py-0 border-0 text-decoration-none" tabindex="-1" onclick="togglePasswordVisibility('{{ form.password2.id_for_label }}', this)" title="Show/Hide password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            {% if form.password2.errors %}
+                                <div class="text-danger small mt-1">{{ form.password2.errors|striptags }}</div>
+                            {% endif %}
+
+                            <!-- Password Match Feedback -->
+                            <div id="matchFeedback" class="mt-2 small d-none p-2 rounded-3 bg-light border" style="font-size: 0.74rem;">
+                                <span class="d-flex align-items-center gap-1.5" id="matchText">
+                                    <i class="bi" id="matchIcon"></i>
+                                    <span></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Status Controls (Edit Mode) -->
+                    {% if form.is_active or form.is_suspended %}
+                    <h6 class="fw-bold text-body border-bottom pb-2 mb-3">
+                        <i class="bi bi-toggles text-primary me-2"></i> Account Status
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6 form-check ps-4">
+                            {{ form.is_active }}
+                            <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}">
+                                Account Active (Permitted to log in)
+                            </label>
+                        </div>
+                        <div class="col-md-6 form-check ps-4">
+                            {{ form.is_suspended }}
+                            <label class="form-check-label fw-semibold text-danger" for="{{ form.is_suspended.id_for_label }}">
+                                Account Suspended
+                            </label>
+                        </div>
+                        {% if form.suspension_reason %}
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Suspension Reason</label>
+                            {{ form.suspension_reason }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                        <a href="{% url 'superadmin:admin_list' %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-check2-circle me-1"></i> Save Administrator
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const logoInput = document.getElementById('logoInput');
+    if (logoInput) {
+        logoInput.addEventListener('change', function() {
+            handleLogoPreview(this);
+        });
+    }
+});
+
+function handleLogoPreview(input) {
+    const preview = document.getElementById('logoPreview');
+    const placeholder = document.getElementById('logoPlaceholder');
+    const clearBtn = document.getElementById('clearLogoBtn');
+    const fileInfo = document.getElementById('fileInfoText');
+
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+
+        // Validate client side file size (< 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('The selected image exceeds the 5MB file size limit. Please select a smaller image.');
+            input.value = '';
+            return;
+        }
+
+        const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml'];
+        if (!validTypes.includes(file.type)) {
+            alert('Please select a valid image file (PNG, JPG, WEBP, or SVG).');
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.classList.remove('d-none');
+            if (placeholder) placeholder.classList.add('d-none');
+            if (clearBtn) clearBtn.classList.remove('d-none');
+            if (fileInfo) fileInfo.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Previewing: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)</span>';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function clearLogoInput() {
+    const input = document.getElementById('logoInput');
+    const preview = document.getElementById('logoPreview');
+    const placeholder = document.getElementById('logoPlaceholder');
+    const clearBtn = document.getElementById('clearLogoBtn');
+    const fileInfo = document.getElementById('fileInfoText');
+
+    if (input) input.value = '';
+    const initialLogoUrl = preview ? preview.getAttribute('data-initial') : '';
+    if (initialLogoUrl) {
+        preview.src = initialLogoUrl;
+        preview.classList.remove('d-none');
+        if (placeholder) placeholder.classList.add('d-none');
+        if (fileInfo) fileInfo.textContent = 'Current Saved Logo (Replacement cancelled)';
+    } else {
+        if (preview) {
+            preview.src = '';
+            preview.classList.add('d-none');
+        }
+        if (placeholder) placeholder.classList.remove('d-none');
+        if (fileInfo) fileInfo.textContent = 'No file selected';
+    }
+    if (clearBtn) clearBtn.classList.add('d-none');
+}
+</script>
+<script src="{% static 'js/password_security.js' %}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const p1 = document.querySelector('[name="password1"]');
+    const p2 = document.querySelector('[name="password2"]');
+    if (p1) {
+        initPasswordSecurity({
+            passwordInput: p1,
+            confirmInput: p2,
+            prefix: '',
+            userFields: [
+                '#{{ form.username.id_for_label }}',
+                '#{{ form.email.id_for_label }}',
+                '#{{ form.first_name.id_for_label }}',
+                '#{{ form.last_name.id_for_label }}'
+            ]
+        });
+    }
+});
+</script>
+{% endblock %}

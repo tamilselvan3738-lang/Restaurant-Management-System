@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Seat Audit Logs | Growwpark RMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+    <!-- Top Breadcrumb & Actions -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2 text-muted small mb-1">
+                <a href="{% url 'tables:seat_management' %}" class="text-decoration-none text-muted">
+                    <i class="bi bi-person-workspace"></i> Seat Occupancy
+                </a>
+                <i class="bi bi-chevron-right" style="font-size: 0.75rem;"></i>
+                <span class="text-dark fw-semibold">Audit Logs</span>
+            </div>
+            <h2 class="fw-bold mb-0">Seat Occupancy Audit Trail</h2>
+            <p class="text-muted small mb-0">Complete historical log of manual seat allocations, releases, capacity adjustments, and reasons</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'tables:seat_management' %}" class="btn btn-outline-primary rounded-3">
+                <i class="bi bi-arrow-left me-1"></i> Back to Seat Management
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="card shadow-sm border-0 mb-4 rounded-4">
+        <div class="card-body py-2.5 px-3">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <label class="small fw-semibold text-muted me-1"><i class="bi bi-funnel"></i> Filter Logs:</label>
+                </div>
+                <div class="col-12 col-sm-auto">
+                    <select name="table" class="form-select form-select-sm rounded-3" onchange="this.form.submit()">
+                        <option value="">All Tables</option>
+                        {% for t in tables %}
+                            <option value="{{ t.id }}" {% if table_id == t.id|stringformat:"s" %}selected{% endif %}>Table {{ t.table_number }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-sm-auto">
+                    <select name="action" class="form-select form-select-sm rounded-3" onchange="this.form.submit()">
+                        <option value="">All Actions</option>
+                        <option value="MANUAL_ALLOCATE" {% if action_filter == 'MANUAL_ALLOCATE' %}selected{% endif %}>Manual Allocate</option>
+                        <option value="MANUAL_RELEASE" {% if action_filter == 'MANUAL_RELEASE' %}selected{% endif %}>Manual Release</option>
+                        <option value="STATUS_CHANGE" {% if action_filter == 'STATUS_CHANGE' %}selected{% endif %}>Status Change</option>
+                        <option value="CAPACITY_CHANGE" {% if action_filter == 'CAPACITY_CHANGE' %}selected{% endif %}>Capacity Change</option>
+                        <option value="ALLOCATE" {% if action_filter == 'ALLOCATE' %}selected{% endif %}>QR Allocate</option>
+                    </select>
+                </div>
+                {% if table_id or action_filter %}
+                <div class="col-auto">
+                    <a href="{% url 'tables:seat_audit_logs' %}" class="btn btn-sm btn-link text-decoration-none text-muted">
+                        <i class="bi bi-x-circle"></i> Clear Filters
+                    </a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3" style="width: 170px;">Date & Time</th>
+                            <th>Table</th>
+                            <th>Seat #</th>
+                            <th>Action</th>
+                            <th>Group / Session</th>
+                            <th>State Transition</th>
+                            <th>Recorded Reason</th>
+                            <th class="pe-3">User</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td class="ps-3 text-muted small">
+                                <i class="bi bi-clock me-1"></i>{{ log.timestamp|date:"M d, Y • H:i:s" }}
+                            </td>
+                            <td>
+                                <strong class="text-dark">Table {{ log.seat.table.table_number }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">Seat {{ log.seat.seat_number }}</span>
+                            </td>
+                            <td>
+                                <span class="badge {% if log.action == 'MANUAL_RELEASE' %}bg-danger-subtle text-danger{% elif log.action == 'MANUAL_ALLOCATE' or log.action == 'ALLOCATE' %}bg-success-subtle text-success{% elif log.action == 'CAPACITY_CHANGE' %}bg-info-subtle text-info{% else %}bg-secondary-subtle text-secondary{% endif %} px-2.5 py-1">
+                                    {{ log.action }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if log.session %}
+                                    <div class="fw-semibold text-dark">{{ log.session.session_name }}</div>
+                                    <div class="text-muted small">Guest: {{ log.session.customer_name }}</div>
+                                {% else %}
+                                    <span class="text-muted small">&mdash;</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-1.5 small">
+                                    <span class="badge bg-light text-muted border">{{ log.previous_status|default:"&mdash;" }}</span>
+                                    <i class="bi bi-arrow-right text-muted" style="font-size: 0.75rem;"></i>
+                                    <span class="badge bg-primary-subtle text-primary">{{ log.new_status|default:"&mdash;" }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="text-dark small fw-medium" style="max-width: 320px;">
+                                    {{ log.reason|default:"No reason recorded" }}
+                                </div>
+                            </td>
+                            <td class="pe-3 small text-muted">
+                                {% if log.performed_by %}
+                                    <div class="fw-semibold text-dark">
+                                        {{ log.performed_by.get_full_name|default:log.performed_by.username }}
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.72rem;">{{ log.performed_by.get_role_display }}</div>
+                                {% else %}
+                                    <span class="badge bg-light text-muted border">System / Customer</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="bi bi-journal-x fs-2 d-block mb-2"></i>
+                                No audit records match your query.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

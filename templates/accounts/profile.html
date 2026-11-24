@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - {{ RESTAURANT_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+    <!-- Header with Breadcrumb -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h3 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-person-circle text-primary"></i> My Profile & Personal Information
+            </h3>
+            <p class="text-muted small mb-0">View and update your personal contact details, residential address, profile photo, and security credentials.</p>
+        </div>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-arrow-left"></i> <span>Back</span>
+        </a>
+    </div>
+
+    <!-- Messages / Alerts -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show small py-2.5 px-3 mb-4 rounded-3 shadow-xs" role="alert">
+                <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill text-success{% else %}bi-exclamation-triangle-fill text-warning{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="padding: 0.85rem;"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- User Identity Overview Card -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+        <div class="card-body p-4 bg-light bg-gradient">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="position-relative">
+                        {% if user.has_profile_picture and user.profile_picture_url %}
+                            <img id="topAvatarImg" src="{{ user.profile_picture_url }}" alt="{{ user.get_full_name|default:user.username }}" class="rounded-circle shadow-sm border border-2 border-white" style="width: 72px; height: 72px; object-fit: cover;" onerror="this.style.display='none'; document.getElementById('topAvatarInitials').style.display='flex';">
+                            <div id="topAvatarInitials" class="bg-primary text-white rounded-circle shadow-sm align-items-center justify-content-center fw-bold fs-2 border border-2 border-white" style="width: 72px; height: 72px; display: none;">
+                                {{ user.first_name|default:user.username|slice:":1"|upper }}
+                            </div>
+                        {% else %}
+                            <img id="topAvatarImg" src="" alt="{{ user.get_full_name|default:user.username }}" class="rounded-circle shadow-sm border border-2 border-white" style="width: 72px; height: 72px; object-fit: cover; display: none;">
+                            <div id="topAvatarInitials" class="bg-primary text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center fw-bold fs-2 border border-2 border-white" style="width: 72px; height: 72px;">
+                                {{ user.first_name|default:user.username|slice:":1"|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">{{ user.get_full_name|default:user.username }}</h4>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="badge bg-primary px-2.5 py-1 text-uppercase" style="letter-spacing: 0.5px;">{{ user.get_role_display }}</span>
+                            {% if user.employee_id %}
+                                <span class="badge bg-white text-dark border font-monospace px-2.5 py-1">
+                                    <i class="bi bi-badge-ad me-1 text-muted"></i>{{ user.employee_id }}
+                                </span>
+                            {% endif %}
+                            <span class="badge bg-light text-muted border px-2.5 py-1 font-monospace">
+                                @{{ user.username }}
+                            </span>
+                            {% if user.restaurant %}
+                                <span class="badge bg-white text-secondary border px-2.5 py-1">
+                                    <i class="bi bi-shop me-1 text-primary"></i>{{ user.restaurant.name }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-end d-none d-md-block">
+                    <div class="text-muted small">Status</div>
+                    <div>
+                        {% if user.is_on_duty %}
+                            <span class="badge bg-success-subtle text-success border border-success px-2.5 py-1">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.55rem;"></i> On Duty
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border px-2.5 py-1">Off Duty</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content: 2-Column Responsive Layout -->
+    <div class="row g-4">
+        <!-- LEFT COLUMN: Personal Information Form -->
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+                    <h5 class="card-title mb-0 fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-person-lines-fill text-primary"></i> Personal Information & Contact Details
+                    </h5>
+                    <span class="badge bg-light text-muted border">Editable</span>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" action="{% url 'accounts:profile' %}" id="profileForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="update_profile" value="1">
+
+                        <!-- Name Section -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold small text-dark" for="{{ form.first_name.id_for_label }}">
+                                    First Name
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-person"></i></span>
+                                    {{ form.first_name }}
+                                </div>
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger small mt-1">{% for err in form.first_name.errors %}{{ err }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold small text-dark" for="{{ form.last_name.id_for_label }}">
+                                    Last Name
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-person"></i></span>
+                                    {{ form.last_name }}
+                                </div>
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger small mt-1">{% for err in form.last_name.errors %}{{ err }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Email & Phone Number -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold small text-dark" for="{{ form.email.id_for_label }}">
+                                    Email Address <span class="text-muted small fw-normal">(For login & notifications)</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope"></i></span>
+                                    {{ form.email }}
+                                </div>
+                                {% if form.email.errors %}
+                                    <div class="text-danger small mt-1">{% for err in form.email.errors %}{{ err }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold small text-dark" for="{{ form.phone_number.id_for_label }}">
+                                    Phone Number <span class="text-muted small fw-normal">(Mobile with country code)</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-telephone"></i></span>
+                                    {{ form.phone_number }}
+                                </div>
+                                {% if form.phone_number.errors %}
+                                    <div class="text-danger small mt-1">{% for err in form.phone_number.errors %}{{ err }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Address Section -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-dark" for="{{ form.address.id_for_label }}">
+                                Residential / Contact Address
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-geo-alt"></i></span>
+                                {{ form.address }}
+                            </div>
+                            {% if form.address.errors %}
+                                <div class="text-danger small mt-1">{% for err in form.address.errors %}{{ err }}{% endfor %}</div>
+                            {% endif %}
+                            <div class="form-text small text-muted">Street address, locality, city, state, postal code.</div>
+                        </div>
+
+                        <!-- Emergency Contact Section -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold small text-dark" for="{{ form.emergency_contact_name.id_for_label }}">
+                                    Emergency Contact Person
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-heart-pulse"></i></span>
+                                    {{ form.emergency_contact_name }}
+                                </div>
+                                {% if form.emergency_contact_name.errors %}
+                                    <div class="text-danger small mt-1">{% for err in form.emergency_contact_name.errors %}{{ err }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold small text-dark" for="{{ form.emergency_contact_phone.id_for_label }}">
+                                    Emergency Contact Phone
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-telephone-plus"></i></span>
+                                    {{ form.emergency_contact_phone }}
+                                </div>
+                                {% if form.emergency_contact_phone.errors %}
+                                    <div class="text-danger small mt-1">{% for err in form.emergency_contact_phone.errors %}{{ err }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Profile Picture Section -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold small text-body" for="{{ form.profile_picture.id_for_label }}">
+                                Profile Photo / Avatar
+                            </label>
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                {% if user.has_profile_picture and user.profile_picture_url %}
+                                    <div class="position-relative" id="currentPhotoWrapper">
+                                        <img id="currentPhotoImg" src="{{ user.profile_picture_url }}" alt="Current Photo" class="rounded-3 shadow-xs border" style="width: 48px; height: 48px; object-fit: cover;" onerror="document.getElementById('currentPhotoWrapper').style.display='none';">
+                                    </div>
+                                {% else %}
+                                    <div class="position-relative" id="currentPhotoWrapper" style="display: none;">
+                                        <img id="currentPhotoImg" src="" alt="Photo Preview" class="rounded-3 shadow-xs border" style="width: 48px; height: 48px; object-fit: cover;">
+                                    </div>
+                                {% endif %}
+                                <div class="flex-grow-1" style="min-width: 200px;">
+                                    {{ form.profile_picture }}
+                                </div>
+                                {% if user.has_profile_picture %}
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="checkbox" name="remove_profile_picture" id="remove_profile_picture" value="1">
+                                    <label class="form-check-label small text-danger fw-semibold" for="remove_profile_picture">
+                                        <i class="bi bi-trash3 me-1"></i> Remove photo
+                                    </label>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% if form.profile_picture.errors %}
+                                <div class="text-danger small mt-1">{% for err in form.profile_picture.errors %}{{ err }}{% endfor %}</div>
+                            {% endif %}
+                            <div class="form-text small text-muted">Supports JPG, PNG, WEBP images.</div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-3">
+                            <div class="text-muted small d-flex align-items-center gap-2 flex-grow-1" style="min-width: 250px;">
+                                <i class="bi bi-shield-lock flex-shrink-0 text-secondary"></i>
+                                <span>Changes will immediately take effect across all portal sessions.</span>
+                            </div>
+                            <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold rounded-pill shadow-sm d-inline-flex align-items-center justify-content-center gap-2 text-nowrap flex-shrink-0">
+                                <i class="bi bi-check2-circle"></i>
+                                <span>Save Changes</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Account Security / Change Password -->
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
+                    <h5 class="card-title mb-0 fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-key-fill text-warning"></i> Change Password
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{% url 'accounts:profile' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="change_password" value="1">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-dark">Current Password</label>
+                            <input type="password" name="old_password" class="form-control" required placeholder="Enter current password" autocomplete="current-password">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-dark">New Password</label>
+                            <input type="password" name="new_password1" class="form-control" required placeholder="Enter new password" autocomplete="new-password">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-dark">Confirm New Password</label>
+                            <input type="password" name="new_password2" class="form-control" required placeholder="Re-enter new password" autocomplete="new-password">
+                        </div>
+
+                        <button type="submit" class="btn btn-outline-primary w-100 fw-semibold rounded-pill d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-arrow-repeat"></i> Update Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Role & Employment Details (Read-only System Info) -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white py-3 px-4 border-bottom">
+                    <h6 class="card-title mb-0 fw-bold text-muted small text-uppercase" style="letter-spacing: 0.5px;">
+                        <i class="bi bi-info-circle me-1 text-primary"></i> Employment & Account Information
+                    </h6>
+                </div>
+                <div class="card-body p-4 small">
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Username</span>
+                        <span class="fw-semibold font-monospace text-dark">{{ user.username }}</span>
+                    </div>
+                    {% if user.employee_id %}
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Employee ID</span>
+                        <span class="fw-semibold font-monospace text-primary">{{ user.employee_id }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Restaurant</span>
+                        <span class="fw-semibold">{{ user.restaurant.name|default:"Main Branch" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Role</span>
+                        <span class="badge bg-light text-dark border">{{ user.get_role_display }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Email</span>
+                        <span class="fw-semibold">{{ user.email|default:"Not specified" }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Phone</span>
+                        <span class="fw-semibold">{{ user.phone_number|default:"Not specified" }}</span>
+                    </div>
+                    {% if user.department %}
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Department</span>
+                        <span class="fw-semibold">{{ user.get_department_display }}</span>
+                    </div>
+                    {% endif %}
+                    {% if user.shift %}
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Assigned Shift</span>
+                        <span class="fw-semibold">{{ user.get_shift_display }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex justify-content-between py-2">
+                        <span class="text-muted">Joining Date</span>
+                        <span class="fw-semibold">{{ user.hire_date|default:user.date_joined|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('id_profile_picture');
+        const topImg = document.getElementById('topAvatarImg');
+        const topInitials = document.getElementById('topAvatarInitials');
+        const currentWrapper = document.getElementById('currentPhotoWrapper');
+        const currentImg = document.getElementById('currentPhotoImg');
+        const removeCheckbox = document.getElementById('remove_profile_picture');
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files && e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        if (topImg) {
+                            topImg.src = evt.target.result;
+                            topImg.style.display = 'block';
+                        }
+                        if (topInitials) {
+                            topInitials.style.display = 'none';
+                        }
+                        if (currentWrapper && currentImg) {
+                            currentImg.src = evt.target.result;
+                            currentWrapper.style.display = 'block';
+                            currentWrapper.style.opacity = '1';
+                        }
+                        if (removeCheckbox) {
+                            removeCheckbox.checked = false;
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        if (removeCheckbox) {
+            removeCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    if (topImg) topImg.style.display = 'none';
+                    if (topInitials) topInitials.style.display = 'flex';
+                    if (currentWrapper) currentWrapper.style.opacity = '0.3';
+                    if (fileInput) fileInput.value = '';
+                } else {
+                    if (topImg && topImg.getAttribute('src')) {
+                        topImg.style.display = 'block';
+                        if (topInitials) topInitials.style.display = 'none';
+                    }
+                    if (currentWrapper) currentWrapper.style.opacity = '1';
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

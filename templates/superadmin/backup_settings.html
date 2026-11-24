@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Backup Settings{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Backup Preferences -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-hdd-network me-2 text-primary"></i> Database Backup Preferences</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="form-check form-switch mb-4 ps-4">
+                        {{ form.auto_backup_enabled }}
+                        <label class="form-check-label fw-bold ms-2" for="{{ form.auto_backup_enabled.id_for_label }}">
+                            Enable Automated Database Snapshots
+                        </label>
+                        <div class="form-text small">Automatically creates local point-in-time database snapshot copies.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Snapshot Frequency (Days)</label>
+                        {{ form.backup_frequency_days }}
+                        <div class="form-text small">Interval between automated system backups.</div>
+                    </div>
+
+                    <div class="pt-3 border-top text-end">
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            Save Backup Preferences
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- On-Demand Backup & Recent Snapshots -->
+    <div class="col-lg-6">
+        <div class="card mb-4 border-primary">
+            <div class="card-body p-4 text-center">
+                <i class="bi bi-cloud-arrow-down fs-1 text-primary d-block mb-2"></i>
+                <h5 class="fw-bold mb-1">On-Demand Database Snapshot</h5>
+                <p class="text-muted small mb-3">Create an instant point-in-time copy of your SQLite database immediately.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="trigger_backup" value="1">
+                    <button type="submit" class="btn btn-primary fw-bold px-4">
+                        <i class="bi bi-camera me-1"></i> Trigger Backup Snapshot Now
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i> Available Database Snapshots</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Snapshot Filename</th>
+                            <th>Size</th>
+                            <th>Created</th>
+                            <th class="text-end">Download</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in recent_backups %}
+                        <tr>
+                            <td class="fw-bold">{{ b.name }}</td>
+                            <td>{{ b.size_kb }} KB</td>
+                            <td>{{ b.created|date:"M d, Y h:i A" }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'superadmin:download_backup' b.name %}" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No snapshot backups found. Click the button above to generate one!</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

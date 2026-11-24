@@ -1,0 +1,1262 @@
+{% extends 'base.html' %}
+
+{% block title %}Service Assistance Management - {{ RESTAURANT_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.metric-kpi-card {
+    border-radius: 16px;
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+    background: var(--bs-card-bg, #ffffff);
+    padding: 16px 18px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    cursor: pointer;
+}
+.metric-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+[data-bs-theme="dark"] .metric-kpi-card {
+    background-color: var(--rms-card-bg, #151921) !important;
+    border-color: var(--rms-border-color, #222a38) !important;
+}
+
+/* Service Request Cards */
+.admin-req-card {
+    border-radius: 18px;
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08)) !important;
+    background: var(--bs-card-bg, #ffffff);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: visible !important;
+}
+.renotice-badge-btn {
+    position: absolute;
+    top: -10px;
+    right: 0px;
+    z-index: 15;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    line-height: 1;
+    border: 2px solid #ffffff !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5) !important;
+    cursor: pointer;
+}
+[data-bs-theme="dark"] .renotice-badge-btn {
+    border-color: #151921 !important;
+}
+.admin-req-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.09);
+}
+.admin-req-card.is-pending {
+    border-left: 5px solid #f59e0b !important;
+}
+.admin-req-card.is-accepted {
+    border-left: 5px solid #06b6d4 !important;
+}
+.admin-req-card.is-in-progress {
+    border-left: 5px solid #8b5cf6 !important;
+}
+.admin-req-card.is-completed {
+    border-left: 5px solid #10b981 !important;
+    opacity: 0.92;
+}
+.admin-req-card.is-delayed {
+    border-left: 5px solid #ef4444 !important;
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.25) !important;
+}
+.admin-req-card.is-unable {
+    border-left: 5px solid #eab308 !important;
+}
+.admin-req-card.is-cancelled {
+    border-left: 5px solid #6b7280 !important;
+    opacity: 0.75;
+}
+[data-bs-theme="dark"] .admin-req-card {
+    background-color: var(--rms-card-bg, #151921) !important;
+    border-color: var(--rms-border-color, #222a38) !important;
+}
+.req-meta-box {
+    background-color: var(--bs-tertiary-bg, #f8fafc);
+    border: 1px solid var(--bs-border-color-translucent, #e2e8f0);
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+[data-bs-theme="dark"] .req-meta-box {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.filter-search-btn {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-weight: 600;
+}
+.waiter-perf-card {
+    border-radius: 18px;
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08)) !important;
+    background: var(--bs-card-bg, #ffffff);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+.waiter-perf-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+[data-bs-theme="dark"] .waiter-perf-card {
+    background-color: var(--rms-card-bg, #151921) !important;
+    border-color: var(--rms-border-color, #222a38) !important;
+}
+
+/* Timeline in Detail Modal */
+.service-timeline {
+    position: relative;
+    padding-left: 24px;
+}
+.service-timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--bs-border-color-translucent, #e2e8f0);
+}
+.service-timeline-item {
+    position: relative;
+    margin-bottom: 16px;
+}
+.service-timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 5px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ea580c;
+    border: 2px solid var(--bs-body-bg, #ffffff);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2.5 py-1 rounded-pill fw-semibold">
+                <i class="bi bi-shield-check me-1"></i> Smart Service Command Centre
+            </span>
+            <span class="text-body-secondary small"><i class="bi bi-broadcast me-1 text-danger"></i>Live Telemetry &amp; SLA Engine</span>
+        </div>
+        <h2 class="h3 fw-bold mb-1">Service Assistance Management</h2>
+        <p class="text-body-secondary small mb-0">Live customer requests, automatic floor routing, SLA breach tracking, and guest escalation resolution.</p>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <button type="button" class="btn btn-outline-warning btn-sm d-flex align-items-center gap-1.5 rounded-pill px-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#slaConfigModal">
+            <i class="bi bi-clock-history"></i> SLA Config
+        </button>
+        <a href="{% url 'tables:floor_sections' %}" class="btn btn-outline-info btn-sm d-flex align-items-center gap-1.5 rounded-pill px-3 fw-semibold">
+            <i class="bi bi-grid-1x2-fill"></i> Floor Sections
+        </a>
+        <a href="{% url 'tables:waiter_assignments' %}" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1.5 rounded-pill px-3 fw-semibold">
+            <i class="bi bi-diagram-3-fill"></i> Waiter Assignments
+        </a>
+        <a href="{% url 'tables:waiter_requests' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5 rounded-pill px-3 fw-semibold">
+            <i class="bi bi-card-checklist"></i> Waiter View
+        </a>
+        <a href="{% url 'tables:admin_service_requests' %}" class="btn btn-secondary btn-sm rounded-pill px-3" title="Refresh Live Data">
+            <i class="bi bi-arrow-clockwise"></i>
+        </a>
+    </div>
+</div>
+
+<!-- 6 Primary Status Metrics KPI Row -->
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="{% url 'tables:admin_service_requests' %}?status=ALL" class="text-decoration-none text-body">
+            <div class="metric-kpi-card shadow-sm h-100">
+                <div class="d-flex justify-content-between align-items-center mb-1 text-body-secondary small fw-semibold">
+                    <span>Total Requests</span>
+                    <i class="bi bi-collection text-primary"></i>
+                </div>
+                <h3 class="fw-bold mb-0" id="kpi-total">{{ total_count }}</h3>
+                <span class="text-body-secondary small">All records</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="{% url 'tables:admin_service_requests' %}?status=PENDING" class="text-decoration-none text-body">
+            <div class="metric-kpi-card shadow-sm h-100" style="border-left: 4px solid #f59e0b !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1 text-warning small fw-semibold">
+                    <span>Pending</span>
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-warning" id="kpi-pending">{{ pending_count }}</h3>
+                <span class="text-body-secondary small">Awaiting waiter</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="{% url 'tables:admin_service_requests' %}?status=ACCEPTED" class="text-decoration-none text-body">
+            <div class="metric-kpi-card shadow-sm h-100" style="border-left: 4px solid #06b6d4 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1 text-info small fw-semibold">
+                    <span>Accepted</span>
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-info" id="kpi-accepted">{{ accepted_count }}</h3>
+                <span class="text-body-secondary small">Dispatched</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="{% url 'tables:admin_service_requests' %}?status=IN_PROGRESS" class="text-decoration-none text-body">
+            <div class="metric-kpi-card shadow-sm h-100" style="border-left: 4px solid #8b5cf6 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1 small fw-semibold" style="color: #8b5cf6;">
+                    <span>In Progress</span>
+                    <i class="bi bi-person-walking"></i>
+                </div>
+                <h3 class="fw-bold mb-0" style="color: #8b5cf6;" id="kpi-in-progress">{{ in_progress_count }}</h3>
+                <span class="text-body-secondary small">Attending guest</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="{% url 'tables:admin_service_requests' %}?status=COMPLETED" class="text-decoration-none text-body">
+            <div class="metric-kpi-card shadow-sm h-100" style="border-left: 4px solid #10b981 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1 text-success small fw-semibold">
+                    <span>Completed</span>
+                    <i class="bi bi-check-all"></i>
+                </div>
+                <h3 class="fw-bold mb-0 text-success" id="kpi-completed">{{ completed_count }}</h3>
+                <span class="text-body-secondary small">Fulfilled</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="metric-kpi-card shadow-sm h-100" style="border-left: 4px solid #3b82f6 !important;">
+            <div class="d-flex justify-content-between align-items-center mb-1 text-primary small fw-semibold">
+                <span>Avg Latency</span>
+                <i class="bi bi-stopwatch"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-primary">{{ avg_completion_min }}<small class="fs-6 fw-normal text-muted">m</small></h3>
+            <span class="text-body-secondary small">Avg completion</span>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary SLA, Quality & Escalation KPI Row (Connected Cards) -->
+<div class="row g-3 mb-4">
+    <!-- Card 1: Delayed SLA Breaches -->
+    <div class="col-6 col-md-3">
+        <a href="{% url 'tables:admin_service_requests' %}?delayed=1" class="text-decoration-none text-body">
+            <div class="metric-kpi-card shadow-sm h-100" style="border-left: 4px solid #ef4444 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1 text-danger small fw-semibold">
+                    <span>Delayed (SLA Breach)</span>
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h4 class="fw-bold mb-0 text-danger" id="kpi-delayed">{{ delayed_count }}</h4>
+                <span class="text-body-secondary small">Unresolved past target SLA</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Card 2: Unable to Fulfil -->
+    <div class="col-6 col-md-3">
+        <a href="{% url 'tables:admin_service_requests' %}?unable=1" class="text-decoration-none text-body">
+            <div class="metric-kpi-card shadow-sm h-100" style="border-left: 4px solid #eab308 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1 text-warning small fw-semibold">
+                    <span>Unable to Fulfil</span>
+                    <i class="bi bi-slash-circle-fill"></i>
+                </div>
+                <h4 class="fw-bold mb-0 text-warning" id="kpi-unable">{{ unable_count }}</h4>
+                <span class="text-body-secondary small">Stock / staff unavailable</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Card 3: Guest Escalations -->
+    <div class="col-6 col-md-3">
+        <a href="{% url 'tables:admin_service_requests' %}?escalated=1" class="text-decoration-none text-body">
+            <div class="metric-kpi-card shadow-sm h-100" style="border-left: 4px solid #dc2626 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1 text-danger small fw-semibold">
+                    <span>Guest Escalations</span>
+                    <i class="bi bi-bell-fill"></i>
+                </div>
+                <h4 class="fw-bold mb-0 text-danger" id="kpi-reported">{{ reported_count }}</h4>
+                <span class="text-body-secondary small">Customer reported not received</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Card 4: Guest Rating -->
+    <div class="col-6 col-md-3">
+        <div class="metric-kpi-card shadow-sm h-100" style="border-left: 4px solid #14b8a6 !important;" data-bs-toggle="modal" data-bs-target="#guestRatingModal" title="Click to view customer feedback review">
+            <div class="d-flex justify-content-between align-items-center mb-1 text-teal small fw-semibold" style="color: #0d9488;">
+                <span>Guest Rating</span>
+                <i class="bi bi-star-fill text-warning"></i>
+            </div>
+            <h4 class="fw-bold mb-0" style="color: #0d9488;" id="kpi-rating">
+                {% if avg_rating %}★ {{ avg_rating }} <small class="fs-6 fw-normal text-muted">/ 5.0 ({{ total_ratings }})</small>{% else %}N/A{% endif %}
+            </h4>
+            <span class="text-body-secondary small">Click to inspect feedback</span>
+        </div>
+    </div>
+</div>
+
+<!-- Filters & Search Toolbar -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="GET" class="row g-2 align-items-center">
+            <!-- Search by Request ID, Table, Customer, Group, Waiter, Message -->
+            <div class="col-12 col-md-4 col-xl">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search text-body-secondary"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0" placeholder="Search ID, table, guest, waiter..." value="{{ query }}">
+                </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="col-6 col-sm-3 col-md-2 col-xl-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="ALL" {% if status_filter == 'ALL' %}selected{% endif %}>All Statuses</option>
+                    <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending</option>
+                    <option value="ACCEPTED" {% if status_filter == 'ACCEPTED' %}selected{% endif %}>Accepted</option>
+                    <option value="IN_PROGRESS" {% if status_filter == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
+                    <option value="COMPLETED" {% if status_filter == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                    <option value="UNABLE_TO_FULFIL" {% if status_filter == 'UNABLE_TO_FULFIL' %}selected{% endif %}>Unable to Fulfil</option>
+                    <option value="CANCELLED" {% if status_filter == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+                    <option value="ESCALATED" {% if status_filter == 'ESCALATED' %}selected{% endif %}>Guest Escalations</option>
+                    <option value="DELAYED" {% if status_filter == 'DELAYED' %}selected{% endif %}>Delayed / SLA Breached</option>
+                </select>
+            </div>
+
+            <!-- Table Filter -->
+            <div class="col-6 col-sm-3 col-md-2 col-xl-2">
+                <select name="table" class="form-select form-select-sm">
+                    <option value="">All Tables</option>
+                    {% for tbl in tables_list %}
+                    <option value="{{ tbl.table_number }}" {% if table_filter == tbl.table_number %}selected{% endif %}>Table {{ tbl.table_number }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Waiter Filter -->
+            <div class="col-6 col-sm-3 col-md-2 col-xl-2">
+                <select name="waiter" class="form-select form-select-sm">
+                    <option value="">All Waiters</option>
+                    {% for w in waiters_list %}
+                    <option value="{{ w.id }}" {% if waiter_filter == w.id|stringformat:"s" %}selected{% endif %}>{{ w.get_full_name|default:w.username }} ({{ w.employee_id|default:"-" }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Request Type Filter -->
+            <div class="col-6 col-sm-3 col-md-2 col-xl-2">
+                <select name="type" class="form-select form-select-sm">
+                    <option value="">All Request Types</option>
+                    {% for code, label in request_types %}
+                    <option value="{{ code }}" {% if type_filter == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Action Buttons: Apply & Clear -->
+            <div class="col-auto ms-auto d-flex gap-1.5 align-items-center flex-shrink-0">
+                <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 filter-search-btn" title="Apply Filters">
+                    <i class="bi bi-funnel-fill"></i>
+                </button>
+                <a href="{% url 'tables:admin_service_requests' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5" title="Clear All Filters">
+                    <i class="bi bi-x-circle"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Active Filter Notice Banner (if delayed or escalated selected) -->
+{% if delayed_filter == '1' or status_filter == 'DELAYED' %}
+<div class="alert alert-danger d-flex justify-content-between align-items-center py-2 px-3 rounded-3 mb-3">
+    <div><i class="bi bi-exclamation-octagon-fill me-2"></i><strong>Filtering Delayed Requests:</strong> Showing requests that breached their SLA targets.</div>
+    <a href="{% url 'tables:admin_service_requests' %}" class="btn btn-sm btn-outline-danger rounded-pill px-3">Show All</a>
+</div>
+{% elif escalated_filter == '1' or status_filter == 'ESCALATED' %}
+<div class="alert alert-danger d-flex justify-content-between align-items-center py-2 px-3 rounded-3 mb-3">
+    <div><i class="bi bi-bell-fill me-2"></i><strong>Filtering Guest Escalations:</strong> Showing requests reported as unfulfilled by guests.</div>
+    <a href="{% url 'tables:admin_service_requests' %}" class="btn btn-sm btn-outline-danger rounded-pill px-3">Show All</a>
+</div>
+{% elif unable_filter == '1' or status_filter == 'UNABLE_TO_FULFIL' %}
+<div class="alert alert-warning d-flex justify-content-between align-items-center py-2 px-3 rounded-3 mb-3">
+    <div><i class="bi bi-slash-circle-fill me-2"></i><strong>Filtering Unable to Fulfil:</strong> Requests staff reported unable to deliver.</div>
+    <a href="{% url 'tables:admin_service_requests' %}" class="btn btn-sm btn-outline-warning rounded-pill px-3">Show All</a>
+</div>
+{% endif %}
+
+<!-- Service Requests Cards Grid -->
+{% if requests %}
+<div class="row g-3 row-cols-1 row-cols-md-2 row-cols-xl-3 pt-2.5" id="adminRequestsContainer">
+    {% for req in requests %}
+    <div class="col" id="admin-req-card-{{ req.id }}">
+        <div class="card h-100 admin-req-card p-3 shadow-sm {% if req.is_delayed %}is-delayed{% elif req.status == 'PENDING' %}is-pending{% elif req.status == 'ACCEPTED' %}is-accepted{% elif req.status == 'IN_PROGRESS' %}is-in-progress{% elif req.status == 'COMPLETED' %}is-completed{% elif req.status == 'UNABLE_TO_FULFIL' %}is-unable{% else %}is-cancelled{% endif %} position-relative" style="overflow: visible !important;">
+            
+            <!-- Floating Notification Badge at Top-Right Corner (Inside the user's circled spot) -->
+            <div id="card-renotice-slot-{{ req.id }}" class="renotice-slot">
+                {% if req.re_notice_count > 0 %}
+                <button type="button" class="btn btn-danger renotice-badge-btn animate__animated animate__pulse animate__infinite" onclick="dismissCardRenotice('{{ req.id }}', this)" title="Customer re-notified {{ req.re_notice_count }}x! Click to send apology and clear notification.">
+                    <span class="fw-bold">{{ req.re_notice_count }}</span>
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Card Header: Row 1 (Table on Left, Badges on Right) & Row 2 (Request # on Left, Floor Section on Right) -->
+            <div class="mb-2.5">
+                <!-- Row 1: Table Badge on Left, Status Badges on Right -->
+                <div class="d-flex justify-content-between align-items-center mb-1.5 gap-2" style="min-height: 28px;">
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fw-bold px-2.5 py-1 rounded-pill fs-7 text-nowrap flex-shrink-0">
+                        Table {{ req.table.table_number }}
+                    </span>
+                    <div class="d-flex align-items-center gap-1.5 flex-nowrap justify-content-end" id="card-badges-{{ req.id }}">
+                        {% if req.is_delayed %}
+                        <span class="badge bg-danger rounded-pill px-2 py-1 text-uppercase fs-8 fw-bold text-nowrap" title="SLA Breach">
+                            <i class="bi bi-exclamation-triangle-fill me-0.5"></i>DELAYED
+                        </span>
+                        {% endif %}
+                        {% if req.priority == 'URGENT' %}
+                        <span class="badge bg-danger rounded-pill px-2 py-1 text-uppercase fs-8 fw-bold text-nowrap">
+                            URGENT
+                        </span>
+                        {% elif req.priority == 'HIGH' %}
+                        <span class="badge bg-warning text-dark rounded-pill px-2 py-1 text-uppercase fs-8 fw-bold text-nowrap">
+                            HIGH
+                        </span>
+                        {% endif %}
+                        <span class="badge bg-{{ req.badge_class }} {% if req.badge_class == 'warning' %}text-dark{% else %}text-white{% endif %} rounded-pill px-2.5 py-1 text-uppercase fs-8 fw-semibold text-nowrap">
+                            {{ req.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Row 2: Request Number on Left, Floor Section on Right (Fixed height for uniform vertical alignment across all cards) -->
+                <div class="d-flex justify-content-between align-items-center gap-2" style="min-height: 22px;">
+                    <span class="font-monospace fw-medium text-body-secondary text-nowrap" style="font-size: 0.78rem;">#{{ req.request_number }}</span>
+                    {% if req.table_section %}
+                    <span class="badge bg-secondary-subtle text-body-secondary border rounded-pill px-2 py-0.5 text-truncate" style="font-size: 0.68rem; max-width: 150px;" title="{{ req.table_section.name }}">
+                        {{ req.table_section.name }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Card Body: Type & Guest Info -->
+            <div class="d-flex align-items-center gap-2.5 mb-2.5">
+                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 44px; height: 44px; background: rgba(234, 88, 12, 0.12); color: #ea580c; font-size: 1.25rem;">
+                    <i class="bi {{ req.icon_class }}"></i>
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex align-items-center gap-1.5 flex-nowrap">
+                        <h5 class="fw-bold mb-0 text-truncate" style="font-size: 1.05rem;">{{ req.get_request_type_display }}</h5>
+                        {% if req.quantity and req.quantity > 1 or req.unit %}
+                        <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-0.5 small text-nowrap flex-shrink-0">
+                            {{ req.quantity }} {{ req.unit|default:"" }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <span class="text-body-secondary small text-truncate d-block">
+                        {{ req.customer_name|default:"Guest Session" }}
+                        {% if req.session.session_name %} &bull; <strong>{{ req.session.session_name }}</strong>{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Custom Message (if any) -->
+            {% if req.custom_message %}
+            <div class="req-meta-box mb-2.5">
+                <div class="text-body-secondary small fw-semibold mb-0.5">
+                    <i class="bi bi-chat-quote-fill me-1 text-primary"></i> Guest Note:
+                </div>
+                <p class="mb-0 small fst-italic text-break">"{{ req.custom_message }}"</p>
+            </div>
+            {% endif %}
+
+            <!-- Customer Escalation Alert (if reported not fulfilled) -->
+            {% if req.reported_not_fulfilled %}
+            <div class="w-100 p-2.5 mb-2.5 bg-danger bg-opacity-10 text-danger rounded-3 small fw-bold border border-danger border-opacity-25 d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-exclamation-octagon-fill me-1"></i> Customer reported NOT fulfilled: "{{ req.report_reason|default:'Item not delivered' }}"
+                </div>
+                {% for esc in req.escalations.all %}
+                {% if esc.status != 'RESOLVED' and esc.status != 'CLOSED' %}
+                <button type="button" class="btn btn-xs btn-danger rounded-pill px-2.5 text-nowrap ms-2" onclick="openEscalationModal('{{ esc.id }}', '{{ req.id }}', '{{ req.request_number }}', '{{ esc.complaint_notes|escapejs }}')">
+                    Resolve
+                </button>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Timing and Assigned Waiter Details -->
+            <div class="py-2 border-top border-bottom border-light-subtle mb-3 small">
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-1.5 flex-nowrap">
+                    <div class="d-flex align-items-center gap-1.5 text-body-secondary text-nowrap">
+                        <i class="bi bi-clock"></i>
+                        <span>{{ req.requested_at|date:"g:i A" }}</span>
+                        <span class="badge {% if req.is_delayed %}bg-danger text-white{% else %}bg-secondary-subtle text-body-secondary border border-secondary-subtle{% endif %} rounded-pill ms-1 font-monospace" id="req-duration-{{ req.id }}">
+                            {{ req.waiting_duration_display }}
+                        </span>
+                    </div>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill text-nowrap" title="Target SLA">
+                        Target: ~{{ req.target_sla_minutes }}m
+                    </span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between gap-2 flex-nowrap">
+                    <span class="text-body-secondary small text-nowrap">Waiter:</span>
+                    <div class="text-end text-truncate">
+                        {% if req.assigned_waiter %}
+                        <span class="badge bg-light text-dark border rounded-pill text-truncate" style="max-width: 200px;">
+                            <i class="bi bi-person-fill text-primary me-1"></i>{{ req.assigned_waiter.get_full_name|default:req.assigned_waiter.username }}
+                            {% if req.assigned_waiter.employee_id %}<small class="text-muted">({{ req.assigned_waiter.employee_id }})</small>{% endif %}
+                        </span>
+                        {% else %}
+                        <span class="badge bg-warning bg-opacity-20 text-warning rounded-pill">Unassigned</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Footer: View Details & Actions -->
+            <div class="mt-auto d-flex align-items-center gap-1.5 pt-1 flex-nowrap">
+                <!-- Detail Popup Trigger -->
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1.5 fw-semibold text-nowrap" onclick="openRequestDetail('{{ req.id }}')">
+                    <i class="bi bi-info-circle me-1"></i> Details
+                </button>
+
+                {% if req.status != 'COMPLETED' and req.status != 'CANCELLED' and req.status != 'UNABLE_TO_FULFIL' %}
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1.5 fw-semibold text-nowrap flex-grow-1" onclick="openReassignModal('{{ req.id }}', '{{ req.request_number }}', '{{ req.assigned_waiter_id|default:'' }}', '{{ req.assigned_waiter.get_full_name|default:req.assigned_waiter.username|escapejs }}')">
+                    <i class="bi bi-arrow-left-right me-1"></i> Reassign Waiter
+                </button>
+                <form method="POST" action="{% url 'tables:waiter_request_cancel' req.id %}" class="d-inline m-0 flex-shrink-0" onsubmit="return confirm('Cancel request #{{ req.request_number }}?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="cancellation_reason" value="Cancelled by Administrator">
+                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-0 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Cancel Request">
+                        <i class="bi bi-x-lg" style="font-size: 0.75rem;"></i>
+                    </button>
+                </form>
+                {% elif req.status == 'COMPLETED' %}
+                <div class="w-100 py-1.5 px-2 text-center text-success small fw-semibold bg-success bg-opacity-10 rounded-pill text-truncate d-flex align-items-center justify-content-center" style="height: 32px;">
+                    <i class="bi bi-check-circle-fill me-1"></i> Completed by {{ req.completed_by.get_full_name|default:"Staff" }} ({{ req.waiting_duration_display }})
+                    {% if req.rating %}<span class="ms-2 badge bg-warning text-dark">★ {{ req.rating }}/5</span>{% endif %}
+                </div>
+                {% elif req.status == 'UNABLE_TO_FULFIL' %}
+                <div class="w-100 py-2 px-3 text-warning small bg-warning bg-opacity-10 rounded-3 border border-warning-subtle">
+                    <div class="fw-bold d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-slash-circle me-1"></i> Unable to Fulfil</span>
+                        <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2" onclick="openReassignModal('{{ req.id }}', '{{ req.request_number }}', '{{ req.assigned_waiter_id|default:'' }}', '{{ req.assigned_waiter.get_full_name|default:req.assigned_waiter.username|escapejs }}')">
+                            Reassign
+                        </button>
+                    </div>
+                    <div>Reason: {{ req.unable_to_fulfil_reason }}</div>
+                    {% if req.alternative_suggestion %}
+                    <div class="fst-italic mt-0.5 text-body-secondary">Alt: {{ req.alternative_suggestion }}</div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="w-100 py-1.5 px-2 text-center text-secondary small fst-italic bg-secondary bg-opacity-10 rounded-pill text-truncate d-flex align-items-center justify-content-center" style="height: 32px;">
+                    <i class="bi bi-x-circle me-1"></i> {{ req.cancellation_reason|default:"Cancelled" }}
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<!-- Empty State Card -->
+<div class="card border-0 shadow-sm text-center py-5 rounded-4">
+    <div class="card-body">
+        <div class="display-4 text-body-secondary mb-3"><i class="bi bi-inbox"></i></div>
+        <h4 class="fw-bold mb-1">No Service Requests Found</h4>
+        <p class="text-body-secondary mb-4">No service assistance requests match the selected filters.</p>
+        <a href="{% url 'tables:admin_service_requests' %}" class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-arrow-repeat me-1"></i> Reset Filters &amp; Refresh
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Waiter Performance & Workload Monitoring Section (Cards Only) -->
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-3 mt-4 pt-2">
+    <div>
+        <h4 class="h5 fw-bold mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-people-fill text-primary"></i> Waiter Performance &amp; SLA Tracking
+        </h4>
+        <p class="text-body-secondary small mb-0">Floor section assignments, active request workloads, response latency, and customer ratings.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="{% url 'tables:floor_sections' %}" class="btn btn-sm btn-outline-info rounded-pill px-3.5">
+            <i class="bi bi-grid-1x2-fill me-1"></i> Floor Sections
+        </a>
+        <a href="{% url 'tables:waiter_assignments' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3.5 flex-shrink-0">
+            <i class="bi bi-diagram-3-fill me-1"></i> Table Mappings
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 row-cols-1 row-cols-md-2 row-cols-xl-3" id="waiterPerformanceCards">
+    {% for wp in waiter_performance %}
+    <div class="col">
+        <div class="card h-100 p-3.5 shadow-sm waiter-perf-card">
+            <!-- Header: Avatar, Name, Employee ID, Duty Badge -->
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold fs-6 flex-shrink-0" style="width: 44px; height: 44px;">
+                        {{ wp.waiter.first_name|default:wp.waiter.username|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0 text-truncate">{{ wp.waiter.get_full_name|default:wp.waiter.username }}</h6>
+                        <span class="text-body-secondary small font-monospace">{{ wp.employee_id }}</span>
+                        <div class="text-muted small fst-italic" style="font-size: 0.72rem;">{{ wp.section_display }}</div>
+                    </div>
+                </div>
+                <div class="d-flex flex-column align-items-end gap-1">
+                    {% if wp.is_on_duty %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                        <i class="bi bi-circle-fill me-1" style="font-size: 0.45rem;"></i>On Duty
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                        Off Duty
+                    </span>
+                    {% endif %}
+                    <form method="POST" action="{% url 'tables:admin_waiter_duty_toggle' wp.waiter.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-link p-0 text-decoration-none small text-muted" style="font-size: 0.68rem;" title="Toggle On/Off Shift">
+                            <i class="bi bi-power"></i> Toggle
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Stats 6-Box Grid -->
+            <div class="row g-2 mb-3 text-center">
+                <div class="col-4">
+                    <div class="p-2 rounded-3 bg-body-tertiary border border-light-subtle">
+                        <div class="text-body-secondary small fw-medium" style="font-size: 0.7rem;">Active Load</div>
+                        <div class="fw-bold fs-6 {% if wp.active_load > 3 %}text-danger{% elif wp.active_load > 0 %}text-warning{% else %}text-muted{% endif %}">
+                            {{ wp.active_load }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-25">
+                        <div class="text-success small fw-medium" style="font-size: 0.7rem;">Completed</div>
+                        <div class="fw-bold text-success fs-6">{{ wp.completed }}</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-25">
+                        <div class="text-danger small fw-medium" style="font-size: 0.7rem;">Delayed</div>
+                        <div class="fw-bold text-danger fs-6">{{ wp.delayed }}</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-1.5 rounded-3 bg-body-tertiary border border-light-subtle small">
+                        <span class="text-muted" style="font-size: 0.68rem;">Accept Latency:</span>
+                        <strong class="font-monospace d-block">{{ wp.avg_acceptance_display }}</strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-1.5 rounded-3 bg-body-tertiary border border-light-subtle small">
+                        <span class="text-muted" style="font-size: 0.68rem;">Completion Time:</span>
+                        <strong class="font-monospace d-block">{{ wp.avg_completion_display }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar: Fulfilment Rate -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-body-secondary small fw-semibold" style="font-size: 0.72rem;">Fulfilment Rate</span>
+                    <span class="fw-bold small font-monospace">
+                        {% if wp.assigned > 0 %}{% widthratio wp.completed wp.assigned 100 %}%{% else %}0%{% endif %}
+                    </span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-success" style="width: {% if wp.assigned > 0 %}{% widthratio wp.completed wp.assigned 100 %}%{% else %}0%{% endif %};"></div>
+                </div>
+            </div>
+
+            <!-- Footer: Customer Rating & Quick Filter -->
+            <div class="mt-auto pt-2.5 border-top border-light-subtle d-flex justify-content-between align-items-center">
+                <span class="text-body-secondary small" style="font-size: 0.75rem;">
+                    Rating:
+                    {% if wp.avg_rating %}
+                    <strong class="text-warning">★ {{ wp.avg_rating }} / 5.0</strong>
+                    {% else %}
+                    <span class="text-muted fst-italic">N/A</span>
+                    {% endif %}
+                </span>
+                <a href="{% url 'tables:admin_service_requests' %}?waiter={{ wp.waiter.id }}" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5" title="Filter requests by this waiter">
+                    View History
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm text-center py-4 rounded-4">
+            <span class="text-body-secondary small">No waitstaff registered for this restaurant.</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 1: REQUEST DETAIL POPUP & AUDIT TIMELINE -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="requestDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div id="modalReqIcon" class="d-flex align-items-center justify-content-center rounded-circle" style="width: 38px; height: 38px; background: rgba(234, 88, 12, 0.12); color: #ea580c; font-size: 1.2rem;">
+                        <i class="bi bi-bell-fill"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="modalReqNumber">Request Details</h5>
+                        <span class="text-muted small" id="modalReqMeta"></span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span id="modalReqStatusBadge" class="badge rounded-pill px-3 py-1.5 text-uppercase"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <div class="modal-body p-4">
+                <!-- Info Grid -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-body-tertiary border">
+                            <h6 class="fw-bold mb-2 text-primary"><i class="bi bi-table me-1"></i> Location &amp; Guest</h6>
+                            <div class="d-flex justify-content-between mb-1 small"><span class="text-muted">Table:</span> <strong id="modalTableNumber">-</strong></div>
+                            <div class="d-flex justify-content-between mb-1 small"><span class="text-muted">Floor Section:</span> <span id="modalSectionName">-</span></div>
+                            <div class="d-flex justify-content-between mb-1 small"><span class="text-muted">Guest / Group:</span> <strong id="modalGuestName">-</strong></div>
+                            <div class="d-flex justify-content-between small"><span class="text-muted">Requested Item:</span> <strong id="modalItemDisplay">-</strong></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-body-tertiary border">
+                            <h6 class="fw-bold mb-2 text-warning"><i class="bi bi-stopwatch me-1"></i> SLA &amp; Fulfillment</h6>
+                            <div class="d-flex justify-content-between mb-1 small"><span class="text-muted">Target SLA:</span> <strong id="modalTargetSLA">-</strong></div>
+                            <div class="d-flex justify-content-between mb-1 small"><span class="text-muted">Breach Limit:</span> <strong id="modalBreachSLA">-</strong></div>
+                            <div class="d-flex justify-content-between mb-1 small"><span class="text-muted">Total Wait Time:</span> <span id="modalTotalWait" class="fw-bold font-monospace">-</span></div>
+                            <div class="d-flex justify-content-between small"><span class="text-muted">Assigned Server:</span> <strong id="modalAssignedWaiter">-</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Note / Reason Box -->
+                <div id="modalNoteContainer" class="p-3 rounded-3 bg-body-secondary mb-4 border d-none">
+                    <div class="fw-bold small mb-1"><i class="bi bi-chat-left-quote me-1"></i> Guest Custom Note:</div>
+                    <div id="modalCustomNote" class="small fst-italic"></div>
+                </div>
+
+                <!-- Escalation Box (if reported) -->
+                <div id="modalEscalationContainer" class="p-3 rounded-3 bg-danger bg-opacity-10 border border-danger-subtle text-danger mb-4 d-none">
+                    <div class="fw-bold d-flex justify-content-between align-items-center mb-1">
+                        <span><i class="bi bi-exclamation-octagon-fill me-1"></i> Customer Escalation Report</span>
+                        <span id="modalEscalationStatusBadge" class="badge bg-danger rounded-pill"></span>
+                    </div>
+                    <div id="modalEscalationText" class="small"></div>
+                </div>
+
+                <!-- Customer Feedback & Review Box -->
+                <div id="modalFeedbackContainer" class="p-3 rounded-3 bg-warning bg-opacity-10 border border-warning-subtle text-dark mb-4 d-none">
+                    <div class="fw-bold small mb-1 text-warning-emphasis"><i class="bi bi-star-fill text-warning me-1"></i> Customer Rating &amp; Feedback:</div>
+                    <div id="modalFeedbackText" class="small"></div>
+                </div>
+
+                <!-- Chronological Audit Timeline -->
+                <h6 class="fw-bold mb-3 d-flex align-items-center gap-1.5">
+                    <i class="bi bi-clock-history text-primary"></i> Lifecycle Audit Trail
+                </h6>
+                <div class="service-timeline" id="modalTimelineList">
+                    <!-- Populated via AJAX -->
+                </div>
+            </div>
+
+            <div class="modal-footer border-top py-2.5">
+                <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary rounded-pill px-3 fw-semibold" id="modalReassignBtn" onclick="">
+                    <i class="bi bi-arrow-left-right me-1"></i> Reassign Waiter
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 2: REASSIGN WAITER POPUP (PROFESSIONAL ASSIGNMENT INTERFACE) -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="reassignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" id="reassignForm" class="modal-content border-0 shadow-lg rounded-4">
+            {% csrf_token %}
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-person-gear text-primary me-2"></i>Reassign Waiter
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="p-2.5 rounded-3 bg-body-tertiary border mb-3 small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Service Request:</span>
+                        <strong id="reassignReqNum" class="font-monospace"></strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Current Waiter:</span>
+                        <strong id="reassignCurrentWaiter" class="text-primary">-</strong>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Select Designated Waiter <span class="text-danger">*</span></label>
+                    <select name="waiter_id" id="reassignWaiterSelect" class="form-select" required>
+                        <option value="">-- Choose on-duty server --</option>
+                        {% for wp in waiter_performance %}
+                        <option value="{{ wp.waiter.id }}">
+                            {{ wp.waiter.get_full_name|default:wp.waiter.username }} [{{ wp.employee_id }}] &bull; {% if wp.is_on_duty %}On Duty{% else %}Off Duty{% endif %} &bull; {{ wp.active_load }} active tasks
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text small">Servers with fewer active tasks are recommended for fast response.</div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Reason for Reassignment <span class="text-danger">*</span></label>
+                    <textarea name="reason" id="reassignReasonInput" class="form-control" rows="2" placeholder="e.g. Server busy on table 4, guest requested prompt assistance, section handover..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2.5">
+                <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-check2 me-1"></i> Confirm Reassignment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 3: RESOLVE GUEST ESCALATION POPUP -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="resolveEscalationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" id="escalationForm" class="modal-content border-0 shadow-lg rounded-4">
+            {% csrf_token %}
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold text-danger">
+                    <i class="bi bi-exclamation-octagon-fill me-2"></i>Resolve Guest Escalation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="p-3 rounded-3 bg-danger bg-opacity-10 border border-danger-subtle text-danger mb-3 small">
+                    <div class="fw-bold mb-1">Customer Reported Problem:</div>
+                    <div id="escComplaintText" class="fst-italic"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Escalation Status</label>
+                    <select name="status" class="form-select" id="escStatusSelect">
+                        <option value="RESOLVED" selected>Resolved (Issue investigated &amp; delivered)</option>
+                        <option value="REASSIGNED">Reassigned (Dispatched new server)</option>
+                        <option value="UNDER_REVIEW">Under Review (Investigating with floor staff)</option>
+                        <option value="CLOSED">Closed (Addressed with guest)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Reassign to Server / Supervisor (Optional)</label>
+                    <select name="reassign_waiter_id" class="form-select">
+                        <option value="">-- Keep current server or none --</option>
+                        {% for wp in waiter_performance %}
+                        <option value="{{ wp.waiter.id }}">
+                            {{ wp.waiter.get_full_name|default:wp.waiter.username }} [{{ wp.employee_id }}]
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Resolution Notes</label>
+                    <textarea name="resolution_notes" class="form-control" rows="2" placeholder="e.g. Water delivered immediately by supervisor. Apologized to guest." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2.5">
+                <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold">
+                    <i class="bi bi-check-circle me-1"></i> Save Resolution
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 4: SLA CONFIGURATION SETTINGS MODAL -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="slaConfigModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-clock-history text-warning me-2"></i>Service Target SLA Configurations
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-body-secondary small mb-3">
+                    Configure target fulfillment times, warning thresholds, and escalation limits for each service type.
+                    Requests exceeding these thresholds trigger real-time supervisor alerts and delayed indicators.
+                </p>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Service Type</th>
+                                <th style="width: 105px;">Target (Mins)</th>
+                                <th style="width: 105px;">Warning (Mins)</th>
+                                <th style="width: 105px;">Breach (Mins)</th>
+                                <th style="width: 110px;">Timeout (Secs)</th>
+                                <th style="width: 80px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cfg in sla_configs %}
+                            <tr>
+                                <form method="POST" action="{% url 'tables:admin_sla_config_update' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="request_type" value="{{ cfg.request_type }}">
+                                    <td>
+                                        <div class="fw-bold">{{ cfg.get_request_type_display }}</div>
+                                        <span class="text-muted small">{{ cfg.request_type }}</span>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="target_minutes" value="{{ cfg.target_minutes }}" class="form-control form-control-sm text-center" min="1" max="60" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="warning_minutes" value="{{ cfg.warning_minutes }}" class="form-control form-control-sm text-center" min="1" max="60" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="escalation_minutes" value="{{ cfg.escalation_minutes }}" class="form-control form-control-sm text-center fw-bold text-danger" min="1" max="60" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="acceptance_timeout_seconds" value="{{ cfg.acceptance_timeout_seconds|default:60 }}" class="form-control form-control-sm text-center fw-bold text-warning" min="10" max="600" required title="Seconds before automatic reassignment">
+                                    </td>
+                                    <td>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-2.5" title="Save this SLA">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </td>
+                                </form>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">No custom SLAs configured yet. Standard benchmarks (3–5m) active.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2.5">
+                <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 5: GUEST RATINGS & REVIEWS INSPECTION MODAL -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="guestRatingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold text-teal" style="color: #0d9488;">
+                    <i class="bi bi-star-fill text-warning me-2"></i>Guest Satisfaction &amp; Feedback
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="text-center p-3 rounded-3 bg-body-tertiary mb-3 border">
+                    <div class="display-5 fw-bold text-warning mb-1">
+                        {% if avg_rating %}★ {{ avg_rating }}<small class="fs-6 text-muted">/5.0</small>{% else %}N/A{% endif %}
+                    </div>
+                    <span class="text-body-secondary small">Based on {{ total_ratings }} submitted customer reviews</span>
+                </div>
+
+                <h6 class="fw-bold mb-2 small text-muted text-uppercase">Recent Customer Comments</h6>
+                <div class="d-flex flex-column gap-2 mb-2">
+                    {% for fb in recent_feedbacks %}
+                    <div class="p-2.5 rounded-3 bg-body-secondary border small">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge bg-warning text-dark">★ {{ fb.rating }}/5</span>
+                            <span class="text-muted font-monospace" style="font-size: 0.72rem;">Table {{ fb.table.table_number }} &bull; {{ fb.feedback_at|date:"M d, g:i A" }}</span>
+                        </div>
+                        <div class="fst-italic text-break">"{{ fb.feedback_notes }}"</div>
+                        <div class="text-muted mt-1" style="font-size: 0.7rem;">Attended by: {{ fb.completed_by.get_full_name|default:fb.assigned_waiter.get_full_name|default:"Staff" }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3 text-muted small">No written feedback notes submitted yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2.5">
+                <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Open Reassign Modal
+function openReassignModal(reqId, reqNumber, currentWaiterId, currentWaiterName) {
+    const form = document.getElementById('reassignForm');
+    form.action = `/tables/service-request/${reqId}/reassign/`;
+    document.getElementById('reassignReqNum').innerText = '#' + reqNumber;
+    document.getElementById('reassignCurrentWaiter').innerText = currentWaiterName || 'Unassigned';
+    const select = document.getElementById('reassignWaiterSelect');
+    select.value = currentWaiterId || '';
+    document.getElementById('reassignReasonInput').value = '';
+    new bootstrap.Modal(document.getElementById('reassignModal')).show();
+}
+
+// Open Escalation Resolve Modal
+function openEscalationModal(escId, reqId, reqNumber, complaintNotes) {
+    const form = document.getElementById('escalationForm');
+    form.action = `/tables/escalations/${escId}/resolve/`;
+    document.getElementById('escComplaintText').innerText = '"' + complaintNotes + '"';
+    new bootstrap.Modal(document.getElementById('resolveEscalationModal')).show();
+}
+
+// Open Detailed Request View & Activity Timeline Popup
+async function openRequestDetail(reqId) {
+    try {
+        const resp = await fetch(`/tables/service-request/${reqId}/detail-json/`);
+        const json = await resp.json();
+        if (!json.success || !json.request) return;
+
+        const r = json.request;
+        document.getElementById('modalReqNumber').innerText = '#' + r.request_number;
+        document.getElementById('modalReqMeta').innerText = r.request_type_display + (r.quantity > 1 ? ` (${r.quantity} ${r.unit})` : '');
+        
+        const badge = document.getElementById('modalReqStatusBadge');
+        badge.className = `badge rounded-pill px-3 py-1.5 text-uppercase ${r.badge_class}`;
+        badge.innerText = r.status_display;
+
+        document.getElementById('modalTableNumber').innerText = `Table ${r.table_number} (${r.table_location})`;
+        document.getElementById('modalSectionName').innerText = r.section_name || 'Standard Zone';
+        document.getElementById('modalGuestName').innerText = `${r.customer_name} • ${r.session_name}`;
+        document.getElementById('modalItemDisplay').innerText = `${r.request_type_display} (Priority: ${r.priority_display})`;
+
+        document.getElementById('modalTargetSLA').innerText = `~${r.target_sla_minutes} Mins`;
+        document.getElementById('modalBreachSLA').innerText = `${r.escalation_sla_minutes} Mins`;
+        document.getElementById('modalTotalWait').innerText = r.waiting_duration;
+        document.getElementById('modalAssignedWaiter').innerText = r.assigned_waiter || 'Unassigned';
+
+        // Note Container
+        const noteBox = document.getElementById('modalNoteContainer');
+        if (r.custom_message) {
+            noteBox.classList.remove('d-none');
+            document.getElementById('modalCustomNote').innerText = r.custom_message;
+        } else {
+            noteBox.classList.add('d-none');
+        }
+
+        // Escalation Box
+        const escBox = document.getElementById('modalEscalationContainer');
+        if (r.escalation) {
+            escBox.classList.remove('d-none');
+            document.getElementById('modalEscalationText').innerText = `Reported: "${r.escalation.complaint_notes}" (${r.escalation.created_at})`;
+            document.getElementById('modalEscalationStatusBadge').innerText = r.escalation.status_display;
+        } else {
+            escBox.classList.add('d-none');
+        }
+
+        // Feedback Box
+        const fbBox = document.getElementById('modalFeedbackContainer');
+        if (r.rating) {
+            fbBox.classList.remove('d-none');
+            document.getElementById('modalFeedbackText').innerText = `★ ${r.rating}/5 stars. "${r.feedback_notes || 'No written comment'}" (${r.feedback_at || ''})`;
+        } else {
+            fbBox.classList.add('d-none');
+        }
+
+        // Timeline
+        const tlList = document.getElementById('modalTimelineList');
+        tlList.innerHTML = '';
+        if (r.timeline && r.timeline.length > 0) {
+            r.timeline.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'service-timeline-item';
+                div.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-0.5">
+                        <strong class="text-body" style="font-size: 0.85rem;">${item.action.replace(/_/g, ' ')}</strong>
+                        <span class="text-muted font-monospace small">${item.time_display}</span>
+                    </div>
+                    <div class="text-body-secondary small">${item.notes || ''}</div>
+                    <div class="text-muted" style="font-size: 0.72rem;">Performed by: ${item.performer}</div>
+                `;
+                tlList.appendChild(div);
+            });
+        } else {
+            tlList.innerHTML = '<div class="text-muted small">No audit events recorded.</div>';
+        }
+
+        // Reassign button hook
+        const reBtn = document.getElementById('modalReassignBtn');
+        if (r.status === 'COMPLETED' || r.status === 'CANCELLED') {
+            reBtn.classList.add('d-none');
+        } else {
+            reBtn.classList.remove('d-none');
+            reBtn.onclick = function() {
+                bootstrap.Modal.getInstance(document.getElementById('requestDetailModal')).hide();
+                openReassignModal(r.id, r.request_number, r.assigned_waiter_id, r.assigned_waiter);
+            };
+        }
+
+        new bootstrap.Modal(document.getElementById('requestDetailModal')).show();
+    } catch (e) {
+        console.error('Error fetching request details:', e);
+    }
+}
+
+function getCsrfToken() {
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    return cookieValue || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+}
+
+// Acknowledge & Dismiss Re-Notice Notification on Card (count vanishes & sends apology to customer)
+window.dismissCardRenotice = async function(reqId, btn) {
+    if (btn) {
+        btn.style.transition = 'all 0.25s ease';
+        btn.style.transform = 'scale(0)';
+        btn.style.opacity = '0';
+        setTimeout(() => { if (btn.parentNode) btn.remove(); }, 250);
+    }
+    try {
+        const csrfToken = getCsrfToken();
+        const res = await fetch(`/tables/service-request/${reqId}/dismiss-renotice/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        const data = await res.json();
+        console.log('Renotice dismissed successfully:', data);
+        if (typeof window.dismissServiceRequestToast === 'function') {
+            window.dismissServiceRequestToast();
+        }
+    } catch (e) {
+        console.error('Error dismissing re-notice:', e);
+    }
+};
+
+// Live Polling Telemetry (runs every 6 seconds)
+async function pollAdminMetrics() {
+    try {
+        const resp = await fetch('{% url "tables:admin_service_requests_poll_api" %}');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data && data.success && data.metrics) {
+            const m = data.metrics;
+            const elTotal = document.getElementById('kpi-total');
+            if (elTotal) elTotal.innerText = m.total;
+            const elPending = document.getElementById('kpi-pending');
+            if (elPending) elPending.innerText = m.pending;
+            const elAccepted = document.getElementById('kpi-accepted');
+            if (elAccepted) elAccepted.innerText = m.accepted;
+            const elInProg = document.getElementById('kpi-in-progress');
+            if (elInProg) elInProg.innerText = m.in_progress;
+            const elComp = document.getElementById('kpi-completed');
+            if (elComp) elComp.innerText = m.completed;
+            const elDelayed = document.getElementById('kpi-delayed');
+            if (elDelayed) elDelayed.innerText = m.delayed;
+            const elUnable = document.getElementById('kpi-unable');
+            if (elUnable) elUnable.innerText = m.unable;
+            const elReported = document.getElementById('kpi-reported');
+            if (elReported) elReported.innerText = m.reported;
+
+            // Live update durations and card order
+            if (data.active_requests) {
+                const container = document.getElementById('adminRequestsContainer');
+                data.active_requests.forEach(req => {
+                    const durEl = document.getElementById(`req-duration-${req.id}`);
+                    if (durEl) {
+                        durEl.innerText = req.waiting_duration;
+                        if (req.is_delayed) {
+                            durEl.className = 'badge bg-danger text-white rounded-pill ms-1 font-monospace';
+                        }
+                    }
+
+                    // If re-notified, update badge in top-right slot above pending and move card to top
+                    const renoticeSlot = document.getElementById(`card-renotice-slot-${req.id}`);
+                    if (renoticeSlot) {
+                        let btn = renoticeSlot.querySelector('.renotice-badge-btn');
+                        if (req.re_notice_count > 0) {
+                            if (!btn) {
+                                btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'btn btn-danger renotice-badge-btn animate__animated animate__pulse animate__infinite';
+                                btn.onclick = function() { window.dismissCardRenotice(req.id, btn); };
+                                btn.title = `Customer re-notified ${req.re_notice_count}x! Click to send apology and clear notification.`;
+                                btn.innerHTML = `<span class="fw-bold">${req.re_notice_count}</span>`;
+                                renoticeSlot.appendChild(btn);
+                            } else {
+                                const span = btn.querySelector('.fw-bold') || btn.querySelector('span');
+                                if (span) span.innerText = req.re_notice_count;
+                            }
+                            const cardCol = document.getElementById(`admin-req-card-${req.id}`);
+                            if (cardCol && container && container.firstElementChild !== cardCol) {
+                                container.prepend(cardCol);
+                            }
+                        } else if (btn) {
+                            btn.remove();
+                        }
+                    }
+                });
+            }
+        }
+    } catch (err) {
+        // Polling will silently retry
+    }
+}
+
+// Start polling
+setInterval(pollAdminMetrics, 6000);
+</script>
+{% endblock %}

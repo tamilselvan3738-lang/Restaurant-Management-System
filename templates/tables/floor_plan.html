@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+
+{% block title %}Floor Plan & Table Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-box {
+        border-radius: 16px;
+        padding: 16px 12px;
+        text-align: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 2px solid transparent;
+        position: relative;
+        z-index: 1;
+    }
+    .table-box:hover,
+    .table-box:focus-within,
+    .table-box:has(.show) {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+        z-index: 15;
+    }
+    .table-available {
+        background-color: #e8f5e9;
+        border-color: #81c784;
+        color: #2e7d32;
+    }
+    .table-occupied {
+        background-color: #ffebee;
+        border-color: #e57373;
+        color: #c62828;
+    }
+    .table-partially_occupied {
+        background-color: #fff8e1;
+        border-color: #ffb74d;
+        color: #e65100;
+    }
+    .table-bill_requested {
+        background-color: #e0f2fe;
+        border-color: #38bdf8;
+        color: #0369a1;
+    }
+    .table-reserved {
+        background-color: #fff8e1;
+        border-color: #ffd54f;
+        color: #f57f17;
+    }
+    .table-cleaning {
+        background-color: #f3f4f6;
+        border-color: #9ca3af;
+        color: #4b5563;
+    }
+
+    [data-bs-theme="dark"] .table-available {
+        background-color: rgba(46, 125, 50, 0.18);
+        border-color: rgba(129, 199, 132, 0.45);
+        color: #81c784;
+    }
+    [data-bs-theme="dark"] .table-occupied {
+        background-color: rgba(198, 40, 40, 0.18);
+        border-color: rgba(229, 115, 115, 0.45);
+        color: #ef5350;
+    }
+    [data-bs-theme="dark"] .table-partially_occupied {
+        background-color: rgba(230, 81, 0, 0.18);
+        border-color: rgba(255, 183, 77, 0.45);
+        color: #ffb74d;
+    }
+    [data-bs-theme="dark"] .table-bill_requested {
+        background-color: rgba(3, 105, 161, 0.18);
+        border-color: rgba(56, 189, 248, 0.45);
+        color: #7dd3fc;
+    }
+    [data-bs-theme="dark"] .table-reserved {
+        background-color: rgba(245, 127, 23, 0.18);
+        border-color: rgba(255, 213, 79, 0.45);
+        color: #ffd54f;
+    }
+    [data-bs-theme="dark"] .table-cleaning {
+        background-color: rgba(75, 85, 99, 0.18);
+        border-color: rgba(156, 163, 175, 0.45);
+        color: #d1d5db;
+    }
+    .session-mini-tag {
+        font-size: 0.72rem;
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: rgba(0,0,0,0.06);
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        margin-bottom: 2px;
+    }
+    [data-bs-theme="dark"] .session-mini-tag {
+        background: rgba(255,255,255,0.08);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-xl-row justify-content-between align-items-start align-items-xl-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h3 class="fw-bold mb-0">Floor Plan & Table Management</h3>
+            <span class="badge bg-primary rounded-pill px-3 py-1.5">{{ occupied_tables }} Occupied</span>
+        </div>
+        <p class="text-muted small mb-0">Live dining occupancy and real-time table status</p>
+    </div>
+    
+    <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap w-100 w-xl-auto justify-content-start justify-content-xl-end">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs text-nowrap">
+            <i class="bi bi-arrow-left"></i> <span>Back</span>
+        </a>
+        <a href="{% url 'tables:table_qr_print_all' %}" target="_blank" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs text-nowrap">
+            <i class="bi bi-printer"></i> <span>Print All QRs</span>
+        </a>
+        <a href="{% url 'tables:reservation_create' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs text-nowrap">
+            <i class="bi bi-calendar-plus"></i> <span>New Reservation</span>
+        </a>
+        {% if user.is_admin_or_manager %}
+        <a href="{% url 'tables:table_create' %}" class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs text-nowrap">
+            <i class="bi bi-plus-lg"></i> <span>Add Table</span>
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Occupancy Stats Summary Bar -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card p-3 border-start border-success border-4 shadow-sm">
+            <span class="text-muted small fw-semibold">Available</span>
+            <h4 class="fw-bold text-success mb-0">{{ available_tables }}</h4>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card p-3 border-start border-danger border-4 shadow-sm">
+            <span class="text-muted small fw-semibold">Occupied</span>
+            <h4 class="fw-bold text-danger mb-0">{{ occupied_tables }}</h4>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card p-3 border-start border-warning border-4 shadow-sm">
+            <span class="text-muted small fw-semibold">Multi-Session</span>
+            <h4 class="fw-bold text-warning mb-0">{{ partially_occupied }}</h4>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card p-3 border-start border-info border-4 shadow-sm">
+            <span class="text-muted small fw-semibold">Bill Requested</span>
+            <h4 class="fw-bold text-info mb-0">{{ bill_requested_tables }}</h4>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card p-3 border-start border-secondary border-4 shadow-sm">
+            <span class="text-muted small fw-semibold">Reserved</span>
+            <h4 class="fw-bold text-secondary mb-0">{{ reserved_tables }}</h4>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card p-3 border-start border-dark border-4 shadow-sm">
+            <span class="text-muted small fw-semibold">Cleaning</span>
+            <h4 class="fw-bold text-muted mb-0">{{ cleaning_tables }}</h4>
+        </div>
+    </div>
+</div>
+
+<!-- Location & Table Type Filter Pills -->
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body p-3">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="text-muted small fw-bold me-2"><i class="bi bi-funnel me-1"></i> Table Type:</span>
+            <a href="{% url 'tables:floor_plan' %}" class="btn btn-sm {% if not selected_location %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                All Table Types ({{ total_tables }})
+            </a>
+            {% for code, label in locations %}
+            <a href="?location={{ code }}" class="btn btn-sm {% if selected_location == code %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+                {{ label }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Table Cards Grid -->
+<div class="row g-3">
+    {% for table in tables %}
+    <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-3">
+        <div class="table-box table-{{ table.status|lower }} d-flex flex-column h-100 shadow-sm">
+            <div class="fs-3 fw-bold mb-1">{{ table.table_number }}</div>
+            <div class="small fw-semibold mb-2">
+                <i class="bi bi-people me-1"></i> {{ table.capacity }} Seats
+            </div>
+            <div class="mb-3">
+                <span class="badge bg-{{ table.badge_class }}">
+                    {{ table.get_status_display }}
+                </span>
+            </div>
+
+            <!-- Card Actions Footer -->
+            <div class="mt-auto d-flex gap-2 w-100 align-items-center">
+                <a href="{% url 'tables:table_qr_card' table.id %}" class="btn btn-sm btn-light border px-2 d-inline-flex align-items-center justify-content-center flex-shrink-0" title="View Table QR Code" style="height: 32px; width: 34px;">
+                    <i class="bi bi-qr-code"></i>
+                </a>
+                <div class="dropdown flex-grow-1">
+                    <button class="btn btn-sm btn-light border w-100 dropdown-toggle text-nowrap d-flex align-items-center justify-content-center gap-1" type="button" data-bs-toggle="dropdown" data-bs-display="dynamic" data-bs-auto-close="true" aria-expanded="false" style="height: 32px; font-size: 0.82rem;">
+                        <span>Actions</span>
+                    </button>
+                    <ul class="dropdown-menu shadow-lg border py-2" style="min-width: 220px; max-width: calc(100vw - 32px); z-index: 1050;">
+                        <li><h6 class="dropdown-header small text-uppercase fw-bold text-muted px-3">QR Ordering</h6></li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 d-flex align-items-center" href="{% url 'tables:table_qr_card' table.id %}">
+                                <i class="bi bi-qr-code-scan me-2 text-primary fs-6"></i> <span>View & Print QR Stand</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 d-flex align-items-center" href="{% url 'tables:customer_order' table.table_number %}" target="_blank">
+                                <i class="bi bi-phone me-2 text-info fs-6"></i> <span>Customer Digital Menu</span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li><h6 class="dropdown-header small text-uppercase fw-bold text-muted px-3">Table Status</h6></li>
+                        <li>
+                            <form method="post" action="{% url 'tables:table_update_status' table.id %}" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="AVAILABLE">
+                                <button type="submit" class="dropdown-item py-2 px-3 d-flex align-items-center text-success w-100 border-0 bg-transparent text-start">
+                                    <i class="bi bi-check-circle me-2 fs-6"></i> <span>Set Available</span>
+                                </button>
+                            </form>
+                        </li>
+                        <li>
+                            <form method="post" action="{% url 'tables:table_update_status' table.id %}" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="OCCUPIED">
+                                <button type="submit" class="dropdown-item py-2 px-3 d-flex align-items-center text-danger w-100 border-0 bg-transparent text-start">
+                                    <i class="bi bi-person-fill me-2 fs-6"></i> <span>Set Occupied</span>
+                                </button>
+                            </form>
+                        </li>
+                        <li>
+                            <form method="post" action="{% url 'tables:table_update_status' table.id %}" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="CLEANING">
+                                <button type="submit" class="dropdown-item py-2 px-3 d-flex align-items-center text-secondary w-100 border-0 bg-transparent text-start">
+                                    <i class="bi bi-brush me-2 fs-6"></i> <span>Set Cleaning</span>
+                                </button>
+                            </form>
+                        </li>
+                        {% if user.is_admin_or_manager %}
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li>
+                            <a class="dropdown-item py-2 px-3 d-flex align-items-center text-secondary" href="{% url 'tables:table_edit' table.id %}">
+                                <i class="bi bi-pencil me-2 fs-6"></i> <span>Edit Table</span>
+                            </a>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item py-2 px-3 d-flex align-items-center text-danger w-100 border-0 bg-transparent text-start" onclick="confirmDeleteTable({{ table.id }}, '{{ table.table_number|escapejs }}')">
+                                <i class="bi bi-trash3 me-2 fs-6"></i> <span>Delete Table</span>
+                            </button>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% if user.is_admin_or_manager %}
+                <!-- Delete Option after Actions Button -->
+                <button type="button" class="btn btn-sm btn-outline-danger px-2 d-inline-flex align-items-center justify-content-center flex-shrink-0" title="Delete Table {{ table.table_number }}" onclick="confirmDeleteTable({{ table.id }}, '{{ table.table_number|escapejs }}')" style="height: 32px; width: 34px;">
+                    <i class="bi bi-trash3"></i>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5 text-muted">
+        <i class="bi bi-grid-3x3 fs-2 d-block mb-2"></i>
+        No tables found in this section.
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Delete Dining Table Confirmation Modal -->
+<div class="modal fade" id="deleteTableModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg p-3">
+            <form id="deleteTableForm" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-header border-0 pb-0 justify-content-between">
+                    <h6 class="fw-bold modal-title text-danger d-flex align-items-center gap-2">
+                        <i class="bi bi-trash3-fill"></i> Delete Dining Table
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-2">Are you sure you want to permanently delete this table?</p>
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <h6 class="fw-bold text-dark mb-1" id="deleteTableNumber">Table T-01</h6>
+                        <small class="text-muted">This will remove this table and its associated seats from the restaurant floor plan.</small>
+                    </div>
+                    <div class="alert alert-warning py-2 px-3 small rounded-3 mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill text-warning flex-shrink-0"></i>
+                        <span>This action cannot be undone.</span>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                    <button type="button" class="btn btn-light rounded-pill flex-grow-1" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill flex-grow-1 fw-bold">
+                        <i class="bi bi-trash3 me-1"></i> Delete Table
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDeleteTable(tableId, tableNum) {
+    const modalEl = document.getElementById('deleteTableModal');
+    if (modalEl) {
+        document.getElementById('deleteTableNumber').textContent = `Table ${tableNum}`;
+        document.getElementById('deleteTableForm').action = `/tables/table/${tableId}/delete/`;
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
+</script>
+{% endblock %}

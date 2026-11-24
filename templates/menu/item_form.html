@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold">{{ title }}</h5>
+                <div class="d-flex align-items-center gap-2">
+                    {% if item %}
+                    <form method="post" action="{% url 'menu:item_delete' item.id %}" onsubmit="return confirm('Are you sure you want to permanently delete \'{{ item.name|escapejs }}\'? This cannot be undone.');" class="d-inline m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash3 me-1"></i> Delete Dish
+                        </button>
+                    </form>
+                    {% endif %}
+                    <a href="{% url 'menu:list' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Menu
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Dish / Item Name</label>
+                            {{ form.name }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Category</label>
+                            {{ form.category }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description</label>
+                        {{ form.description }}
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Selling Price ({{ RESTAURANT_CURRENCY }})</label>
+                            {{ form.price }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Cost Price ({{ RESTAURANT_CURRENCY }})</label>
+                            {{ form.cost_price }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Prep Time (mins)</label>
+                            {{ form.preparation_time }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Calories</label>
+                            {{ form.calories }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Dietary Tags</label>
+                        {{ form.dietary_tags }}
+                        <div class="form-text small">Hold Ctrl / Cmd to select multiple tags.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Dish Photo</label>
+                        {{ form.image }}
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6 form-check ps-4">
+                            {{ form.is_available }}
+                            <label class="form-check-label fw-semibold" for="{{ form.is_available.id_for_label }}">
+                                Available for Ordering (In Stock)
+                            </label>
+                        </div>
+                        <div class="col-md-6 form-check ps-4">
+                            {{ form.is_special }}
+                            <label class="form-check-label fw-semibold" for="{{ form.is_special.id_for_label }}">
+                                Highlight as Chef Special / Recommendation
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{% url 'menu:list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Menu
+                            </a>
+                            {% if item %}
+                            <button type="button" class="btn btn-outline-danger" onclick="if(confirm('Are you sure you want to permanently delete \'{{ item.name|escapejs }}\'? This cannot be undone.')) { document.getElementById('deleteItemFormBottom').submit(); }">
+                                <i class="bi bi-trash3 me-1"></i> Delete Dish
+                            </button>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            Save Dish
+                        </button>
+                    </div>
+                </form>
+
+                {% if item %}
+                <form id="deleteItemFormBottom" method="post" action="{% url 'menu:item_delete' item.id %}" class="d-none">
+                    {% csrf_token %}
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends 'chef/base_chef.html' %}
+{% load static %}
+
+{% block title %}Report Food Item Unavailable (86 Item){% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+
+    <!-- HEADER -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h4 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-slash-circle text-warning"></i> Report Food Item Unavailable (86 Dish)
+            </h4>
+            <p class="text-muted small mb-0">
+                Notify the Restaurant Admin to disable items that cannot be prepared due to stock depletion or equipment issues.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'chef:dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- FORM: REPORT 86 ITEM -->
+        <div class="col-12 col-lg-5">
+            <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-clipboard-x text-warning"></i> Submit Item Shortage Report
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{% url 'chef:report_unavailable' %}">
+                        {% csrf_token %}
+
+                        <!-- Menu Item Selection -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-dark">
+                                Menu Item Currently Unavailable <span class="text-danger">*</span>
+                            </label>
+                            <select name="menu_item_id" class="form-select" required>
+                                <option value="">-- Choose Food Item --</option>
+                                {% for item in menu_items %}
+                                    <option value="{{ item.id }}">{{ item.category.name|default:"General" }} &rarr; {{ item.name }} ({{ RESTAURANT_CURRENCY|default:"₹" }}{{ item.price }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Reason -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold small text-dark">
+                                Kitchen Reason / Depletion Details <span class="text-danger">*</span>
+                            </label>
+                            <textarea name="reason" class="form-control" rows="3" required placeholder="e.g. Fresh paneer stock depleted; grill heater heating element failed..."></textarea>
+                            <div class="form-text small" style="font-size: 0.72rem;">
+                                Once approved by the Restaurant Admin, this item is taken off the QR digital menu for customer ordering.
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100 py-2.5 rounded-pill fw-semibold shadow-sm text-dark">
+                            <i class="bi bi-send-fill me-1"></i> Submit Report to Admin
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAST REPORTS & STATUS AUDIT -->
+        <div class="col-12 col-lg-7">
+            <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-primary"></i> Item Unavailability Reports History
+                    </h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light small text-uppercase text-muted" style="font-size: 0.72rem;">
+                            <tr>
+                                <th>Date</th>
+                                <th>Menu Item</th>
+                                <th>Reason</th>
+                                <th>Reported By</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if past_reports %}
+                                {% for r in past_reports %}
+                                <tr>
+                                    <td class="small text-muted" style="font-size: 0.73rem;">
+                                        {{ r.created_at|date:"M d, h:i A" }}
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-dark small">{{ r.menu_item.name }}</div>
+                                        <div class="text-muted" style="font-size: 0.7rem;">{{ r.menu_item.category.name|default:"General" }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="small text-dark" style="max-width: 200px;">
+                                            {{ r.reason }}
+                                        </div>
+                                    </td>
+                                    <td class="small text-muted">
+                                        {{ r.reported_by.get_full_name|default:r.reported_by.username|default:"Kitchen" }}
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if r.status == 'APPROVED' %}bg-success{% elif r.status == 'PENDING' %}bg-warning text-dark{% else %}bg-secondary{% endif %} px-2 py-1" style="font-size: 0.7rem;">
+                                            {{ r.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="bi bi-check-circle fs-2 text-success d-block mb-1"></i>
+                                        <div class="fw-semibold">No active food item shortages reported</div>
+                                        <div class="small">All menu items are currently available for kitchen preparation.</div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

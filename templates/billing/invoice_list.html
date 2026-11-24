@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+
+{% block title %}Invoices & Billing History{% endblock %}
+
+{% block extra_css %}
+<style>
+.invoice-card {
+    transition: transform 0.2s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08)) !important;
+}
+.invoice-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12) !important;
+}
+.invoice-pod {
+    background-color: var(--bs-tertiary-bg, #f8fafc);
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.06));
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+[data-bs-theme="dark"] .invoice-card {
+    background-color: var(--rms-card-bg, #151921) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-bs-theme="dark"] .invoice-pod {
+    background-color: rgba(255, 255, 255, 0.035) !important;
+    border-color: rgba(255, 255, 255, 0.06) !important;
+}
+.invoice-number-link {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: var(--bs-primary, #0d6efd);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+[data-bs-theme="dark"] .invoice-number-link {
+    color: #60a5fa;
+}
+.invoice-number-link:hover {
+    text-decoration: underline;
+    color: var(--bs-primary-text-emphasis, #3b82f6);
+}
+.total-due-amount {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">
+            <i class="bi bi-receipt-cutoff text-warning me-2"></i>Invoices & Billing History
+        </h3>
+        <p class="text-muted small mb-0">Payment settlements, transaction receipts, and sales audit</p>
+    </div>
+    
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <a href="{% url 'billing:consolidated_list' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-collection-fill"></i> Consolidated Bills
+        </a>
+        <a href="{% url 'billing:merge_bills_select' %}" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs fw-semibold text-dark">
+            <i class="bi bi-intersect"></i> Merge Customer Bills
+        </a>
+        <div class="card p-2 px-3 bg-success-subtle border-success shadow-xs mb-0 rounded-3">
+            <span class="text-success small fw-semibold text-uppercase" style="font-size: 0.68rem;">Total Settled</span>
+            <h5 class="fw-bold text-success mb-0">₹{{ total_revenue|floatformat:2 }}</h5>
+        </div>
+        <div class="card p-2 px-3 bg-danger-subtle border-danger shadow-xs mb-0 rounded-3">
+            <span class="text-danger small fw-semibold text-uppercase" style="font-size: 0.68rem;">Outstanding</span>
+            <h5 class="fw-bold text-danger mb-0">₹{{ total_unpaid|floatformat:2 }}</h5>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Bar & Quick Search -->
+<div class="card mb-4 border-0 shadow-sm rounded-4 bg-body">
+    <div class="card-body p-3">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-stretch align-items-lg-center gap-3">
+            <!-- Filter Pills -->
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="text-muted small fw-bold me-1">Status:</span>
+                <a href="{% url 'billing:list' %}" class="btn btn-sm rounded-pill px-3 {% if not status_filter %}btn-primary text-white shadow-xs{% else %}btn-outline-secondary{% endif %}">
+                    All Bills
+                </a>
+                <a href="?status=PAID" class="btn btn-sm rounded-pill px-3 {% if status_filter == 'PAID' %}btn-success text-white shadow-xs{% else %}btn-outline-secondary{% endif %}">
+                    Paid in Full
+                </a>
+                <a href="?status=UNPAID" class="btn btn-sm rounded-pill px-3 {% if status_filter == 'UNPAID' %}btn-danger text-white shadow-xs{% else %}btn-outline-secondary{% endif %}">
+                    Unpaid
+                </a>
+                <a href="?status=PARTIALLY_PAID" class="btn btn-sm rounded-pill px-3 {% if status_filter == 'PARTIALLY_PAID' %}btn-warning text-dark shadow-xs{% else %}btn-outline-secondary{% endif %}">
+                    Partially Paid
+                </a>
+                <a href="?status=MERGED" class="btn btn-sm rounded-pill px-3 {% if status_filter == 'MERGED' %}btn-info text-dark shadow-xs{% else %}btn-outline-secondary{% endif %}">
+                    Merged into Consolidated
+                </a>
+            </div>
+
+            <!-- Fast Search Input -->
+            <div style="min-width: 280px; max-width: 400px;">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-body-tertiary border-end-0 rounded-start-pill ps-3 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" id="invoiceSearchInput" class="form-control bg-body-tertiary border-start-0 rounded-end-pill py-1.5" placeholder="Search by Invoice #, Table, Group, Customer...">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invoices Cards Grid View -->
+<div class="row g-3 g-xl-4 row-cols-1 row-cols-md-2 row-cols-xl-3 mb-4" id="invoicesGrid">
+    {% for inv in invoices %}
+    <div class="col invoice-card-item" 
+         data-search="{{ inv.invoice_number|lower }} {% if inv.session %}{{ inv.session.table.table_number|lower }} {{ inv.session.session_name|lower }} {{ inv.session.join_code }}{% elif inv.table %}{{ inv.table.table_number|lower }}{% endif %} {{ inv.customer_name|lower }} {{ inv.get_status_display|lower }}">
+        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative invoice-card bg-body">
+            
+            <!-- Card Header: Invoice #, Type, and Status Badge -->
+            <div class="card-header bg-transparent border-bottom border-light-subtle pt-3 px-3.5 pb-2.5">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                        <a href="{% url 'billing:invoice_detail' inv.id %}" class="invoice-number-link font-monospace d-inline-flex align-items-center gap-1.5">
+                            <i class="bi bi-receipt text-muted"></i>{{ inv.invoice_number }}
+                        </a>
+                        <div class="small text-muted mt-0.5" style="font-size: 0.75rem;">
+                            {{ inv.get_invoice_type_display }}
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge bg-{{ inv.badge_class }} rounded-pill px-3 py-1.5 fw-bold fs-7 shadow-xs">
+                            {{ inv.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body p-3.5 d-flex flex-column gap-2.5">
+                
+                <!-- Table & Group Info Pod -->
+                <div class="invoice-pod">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-1.5">
+                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                            {% if inv.session %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1 fw-bold fs-7">
+                                    <i class="bi bi-grid-3x3-gap-fill me-1"></i>Table {{ inv.session.table.table_number }}
+                                </span>
+                                <span class="fw-bold fs-6 text-body">
+                                    {{ inv.session.session_name }}
+                                </span>
+                            {% elif inv.table %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1 fw-bold fs-7">
+                                    <i class="bi bi-grid-3x3-gap-fill me-1"></i>Table {{ inv.table.table_number }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1 fw-bold fs-7">
+                                    <i class="bi bi-bag-check me-1"></i>Takeaway / Walk-In
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        {% if inv.session and inv.session.join_code %}
+                            <span class="badge bg-body-secondary text-body border border-secondary-subtle rounded-pill px-2 py-1 font-monospace small" style="font-size: 0.74rem;">
+                                <i class="bi bi-key-fill text-muted me-1"></i>Code: {{ inv.session.join_code }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Customer & Timestamp Row -->
+                <div class="d-flex justify-content-between align-items-center px-1 text-muted small" style="font-size: 0.8rem;">
+                    <div class="d-flex align-items-center gap-1.5 text-body fw-semibold text-truncate" style="max-width: 60%;">
+                        <i class="bi bi-person-circle text-muted fs-6"></i>
+                        <span class="text-truncate" title="{{ inv.customer_name }}">{{ inv.customer_name }}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.76rem;">
+                        <i class="bi bi-clock"></i>
+                        <span>{{ inv.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                </div>
+
+                <!-- Financial Pod -->
+                <div class="invoice-pod mt-auto">
+                    <div class="d-flex justify-content-between align-items-center mb-1 text-muted small">
+                        <span>Subtotal:</span>
+                        <span class="font-monospace">₹{{ inv.subtotal|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-baseline">
+                        <span class="fw-bold text-body small">Total Due:</span>
+                        <span class="total-due-amount text-warning font-monospace">
+                            ₹{{ inv.total_amount|floatformat:2 }}
+                        </span>
+                    </div>
+                    {% if inv.status != 'PAID' and inv.balance_due > 0 %}
+                    <div class="d-flex justify-content-between align-items-center mt-1 pt-1 border-top border-light-subtle text-danger small">
+                        <span class="fw-semibold">Outstanding Balance:</span>
+                        <span class="fw-bold font-monospace">₹{{ inv.balance_due|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if inv.consolidated_bill %}
+                    <div class="mt-2 pt-1 border-top border-light-subtle">
+                        <a href="{% url 'billing:consolidated_detail' inv.consolidated_bill.id %}" class="badge bg-info-subtle text-info border border-info-subtle text-decoration-none py-1 px-2 d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-intersect"></i> Merged: {{ inv.consolidated_bill.bill_number }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <!-- Card Footer: Actions -->
+            <div class="card-footer bg-transparent border-top border-light-subtle p-3 pt-2.5">
+                <div class="d-flex gap-2">
+                    <a href="{% url 'billing:invoice_detail' inv.id %}" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold text-dark flex-grow-1 text-center d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs">
+                        <i class="bi bi-eye-fill"></i> Details
+                    </a>
+                    <a href="{% url 'billing:print_receipt' inv.id %}" target="_blank" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1" title="Print Receipt">
+                        <i class="bi bi-printer"></i>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 w-100">
+        <div class="card border-0 shadow-sm rounded-4 text-center py-5 px-3 bg-body">
+            <div class="display-4 text-muted mb-3">
+                <i class="bi bi-receipt-cutoff"></i>
+            </div>
+            <h5 class="fw-bold text-body">No Invoices Found</h5>
+            <p class="text-muted small mb-3">No billing records match the selected status filter.</p>
+            <div>
+                <a href="{% url 'billing:list' %}" class="btn btn-primary btn-sm rounded-pill px-3.5 py-1.5">
+                    View All Invoices
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- No search results container -->
+<div id="searchNoResults" class="card border-0 shadow-sm rounded-4 text-center py-5 px-3 bg-body mb-4" style="display: none;">
+    <div class="display-5 text-muted mb-2">
+        <i class="bi bi-search"></i>
+    </div>
+    <h5 class="fw-bold text-body">No Matching Invoices</h5>
+    <p class="text-muted small mb-0">Try adjusting your search query.</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('invoiceSearchInput');
+    const cards = document.querySelectorAll('.invoice-card-item');
+    const noResults = document.getElementById('searchNoResults');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const searchData = card.getAttribute('data-search') || '';
+                if (!query || searchData.includes(query)) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            if (noResults) {
+                noResults.style.display = (visibleCount === 0 && cards.length > 0) ? 'block' : 'none';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

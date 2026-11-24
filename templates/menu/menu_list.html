@@ -1,0 +1,351 @@
+{% extends 'base.html' %}
+
+{% block title %}Menu Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .menu-item-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .menu-item-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+    .menu-dish-img {
+        transition: transform 0.35s ease;
+    }
+    .menu-item-card:hover .menu-dish-img {
+        transform: scale(1.08);
+    }
+    [data-bs-theme="dark"] .menu-item-img-container {
+        background-color: #12161f !important;
+    }
+    
+    /* Sticky Filter & Search Bar */
+    .menu-sticky-filter {
+        position: -webkit-sticky;
+        position: sticky;
+        top: var(--top-navbar-height, 65px);
+        z-index: 1015;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+        border-radius: 16px;
+        transition: top 0.15s ease, box-shadow 0.2s ease;
+    }
+    [data-bs-theme="dark"] .menu-sticky-filter {
+        background: rgba(21, 25, 33, 0.98) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45) !important;
+    }
+
+    /* Category Scroll Track with Hidden Scrollbar across all browsers */
+    .category-scroll-track {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE 10+ */
+        -webkit-overflow-scrolling: touch;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        padding-left: 2px;
+        padding-right: 2px;
+    }
+    .category-scroll-track::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Edge, Opera */
+        width: 0;
+        height: 0;
+    }
+    .category-scroll-track .cat-pill {
+        transform: none !important;
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold mb-1 text-dark">Food & Beverage Menu</h3>
+        <p class="text-muted small mb-0">Manage dishes, pricing, recipes, and availability</p>
+    </div>
+    
+    <div class="d-flex align-items-center gap-2 flex-wrap flex-sm-nowrap w-100 w-md-auto">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1 flex-md-grow-0 fw-semibold">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        {% if user.is_admin_or_manager %}
+        <a href="{% url 'menu:categories' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1 flex-md-grow-0 fw-semibold">
+            <i class="bi bi-tags"></i> Manage Categories
+        </a>
+        <a href="{% url 'menu:item_create' %}" class="btn btn-primary btn-sm rounded-pill px-3 py-2 d-inline-flex align-items-center justify-content-center gap-1.5 flex-grow-1 flex-md-grow-0 fw-semibold shadow-xs">
+            <i class="bi bi-plus-lg"></i> Add Dish
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filters Bar (Sticky on Scroll with Zero Gap & Aligned Grid) -->
+<div class="card mb-4 border-0 shadow-sm menu-sticky-filter" id="menuStickyFilter">
+    <div class="card-body p-3 p-md-3.5">
+        <!-- Row 1: Category Filter Track (Scrollbar hidden) + Active/Deactivated Switcher -->
+        <div class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3 pb-3 mb-3 border-bottom">
+            
+            <!-- Category Pills (Smooth Swipe, No ugly scrollbar) -->
+            <div class="category-scroll-track flex-grow-1 pe-lg-2">
+                <a href="{% url 'menu:list' %}{% if status_filter != 'active' %}?status={{ status_filter }}{% endif %}" class="cat-pill text-decoration-none {% if not selected_category %}active{% endif %}">
+                    <i class="bi bi-grid-fill me-1"></i> All Items
+                </a>
+                {% for cat in categories %}
+                <a href="?category={{ cat.slug }}{% if status_filter != 'active' %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="cat-pill text-decoration-none {% if selected_category == cat.slug %}active{% endif %}">
+                    <i class="bi {{ cat.icon }} me-1"></i> {{ cat.name }}
+                </a>
+                {% endfor %}
+            </div>
+
+            {% if user.is_admin_or_manager %}
+            <!-- Admin Visibility Controls: Active vs Deactivated (Clean Alignment) -->
+            <div class="btn-group btn-group-sm flex-shrink-0 shadow-xs align-self-start align-self-lg-center" role="group">
+                <a href="{% url 'menu:list' %}?status=active{% if selected_category %}&category={{ selected_category }}{% endif %}" 
+                   class="btn {% if status_filter == 'active' %}btn-primary fw-semibold{% else %}btn-outline-secondary{% endif %} d-inline-flex align-items-center gap-1.5 px-3 py-1.5" title="Show Active Menu Dishes">
+                    <i class="bi bi-check-circle-fill"></i> Active ({{ active_count }})
+                </a>
+                <a href="{% url 'menu:list' %}?status=inactive{% if selected_category %}&category={{ selected_category }}{% endif %}" 
+                   class="btn {% if status_filter == 'inactive' %}btn-danger fw-semibold{% else %}btn-outline-secondary{% endif %} d-inline-flex align-items-center gap-1.5 px-3 py-1.5" title="Show Deactivated & Hidden Items">
+                    <i class="bi bi-slash-circle"></i> Deactivated ({{ inactive_count }})
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Row 2: Search Input & Results Information -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <form method="get" class="d-flex gap-2 flex-grow-1 w-100" style="max-width: 480px;">
+                {% if selected_category %}
+                    <input type="hidden" name="category" value="{{ selected_category }}">
+                {% endif %}
+                {% if status_filter != 'active' %}
+                    <input type="hidden" name="status" value="{{ status_filter }}">
+                {% endif %}
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted ps-3">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control bg-light border-start-0 border-end-0 ps-1" placeholder="Search menu dishes, ingredients..." value="{{ search_query }}">
+                    <button type="submit" class="btn btn-primary px-3 fw-semibold search-submit-btn text-nowrap">
+                        Search
+                    </button>
+                    {% if search_query %}
+                        <a href="{% url 'menu:list' %}{% if selected_category %}?category={{ selected_category }}{% if status_filter != 'active' %}&status={{ status_filter }}{% endif %}{% elif status_filter != 'active' %}?status={{ status_filter }}{% endif %}" class="btn btn-outline-secondary d-flex align-items-center" title="Clear Search">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div class="d-flex align-items-center justify-content-between justify-content-md-end gap-2 text-muted small flex-shrink-0">
+                <span>Showing <strong class="text-dark">{{ items|length }}</strong> dish{{ items|length|pluralize:"es" }}</span>
+                {% if selected_category or search_query or status_filter != 'active' %}
+                    <a href="{% url 'menu:list' %}" class="badge bg-light text-secondary border text-decoration-none py-1.5 px-2.5 rounded-pill d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset View
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Menu Items Grid -->
+<div class="row g-4">
+    {% for item in items %}
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+        <div class="card h-100 shadow-sm menu-item-card food-item overflow-hidden {% if not item.is_available %}opacity-75{% endif %}">
+            <!-- Dish Image Header with Image / Fallback -->
+            <div class="position-relative menu-item-img-container" style="height: 180px; overflow: hidden; background-color: #f8fafc;">
+                {% if item.image %}
+                    <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-100 h-100 menu-dish-img" style="object-fit: cover;">
+                {% else %}
+                    <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center text-muted bg-light">
+                        <i class="bi bi-egg-fried fs-1 text-secondary opacity-50 mb-1"></i>
+                        <span class="small" style="font-size: 0.72rem;">No Image Available</span>
+                    </div>
+                {% endif %}
+
+                <!-- Overlaid Image Header Badges (Unified Flex Container to Prevent Overlap) -->
+                <div class="position-absolute top-0 start-0 end-0 p-2 d-flex justify-content-between align-items-start pointer-events-none" style="z-index: 2;">
+                    <!-- Category Badge on Top-Left (High-Contrast Solid Badge) -->
+                    <div class="d-flex flex-column align-items-start gap-1" style="max-width: 58%;">
+                        <span class="badge dish-img-badge badge-cat-{{ item.category.slug|default:'starters' }} shadow-sm text-truncate d-inline-flex align-items-center" style="max-width: 100%;">
+                            <i class="bi {{ item.category.icon }} flex-shrink-0"></i>
+                            <span class="text-truncate">{{ item.category.name }}</span>
+                        </span>
+                    </div>
+
+                    <!-- Status Badges on Top-Right (Cleanly Stacked Vertically to Prevent Overlap) -->
+                    <div class="d-flex flex-column align-items-end gap-1" style="max-width: 42%;">
+                        {% if item.is_available and item.category.is_active %}
+                            <span class="badge bg-success shadow-sm" style="font-size: 0.68rem; padding: 4px 7px;">
+                                <i class="bi bi-check2 me-1"></i>In Stock
+                            </span>
+                        {% elif not item.category.is_active %}
+                            <span class="badge bg-secondary shadow-sm" style="font-size: 0.68rem; padding: 4px 7px;" title="Category is currently disabled">
+                                <i class="bi bi-folder-x me-1"></i>Category Disabled
+                            </span>
+                        {% else %}
+                            <span class="badge bg-danger shadow-sm" style="font-size: 0.68rem; padding: 4px 7px;">
+                                <i class="bi bi-slash-circle me-1"></i>Deactivated
+                            </span>
+                        {% endif %}
+
+                        {% if item.is_special %}
+                            <span class="badge badge-special shadow-sm" style="font-size: 0.68rem; padding: 4px 7px;">
+                                <i class="bi bi-fire me-1"></i>Special
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-3 d-flex flex-column">
+                <!-- Dish Title (Fixed height, vertically centered, 2-line clamp) -->
+                <div class="mb-2 d-flex align-items-center" style="height: 2.85rem; overflow: hidden;">
+                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.02rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="{{ item.name }}">
+                        {{ item.name }}
+                    </h5>
+                </div>
+
+                <!-- Description (Uniform 2-line fixed height) -->
+                <div class="mb-2" style="height: 2.6rem; overflow: hidden;">
+                    <p class="text-muted small mb-0" style="font-size: 0.82rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="{{ item.description }}">
+                        {{ item.description|default:"Chef specialty preparation crafted with fresh premium ingredients." }}
+                    </p>
+                </div>
+
+                <!-- Dietary Tags (Uniform fixed height container) -->
+                <div class="d-flex flex-wrap gap-1 mb-3 align-items-center" style="height: 1.65rem; overflow: hidden;">
+                    {% for tag in item.dietary_tags.all %}
+                        <span class="badge bg-{{ tag.badge_color }}-subtle text-{{ tag.badge_color }} small" style="font-size: 0.7rem; padding: 3px 7px;">{{ tag.name }}</span>
+                    {% empty %}
+                        <span class="badge bg-transparent text-transparent small" style="font-size: 0.7rem; padding: 3px 7px; user-select: none;">-</span>
+                    {% endfor %}
+                </div>
+
+                <!-- Card Footer: Price First, Then Options One by One Below Price with Clean Gap -->
+                <div class="pt-2 border-top mt-auto">
+                    <!-- Price and Cost Line -->
+                    <div class="d-flex justify-content-between align-items-baseline mb-2" style="min-height: 28px;">
+                        <div class="fs-4 fw-bold text-primary">{{ RESTAURANT_CURRENCY }}{{ item.price|floatformat:2 }}</div>
+                        {% if user.is_admin_or_manager and item.cost_price > 0 %}
+                            <div class="text-muted small text-end" style="font-size: 0.73rem;" title="Cost: {{ RESTAURANT_CURRENCY }}{{ item.cost_price }} ({{ item.profit_margin }}% margin)">
+                                Cost: {{ RESTAURANT_CURRENCY }}{{ item.cost_price }} &bull; {{ item.profit_margin }}%
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Action Options: Distinct Gap Between Deactivate, Edit Dish, and Delete Dish -->
+                    {% if user.is_admin_or_manager %}
+                    <div class="d-flex flex-column" style="gap: 8px;">
+                        <form method="post" action="{% url 'menu:item_toggle_availability' item.id %}" class="m-0">
+                            {% csrf_token %}
+                            {% if item.is_available and item.category.is_active %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger w-100 d-flex align-items-center justify-content-center" style="font-size: 0.82rem; height: 32px; border-radius: 8px;" title="Deactivate dish (hide from menu and search)">
+                                    <i class="bi bi-slash-circle me-1"></i> Deactivate
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-sm btn-success w-100 d-flex align-items-center justify-content-center" style="font-size: 0.82rem; height: 32px; border-radius: 8px;" title="Activate dish (show on menu and search)">
+                                    <i class="bi bi-check-circle me-1"></i> Activate
+                                </button>
+                            {% endif %}
+                        </form>
+                        <a href="{% url 'menu:item_edit' item.id %}" class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-center" style="font-size: 0.82rem; height: 32px; border-radius: 8px;" title="Edit Dish Details">
+                            <i class="bi bi-pencil me-1"></i> Edit Dish
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger w-100 d-flex align-items-center justify-content-center" style="font-size: 0.82rem; height: 32px; border-radius: 8px;" title="Delete Dish Permanently" onclick="confirmDeleteItem({{ item.id }}, '{{ item.name|escapejs }}')">
+                            <i class="bi bi-trash3 me-1"></i> Delete Dish
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5 text-muted">
+        <i class="bi bi-egg fs-1 d-block mb-2"></i>
+        {% if status_filter == 'inactive' %}
+            No deactivated items found. All dishes are currently active!
+        {% elif search_query %}
+            No active dishes matching "<strong>{{ search_query }}</strong>".
+        {% else %}
+            No active items found in this section.
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Delete Menu Item Confirmation Modal -->
+<div class="modal fade" id="deleteItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg p-3">
+            <form id="deleteItemForm" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-header border-0 pb-0 justify-content-between">
+                    <h6 class="fw-bold modal-title text-danger d-flex align-items-center gap-2">
+                        <i class="bi bi-trash3-fill"></i> Delete Menu Item
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-2">Are you sure you want to permanently delete this dish?</p>
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <h6 class="fw-bold text-dark mb-1" id="deleteItemName">Dish Name</h6>
+                        <small class="text-muted">This will remove this dish permanently from the menu catalog and customer ordering.</small>
+                    </div>
+                    <div class="alert alert-warning py-2 px-3 small rounded-3 mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill text-warning flex-shrink-0"></i>
+                        <span>This action cannot be undone.</span>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 d-flex gap-2">
+                    <button type="button" class="btn btn-light rounded-pill flex-grow-1" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill flex-grow-1 fw-bold">
+                        <i class="bi bi-trash3 me-1"></i> Delete Dish
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDeleteItem(itemId, itemName) {
+    const modalEl = document.getElementById('deleteItemModal');
+    if (modalEl) {
+        document.getElementById('deleteItemName').textContent = itemName;
+        document.getElementById('deleteItemForm').action = `/menu/item/${itemId}/delete/`;
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
+
+// Measure top-navbar height and dynamically set sticky offset
+function updateStickyFilterPosition() {
+    const navbar = document.querySelector('.top-navbar');
+    if (navbar) {
+        const navHeight = navbar.offsetHeight;
+        document.documentElement.style.setProperty('--top-navbar-height', `${navHeight}px`);
+    }
+}
+window.addEventListener('resize', updateStickyFilterPosition);
+window.addEventListener('orientationchange', updateStickyFilterPosition);
+document.addEventListener('DOMContentLoaded', updateStickyFilterPosition);
+updateStickyFilterPosition();
+</script>
+{% endblock %}

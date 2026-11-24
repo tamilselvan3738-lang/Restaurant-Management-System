@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Recovery OTP - {{ restaurant_name }}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 560px;
+            margin: 30px auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            background: #0f172a;
+            padding: 32px 24px;
+            text-align: center;
+        }
+        .logo-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: bold;
+            width: 56px;
+            height: 56px;
+            line-height: 56px;
+            border-radius: 14px;
+            margin-bottom: 12px;
+        }
+        .restaurant-title {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+        }
+        .restaurant-subtitle {
+            color: #94a3b8;
+            font-size: 13px;
+            margin: 0;
+        }
+        .content {
+            padding: 32px 28px;
+        }
+        .greeting {
+            font-size: 17px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+        .message {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #475569;
+            margin-bottom: 24px;
+        }
+        .otp-box {
+            background: #f1f5f9;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .otp-code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 38px;
+            font-weight: 800;
+            letter-spacing: 12px;
+            color: #ea580c;
+            display: inline-block;
+            margin-left: 12px;
+        }
+        .otp-expiry {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        .alert-box {
+            background-color: #fff7ed;
+            border-left: 4px solid #f97316;
+            padding: 14px 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            color: #9a3412;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+        .footer {
+            background: #f8fafc;
+            padding: 20px 24px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+            font-size: 12px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-badge">&#128293;</div>
+            <h1 class="restaurant-title">{{ restaurant_name }}</h1>
+            <p class="restaurant-subtitle">Secure Dining & POS Operations</p>
+        </div>
+        <div class="content">
+            <h2 class="greeting">Hello {{ user.get_full_name|default:user.username }},</h2>
+            <p class="message">
+                We received a request to reset your password for your <strong>{{ restaurant_name }}</strong> portal account. Use the one-time verification code below to authorize your password reset:
+            </p>
+            
+            <div class="otp-box">
+                <div class="otp-code">{{ otp }}</div>
+                <div class="otp-expiry">&#9200; This code expires in <strong>{{ expires_in_minutes }} minutes</strong></div>
+            </div>
+
+            <div class="alert-box">
+                <strong>Security Notice:</strong> Do not share this code with anyone. Our staff or management will never ask for your verification code or password. If you did not initiate this request, you can safely disregard this email.
+            </div>
+
+            <p class="message" style="font-size: 13px; color: #64748b; margin-bottom: 0;">
+                Role: <strong>{{ user.get_role_display }}</strong> | Account: <strong>{{ user.username }}</strong>
+            </p>
+        </div>
+        <div class="footer">
+            &copy; {% now "Y" %} {{ restaurant_name }}. All rights reserved.<br>
+            Automated security dispatch. Please do not reply directly to this email.
+        </div>
+    </div>
+</body>
+</html>

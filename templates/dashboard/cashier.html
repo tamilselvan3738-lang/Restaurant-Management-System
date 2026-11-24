@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cashier Operations Desk | {{ RESTAURANT_NAME }}{% endblock %}
+
+{% block content %}
+<!-- Top Header & Quick Actions -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h3 class="fw-bold mb-0 text-body">Good Day, {{ user.first_name|default:user.username }}!</h3>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                <i class="bi bi-wallet2 me-1"></i> Cashier Desk
+            </span>
+        </div>
+        <p class="text-muted small mb-0 mt-1">
+            Billing, live customer orders & payment settlement command center &bull; {{ today|date:"l, F d, Y" }}
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-arrow-left"></i> <span>Back</span>
+        </a>
+        <a href="#billSearchSection" class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm">
+            <i class="bi bi-search"></i> <span>Find & Settle Bill</span>
+        </a>
+        <a href="{% url 'billing:list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-receipt"></i> <span>All Invoices</span>
+        </a>
+        <a href="{% url 'tables:floor_plan' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-grid-3x3-gap"></i> <span>Floor Plan</span>
+        </a>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- 1. CASHIER COUNTER OVERVIEW METRIC CARDS (4 CARDS)                      -->
+<!-- ====================================================================== -->
+<div class="row g-3 mb-4">
+    <!-- 1. Unpaid Bills Awaiting Payment -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 p-3 shadow-sm border position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Unpaid Bills</span>
+                <div class="bg-warning-subtle text-warning-emphasis rounded-3 p-2">
+                    <i class="bi bi-hourglass-split fs-5 text-warning"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-1 text-warning">{{ unpaid_bills_count }} <span class="fs-6 fw-normal text-muted">bills</span></h3>
+            <div class="text-danger small fw-semibold">
+                {{ RESTAURANT_CURRENCY }}{{ unpaid_balance_total|floatformat:2 }} balance due
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Today's Settled Revenue -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 p-3 shadow-sm border position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Today's Revenue</span>
+                <div class="bg-success-subtle text-success rounded-3 p-2">
+                    <i class="bi bi-cash-stack fs-5"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-1 text-success">{{ RESTAURANT_CURRENCY }}{{ today_collected_total|floatformat:2 }}</h3>
+            <div class="text-muted small">
+                {{ today_paid_count }} bill{{ today_paid_count|pluralize }} settled today
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Active Dining Floor Tables -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 p-3 shadow-sm border position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Occupied Tables</span>
+                <div class="bg-primary-subtle text-primary rounded-3 p-2">
+                    <i class="bi bi-grid-3x3-gap-fill fs-5"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-1 text-primary">{{ occupied_tables_count }} <span class="fs-6 fw-normal text-muted">/ {{ total_tables_count }}</span></h3>
+            <div class="text-muted small">Active dining floor sessions</div>
+        </div>
+    </div>
+
+    <!-- 4. Active Customer Orders -->
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 p-3 shadow-sm border position-relative overflow-hidden">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem;">Active Orders</span>
+                <div class="bg-info-subtle text-info rounded-3 p-2">
+                    <i class="bi bi-receipt-cutoff fs-5"></i>
+                </div>
+            </div>
+            <h3 class="fw-bold mb-1 text-info">{{ active_orders_count }} <span class="fs-6 fw-normal text-muted">orders</span></h3>
+            <div class="text-muted small">{{ pending_kitchen_count }} in prep / kitchen queue</div>
+        </div>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- 2. CASHIER BILLING SEARCH & WORKFLOW (ANCHORED)                         -->
+<!-- ====================================================================== -->
+<div class="card shadow-sm border mb-4" id="billSearchSection">
+    <div class="card-body p-3">
+        <form method="get" action="{% url 'dashboard:cashier' %}" class="row g-2 align-items-center">
+            <div class="col-12 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-body text-muted border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ search_q|default:'' }}" class="form-control border-start-0" placeholder="Search by Bill #, Table #, Order #, or Customer...">
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="table" class="form-select">
+                    <option value="">-- All Tables --</option>
+                    {% for t in floor_tables %}
+                        <option value="{{ t.table_number }}" {% if table_filter == t.table_number %}selected{% endif %}>
+                            Table {{ t.table_number }} ({% if t.status == 'OCCUPIED' %}Occupied{% elif t.status == 'BILL_REQUESTED' %}Bill Req{% else %}Available{% endif %})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-auto ms-md-auto d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs">
+                    <i class="bi bi-funnel"></i> <span>Filter Bills</span>
+                </button>
+                {% if search_q or table_filter %}
+                    <a href="{% url 'dashboard:cashier' %}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1" title="Clear search">
+                        <i class="bi bi-x-circle"></i> <span>Reset</span>
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- 3. MAIN CASHIER WORKSPACE (2 COLUMNS)                                   -->
+<!-- ====================================================================== -->
+<div class="row g-4">
+    <!-- LEFT COLUMN: UNPAID BILLS TABLE & DINING FLOOR OVERVIEW -->
+    <div class="col-12 col-xl-8">
+        <!-- Card: Unpaid Bills Awaiting Settlement -->
+        <div class="card shadow-sm border mb-4">
+            <div class="card-header bg-body py-3 d-flex justify-content-between align-items-center border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning-subtle text-warning-emphasis p-1.5 rounded-2">
+                        <i class="bi bi-cash fs-6"></i>
+                    </span>
+                    <h6 class="fw-bold mb-0 text-body">Unpaid & Pending Bills</h6>
+                    <span class="badge bg-warning text-dark font-monospace fw-bold">{{ pending_bills|length }}</span>
+                </div>
+                <a href="{% url 'billing:list' %}" class="small text-decoration-none fw-semibold">View Billing Records &rarr;</a>
+            </div>
+
+            <div class="card-body p-0">
+                {% if pending_bills %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3 py-2.5 small fw-bold text-uppercase text-nowrap" style="font-size: 0.72rem; min-width: 155px;">Bill # / Date</th>
+                                    <th class="py-2.5 small fw-bold text-uppercase text-nowrap" style="font-size: 0.72rem; min-width: 140px;">Table & Session</th>
+                                    <th class="py-2.5 small fw-bold text-uppercase text-nowrap" style="font-size: 0.72rem; min-width: 115px;">Customer</th>
+                                    <th class="py-2.5 small fw-bold text-uppercase text-end text-nowrap" style="font-size: 0.72rem; min-width: 100px;">Amount</th>
+                                    <th class="py-2.5 small fw-bold text-uppercase text-center text-nowrap" style="font-size: 0.72rem; min-width: 100px;">Status</th>
+                                    <th class="pe-3 py-2.5 small fw-bold text-uppercase text-end text-nowrap" style="font-size: 0.72rem; min-width: 135px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bill in pending_bills %}
+                                <tr>
+                                    <td class="ps-3 text-nowrap">
+                                        <a href="{% url 'billing:invoice_detail' bill.id %}" class="fw-bold text-primary text-decoration-none font-monospace d-inline-block text-nowrap">
+                                            {{ bill.invoice_number }}
+                                        </a>
+                                        <div class="text-muted small text-nowrap" style="font-size: 0.72rem;">
+                                            {{ bill.created_at|date:"M d, h:i A" }}
+                                        </div>
+                                    </td>
+                                    <td class="text-nowrap">
+                                        {% if bill.table %}
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold text-nowrap">
+                                                Table {{ bill.table.table_number }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary text-nowrap">Takeaway</span>
+                                        {% endif %}
+                                        {% if bill.session %}
+                                            <div class="text-muted small mt-0.5 text-nowrap" style="font-size: 0.7rem;">
+                                                Session: <span class="fw-semibold text-body-secondary">{{ bill.session.session_name }}</span>
+                                            </div>
+                                        {% elif bill.order %}
+                                            <div class="text-muted small mt-0.5 text-nowrap" style="font-size: 0.7rem;">
+                                                Ord: {{ bill.order.order_number }}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <div class="fw-semibold text-body small text-nowrap">
+                                            {{ bill.order.customer_name|default:bill.session.session_name|default:"Guest Customer" }}
+                                        </div>
+                                        {% if bill.order.customer_phone %}
+                                            <div class="text-muted small text-nowrap" style="font-size: 0.7rem;">{{ bill.order.customer_phone }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end text-nowrap">
+                                        <div class="fw-bold text-body small font-monospace">
+                                            {{ RESTAURANT_CURRENCY }}{{ bill.total_amount|floatformat:2 }}
+                                        </div>
+                                        {% if bill.balance_due < bill.total_amount %}
+                                            <div class="text-danger small font-monospace" style="font-size: 0.7rem;">Due: {{ RESTAURANT_CURRENCY }}{{ bill.balance_due|floatformat:2 }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        {% if bill.status == 'PARTIALLY_PAID' %}
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1 rounded-pill" style="font-size: 0.7rem;">Partially Paid</span>
+                                        {% elif bill.status == 'UNPAID' %}
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill" style="font-size: 0.7rem;">Unpaid</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary px-2 py-1 rounded-pill" style="font-size: 0.7rem;">{{ bill.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="pe-3 text-end text-nowrap">
+                                        <div class="d-inline-flex align-items-center justify-content-end gap-1.5 text-nowrap">
+                                            <a href="{% url 'billing:invoice_detail' bill.id %}" class="btn btn-sm btn-primary py-1 px-2.5 rounded-pill d-inline-flex align-items-center gap-1 shadow-xs" style="font-size: 0.75rem;" title="Process Payment">
+                                                <i class="bi bi-wallet2"></i> <span>Settle</span>
+                                            </a>
+                                            <a href="{% url 'billing:print_receipt' bill.id %}" target="_blank" class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-pill d-inline-flex align-items-center justify-content-center shadow-xs" style="font-size: 0.75rem; width: 28px; height: 28px;" title="Print Invoice">
+                                                <i class="bi bi-printer"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <i class="bi bi-check2-circle text-success fs-1 d-block mb-2"></i>
+                        <h6 class="fw-bold text-body">No Pending Unpaid Bills!</h6>
+                        <p class="small text-muted mb-0">All customer bills are settled and up-to-date.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card: Dining Floor Table Status & Fast Bill Navigation -->
+        <div class="card shadow-sm border mt-4">
+            <div class="card-header bg-body py-3 d-flex justify-content-between align-items-center border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary-subtle text-primary p-1.5 rounded-2">
+                        <i class="bi bi-grid-3x3-gap fs-6"></i>
+                    </span>
+                    <h6 class="fw-bold mb-0 text-body">Floor Tables & Bill Status</h6>
+                </div>
+                <a href="{% url 'tables:floor_plan' %}" class="small text-decoration-none fw-semibold">Open Floor Plan &rarr;</a>
+            </div>
+            <div class="card-body p-3.5">
+                <div class="d-grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));">
+                    {% for t in floor_tables %}
+                    <div class="p-3 rounded-3 border h-100 d-flex flex-column justify-content-between {% if t.status == 'OCCUPIED' %}bg-primary-subtle bg-opacity-10 border-primary-subtle{% elif t.status == 'BILL_REQUESTED' %}bg-warning-subtle bg-opacity-25 border-warning{% else %}bg-body{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-body small">Table {{ t.table_number }}</span>
+                            {% if t.status == 'OCCUPIED' %}
+                                <span class="badge bg-primary px-2.5 py-1 rounded-pill" style="font-size: 0.65rem;">Occupied</span>
+                            {% elif t.status == 'BILL_REQUESTED' %}
+                                <span class="badge bg-warning text-dark font-monospace px-2.5 py-1 rounded-pill" style="font-size: 0.65rem;">Bill Req</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary px-2.5 py-1 rounded-pill" style="font-size: 0.65rem;">Free</span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top" style="border-color: rgba(255, 255, 255, 0.08) !important; font-size: 0.74rem;">
+                            <span class="text-muted"><i class="bi bi-people me-1"></i>{{ t.capacity }} seats</span>
+                            <a href="{% url 'dashboard:cashier' %}?table={{ t.table_number }}" class="text-decoration-none fw-semibold d-inline-flex align-items-center gap-1 small">
+                                Check Bill <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: RECENT PAYMENTS & QUICK TOOLS -->
+    <div class="col-12 col-xl-4">
+        <!-- Card: Recent Payment Settlements -->
+        <div class="card shadow-sm border mb-4">
+            <div class="card-header bg-body py-3 d-flex justify-content-between align-items-center border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success-subtle text-success p-1.5 rounded-2">
+                        <i class="bi bi-check2-circle fs-6"></i>
+                    </span>
+                    <h6 class="fw-bold mb-0 text-body">Recent Settlements</h6>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_payments %}
+                    <div class="list-group list-group-flush small">
+                        {% for p in recent_payments %}
+                        <div class="list-group-item p-3 d-flex justify-content-between align-items-center">
+                            <div class="min-w-0 pe-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold text-body">
+                                        {{ RESTAURANT_CURRENCY }}{{ p.amount|floatformat:2 }}
+                                    </span>
+                                    <span class="badge {% if p.payment_method == 'CASH' %}bg-success-subtle text-success border border-success-subtle{% elif p.payment_method == 'UPI' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-info-subtle text-info border border-info-subtle{% endif %} text-uppercase" style="font-size: 0.65rem;">
+                                        {{ p.get_payment_method_display }}
+                                    </span>
+                                </div>
+                                <div class="text-muted mt-1 text-truncate" style="font-size: 0.72rem;">
+                                    Inv: {{ p.invoice.invoice_number }} {% if p.invoice.table %}&bull; Table {{ p.invoice.table.table_number }}{% endif %}
+                                </div>
+                                <div class="text-muted" style="font-size: 0.68rem;">
+                                    By: {{ p.cashier.get_full_name|default:p.cashier.username }} &bull; {{ p.payment_date|date:"h:i A" }}
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <a href="{% url 'billing:print_receipt' p.invoice.id %}" target="_blank" class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-2" style="font-size: 0.72rem;" title="Print Receipt">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-4 text-center text-muted small">
+                        No payments recorded today yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card: Fast Operational Links -->
+        <div class="card shadow-sm border">
+            <div class="card-header bg-body py-3 border-bottom">
+                <h6 class="fw-bold mb-0 text-body">
+                    <i class="bi bi-lightning-charge text-warning me-2"></i> Operational Shortcuts
+                </h6>
+            </div>
+            <div class="card-body p-2.5">
+                <div class="d-flex flex-column gap-1.5">
+                    <a href="{% url 'orders:list' %}" class="btn btn-light d-flex align-items-center justify-content-between p-2.5 rounded-2 text-decoration-none">
+                        <span class="d-flex align-items-center gap-2 text-body small fw-semibold">
+                            <i class="bi bi-clock-history text-primary"></i> Order Management
+                        </span>
+                        <i class="bi bi-chevron-right text-muted small"></i>
+                    </a>
+                    <a href="{% url 'orders:cancelled_orders' %}" class="btn btn-light d-flex align-items-center justify-content-between p-2.5 rounded-2 text-decoration-none">
+                        <span class="d-flex align-items-center gap-2 text-body small fw-semibold">
+                            <i class="bi bi-x-circle text-danger"></i> Cancelled Orders Log
+                        </span>
+                        <i class="bi bi-chevron-right text-muted small"></i>
+                    </a>
+                    <a href="{% url 'tables:floor_plan' %}" class="btn btn-light d-flex align-items-center justify-content-between p-2.5 rounded-2 text-decoration-none">
+                        <span class="d-flex align-items-center gap-2 text-body small fw-semibold">
+                            <i class="bi bi-grid-3x3-gap text-success"></i> Table Management & Floor
+                        </span>
+                        <i class="bi bi-chevron-right text-muted small"></i>
+                    </a>
+                    <a href="{% url 'tables:table_qr_print_all' %}" class="btn btn-light d-flex align-items-center justify-content-between p-2.5 rounded-2 text-decoration-none">
+                        <span class="d-flex align-items-center gap-2 text-body small fw-semibold">
+                            <i class="bi bi-qr-code text-info"></i> Table QR Codes
+                        </span>
+                        <i class="bi bi-chevron-right text-muted small"></i>
+                    </a>
+                    <a href="{% url 'orders:kitchen_display' %}" class="btn btn-light d-flex align-items-center justify-content-between p-2.5 rounded-2 text-decoration-none">
+                        <span class="d-flex align-items-center gap-2 text-body small fw-semibold">
+                            <i class="bi bi-egg-fried text-warning"></i> Kitchen Display System (KDS)
+                        </span>
+                        <i class="bi bi-chevron-right text-muted small"></i>
+                    </a>
+                    <a href="{% url 'menu:list' %}" class="btn btn-light d-flex align-items-center justify-content-between p-2.5 rounded-2 text-decoration-none">
+                        <span class="d-flex align-items-center gap-2 text-body small fw-semibold">
+                            <i class="bi bi-card-list text-primary"></i> Food Menu Catalog
+                        </span>
+                        <i class="bi bi-chevron-right text-muted small"></i>
+                    </a>
+                    <a href="{% url 'billing:list' %}" class="btn btn-light d-flex align-items-center justify-content-between p-2.5 rounded-2 text-decoration-none">
+                        <span class="d-flex align-items-center gap-2 text-body small fw-semibold">
+                            <i class="bi bi-cash-stack text-success"></i> Billing & Invoices
+                        </span>
+                        <i class="bi bi-chevron-right text-muted small"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

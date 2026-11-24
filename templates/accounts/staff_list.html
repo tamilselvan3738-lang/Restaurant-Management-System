@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+
+{% block title %}Employee & Staff Management | {{ RESTAURANT_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.staff-card {
+    border-radius: 18px;
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+    background: var(--bs-card-bg, #ffffff);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.staff-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+}
+[data-bs-theme="dark"] .staff-card {
+    background-color: var(--rms-card-bg, #151921) !important;
+    border-color: var(--rms-border-color, #222a38) !important;
+}
+.staff-detail-box {
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 12px 14px;
+}
+[data-bs-theme="dark"] .staff-detail-box {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.bg-role-manager { background: #ea580c !important; }
+.bg-role-waiter { background: #3b82f6 !important; }
+.bg-role-kitchen { background: #10b981 !important; }
+.bg-role-cashier { background: #8b5cf6 !important; }
+.bg-role-default { background: #6366f1 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div class="min-w-0 flex-grow-1">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h3 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-people-fill text-primary me-1"></i> Staff & Employee Management
+            </h3>
+            <span class="badge bg-primary rounded-pill px-3 py-1.5">{{ total_staff }} Staff</span>
+        </div>
+        <p class="text-muted small mb-0 mt-0.5">
+            Manage restaurant personnel, unique credentials (Employee ID, Username, Email, Phone), roles, and operational access
+        </p>
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-shrink-0">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1.5 shadow-xs rounded-pill px-3 py-2 fw-semibold text-nowrap">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <a href="{% url 'accounts:staff_create' %}" class="btn btn-primary d-inline-flex align-items-center gap-1.5 shadow-sm rounded-pill px-3.5 py-2 fw-semibold text-nowrap">
+            <i class="bi bi-person-plus-fill"></i> Add Staff Member
+        </a>
+    </div>
+</div>
+
+<!-- Key Employee Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Total Personnel</span>
+                    <h3 class="fw-bold text-dark mb-0 mt-1">{{ total_staff }}</h3>
+                </div>
+                <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 46px; height: 46px;">
+                    <i class="bi bi-people fs-5"></i>
+                </div>
+            </div>
+            <div class="text-muted small mt-2" style="font-size: 0.75rem;">Registered operational staff</div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">On Duty Now</span>
+                    <h3 class="fw-bold text-success mb-0 mt-1">{{ on_duty_count }}</h3>
+                </div>
+                <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 46px; height: 46px;">
+                    <i class="bi bi-clock-history fs-5"></i>
+                </div>
+            </div>
+            <div class="text-muted small mt-2" style="font-size: 0.75rem;">Staff actively working on shift</div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">Unique Logins</span>
+                    <h3 class="fw-bold text-primary mb-0 mt-1">Multi-Access</h3>
+                </div>
+                <div class="rounded-circle bg-info-subtle text-info-emphasis d-flex align-items-center justify-content-center" style="width: 46px; height: 46px;">
+                    <i class="bi bi-shield-lock fs-5"></i>
+                </div>
+            </div>
+            <div class="text-muted small mt-2" style="font-size: 0.75rem;">Employee ID, Phone, Email & Username</div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;">System Security</span>
+                    <h3 class="fw-bold text-dark mb-0 mt-1">Active</h3>
+                </div>
+                <div class="rounded-circle bg-light text-secondary d-flex align-items-center justify-content-center" style="width: 46px; height: 46px;">
+                    <i class="bi bi-shield-check fs-5"></i>
+                </div>
+            </div>
+            <div class="text-muted small mt-2" style="font-size: 0.75rem;">Encrypted credentials & access</div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filter Controls -->
+<div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+    <form method="get" action="{% url 'accounts:staff_list' %}" class="row g-2 align-items-center">
+        <!-- Search Input -->
+        <div class="col-12 col-md-5">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light border-end-0 text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ search_q }}" class="form-control bg-light border-start-0" placeholder="Search by Name, Employee ID, Email, Phone..." style="height: 38px; font-size: 0.85rem;">
+                {% if search_q %}
+                    <a href="{% url 'accounts:staff_list' %}" class="btn btn-light border border-start-0 text-muted d-flex align-items-center" title="Clear search">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Role Filter -->
+        <div class="col-6 col-md-3">
+            <select name="role" class="form-select form-select-sm bg-light" style="height: 38px; font-size: 0.82rem;" onchange="this.form.submit()">
+                <option value="">All Roles</option>
+                {% for r in roles %}
+                    {% if r != roles.ADMIN and r != roles.CUSTOMER %}
+                        <option value="{{ r.value }}" {% if role_filter == r.value %}selected{% endif %}>{{ r.label }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Duty Status Filter -->
+        <div class="col-6 col-md-2">
+            <select name="duty" class="form-select form-select-sm bg-light" style="height: 38px; font-size: 0.82rem;" onchange="this.form.submit()">
+                <option value="">All Duty Status</option>
+                <option value="on" {% if duty_filter == 'on' %}selected{% endif %}>On Duty Only</option>
+                <option value="off" {% if duty_filter == 'off' %}selected{% endif %}>Off Duty Only</option>
+            </select>
+        </div>
+
+        <!-- Submit & Reset Buttons -->
+        <div class="col-12 col-md-auto ms-md-auto d-flex gap-1.5">
+            <button type="submit" class="btn btn-sm btn-primary flex-grow-1 fw-semibold" style="height: 38px;">
+                Filter
+            </button>
+            {% if search_q or role_filter or duty_filter %}
+                <a href="{% url 'accounts:staff_list' %}" class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style="height: 38px;" title="Reset filters">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Staff Members Cards Grid -->
+<div class="row g-3 mb-4">
+    {% for member in staff_members %}
+    <div class="col-12 col-md-6 col-xl-4 col-xxl-3">
+        <div class="staff-card card border-0 shadow-sm h-100 p-3 position-relative d-flex flex-column justify-content-between">
+            <div>
+                <!-- Top Row: Avatar, Name, Employee ID, Username & Account Badge -->
+                <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
+                    <div class="d-flex align-items-center gap-2.5 min-w-0">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-xs text-white flex-shrink-0" 
+                             style="width: 48px; height: 48px; font-size: 1.1rem; background: {% if member.role == 'MANAGER' %}#ea580c{% elif member.role == 'WAITER' %}#3b82f6{% elif member.role == 'KITCHEN' %}#10b981{% elif member.role == 'CASHIER' %}#8b5cf6{% else %}#6366f1{% endif %};">
+                            {{ member.first_name|default:member.username|slice:":1"|upper }}
+                        </div>
+                        <div class="min-w-0">
+                            <h6 class="fw-bold mb-0 text-truncate text-body" style="font-size: 0.98rem;" title="{{ member.get_full_name|default:member.username }}">
+                                {{ member.get_full_name|default:member.username }}
+                            </h6>
+                            <div class="d-flex align-items-center gap-1.5 mt-1 flex-wrap">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace fw-bold" style="font-size: 0.72rem; padding: 2px 6px;">
+                                    <i class="bi bi-hash"></i>{{ member.employee_id|default:"EMP-TBD" }}
+                                </span>
+                                <span class="text-muted small" style="font-size: 0.75rem;">@{{ member.username }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Account Active / Suspended Status -->
+                    <div class="flex-shrink-0">
+                        {% if member.is_suspended %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-0.5 rounded-pill small">
+                                <i class="bi bi-slash-circle me-1"></i>Suspended
+                            </span>
+                        {% elif member.is_active %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5 rounded-pill small">
+                                <i class="bi bi-check-circle-fill me-1"></i>Active
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border px-2 py-0.5 rounded-pill small">
+                                Inactive
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Role Badge & Duty Status Toggle -->
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                    <div>
+                        <span class="badge {% if member.role == 'MANAGER' %}bg-primary text-white{% elif member.role == 'WAITER' %}bg-info text-dark{% elif member.role == 'KITCHEN' %}bg-success text-white{% elif member.role == 'CASHIER' %}text-white{% else %}bg-secondary text-white{% endif %} text-nowrap fw-semibold px-2.5 py-1" style="font-size: 0.75rem; {% if member.role == 'CASHIER' %}background-color: #8b5cf6 !important;{% endif %}">
+                            <i class="bi bi-person-badge me-1"></i>{{ member.get_role_display }}
+                        </span>
+                    </div>
+                    <div>
+                        <form method="post" action="{% url 'accounts:staff_toggle_duty' member.id %}" class="d-inline">
+                            {% csrf_token %}
+                            {% if member.is_on_duty %}
+                                <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-0.5 d-inline-flex align-items-center gap-1.5 font-monospace shadow-xs" style="font-size: 0.74rem;" title="Click to toggle Off Duty">
+                                    <span class="spinner-grow spinner-grow-sm text-success" style="width: 7px; height: 7px;"></span>
+                                    <span>On Duty</span>
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-0.5 d-inline-flex align-items-center gap-1.5 font-monospace" style="font-size: 0.74rem;" title="Click to toggle On Duty">
+                                    <i class="bi bi-circle text-muted" style="font-size: 0.68rem;"></i>
+                                    <span>Off Duty</span>
+                                </button>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Details Box: Login credentials & Joining Date -->
+                <div class="staff-detail-box mb-3">
+                    <!-- Email -->
+                    <div class="d-flex align-items-center gap-2 text-truncate small mb-1.5" style="font-size: 0.78rem;">
+                        <i class="bi bi-envelope text-primary flex-shrink-0"></i>
+                        <span class="text-truncate text-body-secondary" title="{{ member.email }}">{{ member.email }}</span>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="d-flex align-items-center gap-2 text-truncate small mb-1.5" style="font-size: 0.78rem;">
+                        <i class="bi bi-telephone text-primary flex-shrink-0"></i>
+                        {% if member.phone_number %}
+                            <span class="font-monospace text-body-secondary">{{ member.phone_number }}</span>
+                        {% else %}
+                            <span class="text-muted fst-italic">No phone recorded</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Date of Joining -->
+                    <div class="d-flex align-items-center gap-2 text-truncate small" style="font-size: 0.78rem;">
+                        <i class="bi bi-calendar-check text-primary flex-shrink-0"></i>
+                        {% if member.hire_date %}
+                            <span class="text-body-secondary">Joined {{ member.hire_date|date:"M d, Y" }}</span>
+                        {% else %}
+                            <span class="text-muted fst-italic">Date of Joining: Not recorded</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Action Button -->
+            <div class="pt-2 border-top">
+                <a href="{% url 'accounts:staff_edit' member.id %}" class="btn btn-outline-primary btn-sm rounded-pill py-1.5 px-3 d-flex align-items-center justify-content-center gap-1.5 w-100 fw-semibold shadow-xs">
+                    <i class="bi bi-pencil-square"></i> Edit Staff Member
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white staff-card">
+            <i class="bi bi-people display-5 d-block mb-3 text-secondary opacity-50"></i>
+            <h5 class="fw-bold mb-1">No Staff Members Found</h5>
+            <p class="text-muted small mb-3">No staff members match the selected search query or filters.</p>
+            <div>
+                <a href="{% url 'accounts:staff_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Filters
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,510 @@
+{% extends 'chef/base_chef.html' %}
+{% load static %}
+
+{% block title %}Order {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h3 class="fw-bold mb-0">Order: {{ order.order_number }}</h3>
+            <span class="badge bg-{{ order.badge_class }} fs-6">{{ order.get_status_display }}</span>
+        </div>
+        <p class="text-muted small mb-0">
+            Placed on {{ order.created_at|date:"F d, Y @ h:i A" }} by {% if order.server %}{{ order.server.get_full_name|default:order.server.username }}{% else %}Table QR Ordering / Guest{% endif %}
+        </p>
+    </div>
+    
+    <div class="d-flex gap-2">
+        <a href="{% url 'chef:orders' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Orders List
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Order Items Breakdown (Exact Admin Match) -->
+    <div class="col-lg-8">
+        
+        <!-- Customer Added Extra Dishes Banner -->
+        {% if order.has_extra_items %}
+        <div class="card mb-4 border-warning bg-warning-subtle text-body shadow-xs">
+            <div class="card-header bg-warning bg-opacity-25 py-2.5 d-flex justify-content-between align-items-center border-warning-subtle">
+                <h6 class="fw-bold mb-0 text-warning-emphasis">
+                    <i class="bi bi-fire me-2 text-warning"></i> Customer Added Extra Dishes (+{{ order.total_extra_quantity }} items)
+                </h6>
+                <span class="badge bg-warning text-dark font-monospace fw-bold">+{{ order.total_extra_quantity }} extra</span>
+            </div>
+            <div class="card-body p-3 d-flex flex-column gap-2">
+                {% for extra in order.extra_items %}
+                <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between gap-3 bg-body shadow-2xs">
+                    <div class="d-flex align-items-center gap-2.5 min-w-0">
+                        {% if extra.menu_item.image %}
+                            <img src="{{ extra.menu_item.image.url }}" alt="{{ extra.menu_item.name }}" class="rounded-2 flex-shrink-0" style="width: 38px; height: 38px; object-fit: cover;">
+                        {% endif %}
+                        <div class="min-w-0">
+                            <div class="fw-bold text-body text-truncate">{{ extra.menu_item.name }}</div>
+                            <div class="small">
+                                {% if extra.initial_quantity > 0 %}
+                                    <span class="text-muted">(Initial: {{ extra.initial_quantity }}x &bull; Extra: +{{ extra.extra_quantity }}x &bull; Total: {{ extra.quantity }}x)</span>
+                                {% else %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">New Extra Dish</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 flex-shrink-0">
+                        <span class="badge bg-warning text-dark fw-bold font-monospace px-2 py-1">+{{ extra.extra_quantity }}x</span>
+                        <span class="fw-bold font-monospace text-body fs-6">{{ RESTAURANT_CURRENCY }}{{ extra.extra_total_price|floatformat:2 }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Ordered Items Section (Card Format) -->
+        <div class="card mb-4 border shadow-sm">
+            <div class="card-header bg-body py-3 d-flex justify-content-between align-items-center border-bottom">
+                <h6 class="fw-bold mb-0 text-body">
+                    <i class="bi bi-basket me-2 text-primary"></i> Ordered Items ({{ order.total_items }})
+                </h6>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold px-2.5 py-1">
+                    Table {{ order.table.table_number|default:"Takeaway" }}
+                </span>
+            </div>
+            
+            <div class="card-body p-3 d-flex flex-column gap-3">
+                {% for item in order.items.all %}
+                <div class="card p-3 border rounded-3 shadow-2xs {% if item.is_cancelled %}opacity-60 bg-danger-subtle bg-opacity-10 border-danger-subtle{% else %}bg-body{% endif %}">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
+                        <!-- Left: Dish Media & Metadata -->
+                        <div class="d-flex align-items-center gap-3 min-w-0">
+                            {% if item.menu_item.image %}
+                                <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" 
+                                     class="rounded-3 shadow-xs flex-shrink-0" 
+                                     style="width: 56px; height: 56px; object-fit: cover; border: 1px solid rgba(255,255,255,0.08);">
+                            {% else %}
+                                <div class="rounded-3 bg-secondary-subtle text-muted d-flex align-items-center justify-content-center flex-shrink-0 border"
+                                     style="width: 56px; height: 56px;">
+                                    <i class="bi bi-egg-fried fs-4 text-secondary"></i>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="min-w-0">
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                    <span class="badge bg-primary text-white fw-bold font-monospace px-2 py-0.5" style="font-size: 0.78rem;">
+                                        {{ item.quantity }}x
+                                    </span>
+                                    <span class="fw-bold text-body fs-6 {% if item.is_cancelled %}text-decoration-line-through text-muted{% endif %}">
+                                        {{ item.menu_item.name }}
+                                    </span>
+                                    {% if item.is_extra %}
+                                        <span class="badge bg-warning text-dark font-monospace" style="font-size: 0.68rem;">+Extra</span>
+                                    {% endif %}
+                                    {% if item.is_cancelled %}
+                                        <span class="badge bg-danger text-white" style="font-size: 0.68rem;">CANCELLED</span>
+                                    {% elif item.is_cancellation_requested %}
+                                        <span class="badge bg-warning text-dark" style="font-size: 0.68rem;">CANCEL REQUESTED</span>
+                                    {% else %}
+                                        <span class="badge bg-{{ item.badge_class }}-subtle text-{{ item.badge_class }} border border-{{ item.badge_class }}-subtle" style="font-size: 0.68rem;">
+                                            {{ item.get_status_display }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted small">
+                                    <span>{{ RESTAURANT_CURRENCY }}{{ item.unit_price|floatformat:2 }} each</span>
+                                </div>
+                                {% if item.cancellation_reason %}
+                                    <div class="text-danger small mt-1">
+                                        <i class="bi bi-x-circle me-1"></i>Cancelled: {{ item.cancellation_reason }}
+                                    </div>
+                                {% endif %}
+                                {% if item.special_notes %}
+                                    <div class="text-secondary small fst-italic mt-1">
+                                        <i class="bi bi-chat-left-dots me-1"></i>{{ item.special_notes }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Right: Subtotal & Dispatch Actions -->
+                        <div class="d-flex align-items-center justify-content-between justify-content-sm-end gap-3 w-100 w-sm-auto pt-2 pt-sm-0 border-top border-sm-top-0">
+                            <div class="text-sm-end">
+                                <div class="fw-bold fs-5 text-body font-monospace {% if item.is_cancelled %}text-decoration-line-through text-danger opacity-75{% endif %}">
+                                    {{ RESTAURANT_CURRENCY }}{{ item.original_total_price|floatformat:2 }}
+                                </div>
+                            </div>
+                            
+                            <!-- Kitchen Actions -->
+                            <div>
+                                {% if item.status != 'CANCELLED' %}
+                                    <div class="d-inline-flex gap-1.5 align-items-center">
+                                        {% if item.status == 'PENDING' and can_update_status %}
+                                        <form method="post" action="{% url 'chef:item_status' item.id %}" class="d-inline m-0">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="COOKING">
+                                            <button type="submit" class="btn btn-sm btn-primary px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm text-nowrap">
+                                                <i class="bi bi-fire"></i> Cook
+                                            </button>
+                                        </form>
+                                        {% elif item.status == 'COOKING' and can_mark_ready %}
+                                        <form method="post" action="{% url 'chef:item_status' item.id %}" class="d-inline m-0">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="READY">
+                                            <button type="submit" class="btn btn-sm btn-success px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1 shadow-sm text-nowrap">
+                                                <i class="bi bi-check2"></i> Ready
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        
+                                        {% if can_cancel_items and item.status != 'SERVED' %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger px-2.5 py-1.5 d-inline-flex align-items-center gap-1" title="Cancel Item" onclick="openItemCancelModal('{{ item.id }}', '{{ item.menu_item.name|escapejs }}', '{{ item.quantity }}')">
+                                            <i class="bi bi-x-circle"></i> <span>Cancel</span>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1">Voided</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-4 text-center text-muted">
+                    No items in this order.
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Total Bar (Legible Card Footer in Dark & Light Modes) -->
+            <div class="card-footer bg-body-tertiary py-3 px-3.5 border-top d-flex justify-content-between align-items-center">
+                <span class="text-body fw-bold">Items Total ({{ order.total_items }} item{{ order.total_items|pluralize }}):</span>
+                <span class="fw-bold fs-4 text-primary font-monospace">{{ RESTAURANT_CURRENCY }}{{ order.subtotal|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <!-- Special Instructions Card -->
+        {% if order.special_instructions %}
+        <div class="card bg-warning-subtle border-warning p-3 mb-4">
+            <h6 class="fw-bold text-dark mb-1"><i class="bi bi-info-circle me-1"></i> Order Special Instructions</h6>
+            <p class="mb-0 text-dark small">{{ order.special_instructions }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Cancellation & Audit History -->
+        {% if order.cancellation_logs.all %}
+        <div class="card border-danger-subtle mb-4">
+            <div class="card-header bg-danger-subtle text-danger fw-bold py-2 d-flex align-items-center gap-2">
+                <i class="bi bi-shield-x"></i> Cancellation & Audit History
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0" style="font-size: 0.82rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Type</th>
+                                <th>Item / Target</th>
+                                <th>Requested By</th>
+                                <th>Reason</th>
+                                <th>Deducted</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in order.cancellation_logs.all %}
+                            <tr>
+                                <td><span class="badge bg-secondary font-monospace">{{ log.get_cancellation_type_display }}</span></td>
+                                <td class="fw-semibold">{{ log.item_name|default:order.order_number }}</td>
+                                <td>{{ log.requested_by }}</td>
+                                <td class="text-truncate" style="max-width: 150px;">{{ log.reason }}</td>
+                                <td class="text-danger font-monospace fw-bold">{{ RESTAURANT_CURRENCY }}{{ log.amount_deducted|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge {% if log.status == 'CANCELLED' or log.status == 'APPROVED' %}bg-danger{% elif log.status == 'REQUESTED' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                        {{ log.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="text-muted">{{ log.created_at|date:"h:i A" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Column: Order Details & Status Actions -->
+    <div class="col-lg-4">
+
+        <!-- Status & Kitchen Actions Card -->
+        <div class="card border shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-arrow-repeat me-2 text-primary"></i> Kitchen Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="text-muted small">Current Status:</span>
+                    <span class="badge bg-{{ order.badge_class }} fs-6 px-3 py-1.5 rounded-pill text-nowrap">
+                        {{ order.get_status_display }}
+                    </span>
+                </div>
+
+                {% if order.is_serving_delayed %}
+                    <div class="alert alert-danger py-2 px-3 rounded-3 border-danger mb-3 shadow-xs">
+                        <div class="fw-bold d-flex align-items-center gap-1.5 small text-danger">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Serving Delayed (> 5 min)
+                        </div>
+                        <div class="small mt-1 text-muted">
+                            Order ready for +{{ order.serving_delay_minutes }}m. Staff must serve to table immediately.
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Action Workflow depending on exclusive assignment -->
+                {% if not order.accepted_by and order.status in 'PENDING,PLACED' %}
+                    {% if profile.can_accept_orders %}
+                        <form method="post" action="{% url 'chef:order_accept' order.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-xs">
+                                <i class="bi bi-check-lg fs-5"></i> Accept Order
+                            </button>
+                        </form>
+                    {% endif %}
+                {% elif order.accepted_by and order.accepted_by != user and not user.is_admin_or_manager and not user.is_superuser %}
+                    <div class="alert alert-secondary bg-body border rounded-3 p-3 small mb-0">
+                        <div class="fw-bold d-flex align-items-center gap-1.5 mb-1 text-body">
+                            <i class="bi bi-lock-fill text-muted"></i> Order Already Accepted
+                        </div>
+                        <div class="text-muted">
+                            This order has already been accepted by another kitchen staff member (<strong>{{ order.accepted_by_name }}</strong>). You can monitor this order but cannot accept or modify it.
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- User is either the assigned chef or authorized admin -->
+                    {% if order.status in 'PENDING,ACCEPTED,PLACED' and profile.can_update_status %}
+                        <form method="post" action="{% url 'chef:order_status' order.id %}" class="mb-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="PREPARING">
+                            <button type="submit" class="btn btn-primary w-100 py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2 shadow-xs">
+                                <i class="bi bi-fire fs-5"></i> Start Cooking
+                            </button>
+                        </form>
+                    {% elif order.status == 'PREPARING' and profile.can_mark_ready %}
+                        <form method="post" action="{% url 'chef:order_status' order.id %}" class="mb-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="READY">
+                            <button type="submit" class="btn btn-success w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-xs">
+                                <i class="bi bi-check2-circle fs-5"></i> COOK COMPLETE – MARK AS READY
+                            </button>
+                        </form>
+                    {% elif order.status == 'READY' %}
+                        <div class="alert alert-success bg-success-subtle border-success-subtle text-success-emphasis p-3 rounded-3 small mb-0">
+                            <div class="fw-bold d-flex align-items-center gap-1.5 mb-1">
+                                <i class="bi bi-bell-fill"></i> Food Ready on Pass
+                            </div>
+                            <div class="small">
+                                Waitstaff and Cashier have been notified. Food will be served within 5 minutes.
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Kitchen Staff Assignment Card -->
+        <div class="card border shadow-sm mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-fire me-2 text-warning"></i> Kitchen Staff</h6>
+                {% if order.accepted_by %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace" style="font-size: 0.72rem;">Assigned</span>
+                {% else %}
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle font-monospace" style="font-size: 0.72rem;">Unassigned</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if order.accepted_by %}
+                    <div class="d-flex align-items-center gap-2.5 mb-3 pb-3 border-bottom">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-xs flex-shrink-0" style="width: 44px; height: 44px; font-weight: 700; font-size: 1.1rem;">
+                            {{ order.accepted_by.first_name|default:order.accepted_by.username|make_list|first|upper }}
+                        </div>
+                        <div class="min-w-0 flex-grow-1">
+                            <div class="fw-bold text-dark text-truncate" style="font-size: 0.95rem;">
+                                {% if order.accepted_by == user %}<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>You</span> ({{ order.accepted_by_name }}){% else %}{{ order.accepted_by_name }}{% endif %}
+                            </div>
+                            <div class="d-flex align-items-center gap-1.5 mt-0.5">
+                                <span class="badge bg-secondary font-monospace" style="font-size: 0.68rem;">{{ order.accepted_by_employee_id }}</span>
+                                <span class="text-muted small">&bull; {{ order.accepted_by_designation|default:"Kitchen Staff" }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2 small">
+                        <span class="text-muted"><i class="bi bi-calendar-check me-1"></i>Accepted At:</span>
+                        <strong class="font-monospace text-dark">{{ order.accepted_at|date:"M d, Y h:i A"|default:"-" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2 small">
+                        <span class="text-muted"><i class="bi bi-fire me-1"></i>Cooking Started:</span>
+                        <strong class="font-monospace text-dark">{{ order.cooking_started_at|date:"h:i A"|default:"-" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2 small">
+                        <span class="text-muted"><i class="bi bi-bell me-1"></i>Food Ready:</span>
+                        <strong class="font-monospace text-dark">{{ order.ready_at|date:"h:i A"|default:"-" }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center small">
+                        <span class="text-muted"><i class="bi bi-check2-all me-1"></i>Served At:</span>
+                        <strong class="font-monospace text-dark">{{ order.served_at|date:"h:i A"|default:"-" }}</strong>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3 text-muted">
+                        <i class="bi bi-hourglass-split fs-2 text-warning opacity-75 mb-2 d-block"></i>
+                        <h6 class="fw-bold text-dark mb-1">Waiting for Kitchen Staff Acceptance</h6>
+                        <p class="small text-muted mb-0">No kitchen employee has accepted this order yet. Click Accept Order to claim it.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Order Meta Card -->
+        <div class="card border shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-card-heading me-2 text-primary"></i> Order Info</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <span class="text-muted small d-block">Order Type</span>
+                    <span class="fw-bold">{{ order.get_order_type_display }}</span>
+                </div>
+                {% if order.table %}
+                <div class="mb-2">
+                    <span class="text-muted small d-block">Table</span>
+                    <span class="fw-bold">Table {{ order.table.table_number }} ({{ order.table.get_location_display }})</span>
+                </div>
+                {% endif %}
+                <div class="mb-2">
+                    <span class="text-muted small d-block">Customer</span>
+                    <span class="fw-bold">{{ order.customer_name }}</span>
+                    {% if order.customer_phone %}<span class="text-muted small">({{ order.customer_phone }})</span>{% endif %}
+                </div>
+                <div>
+                    <span class="text-muted small d-block">Server / Waiter</span>
+                    <span class="fw-bold">{% if order.server %}{{ order.server.get_full_name|default:order.server.username }}{% else %}Unassigned Staff{% endif %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CANCEL INDIVIDUAL ITEM -->
+<div class="modal fade" id="itemCancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <form id="itemCancelForm" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-header border-bottom py-3">
+                    <h6 class="modal-title fw-bold text-danger d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Cancel Food Item
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">
+                        Cancel <strong id="modalItemTitle" class="text-dark"></strong> from this order. The item will be voided and the customer table tab recalculated.
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-dark">
+                            Reason for Cancellation <span class="text-danger">*</span>
+                        </label>
+                        <select name="reason_code" class="form-select" required>
+                            <option value="Ingredient unavailable">Ingredient unavailable / depleted</option>
+                            <option value="Food preparation problem">Food preparation problem / kitchen issue</option>
+                            <option value="Incorrect order">Incorrect item / wrong entry</option>
+                            <option value="Kitchen equipment issue">Kitchen equipment malfunction</option>
+                            <option value="Customer changed mind">Customer request / changed mind</option>
+                            <option value="Other">Other reason</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small text-dark">
+                            Additional Notes (Optional)
+                        </label>
+                        <textarea name="reason_notes" class="form-control" rows="2" placeholder="e.g. Fresh basil out of stock"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2.5 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">
+                        Nevermind
+                    </button>
+                    <button type="submit" class="btn btn-danger btn-sm rounded-pill px-4 fw-semibold shadow-sm">
+                        Confirm Cancellation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CANCEL ENTIRE ORDER -->
+<div class="modal fade" id="orderCancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <form method="post" action="{% url 'chef:order_request_cancel' order.id %}">
+                {% csrf_token %}
+                <div class="modal-header border-bottom py-3">
+                    <h6 class="modal-title fw-bold text-danger d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-slash-fill"></i> Cancel Entire Order ({{ order.order_number }})
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning border-0 rounded-3 small mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Cancelling the entire order voids all items in this ticket.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-dark">
+                            Reason for Entire Order Cancellation <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="reason" class="form-control" rows="3" required placeholder="Explain why the entire order cannot be fulfilled..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2.5 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">
+                        Keep Order
+                    </button>
+                    <button type="submit" class="btn btn-danger btn-sm rounded-pill px-4 fw-semibold shadow-sm">
+                        Submit Cancellation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openItemCancelModal(itemId, itemName, qty) {
+    const form = document.getElementById('itemCancelForm');
+    const title = document.getElementById('modalItemTitle');
+    if (form) {
+        form.action = `/chef/items/${itemId}/cancel/`;
+    }
+    if (title) {
+        title.textContent = `${qty}x ${itemName}`;
+    }
+    const modalEl = document.getElementById('itemCancelModal');
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
+</script>
+{% endblock %}

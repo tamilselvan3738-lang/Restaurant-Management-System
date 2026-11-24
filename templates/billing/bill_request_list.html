@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Bill Requests - {{ RESTAURANT_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.req-card {
+    transition: transform 0.2s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08)) !important;
+}
+.req-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08) !important;
+}
+.req-pod-box {
+    background-color: var(--bs-tertiary-bg, #f8fafc);
+    border: 1px solid var(--bs-border-color-translucent, #e2e8f0);
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+.dish-chip {
+    font-size: 0.76rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 8px;
+    background: var(--bs-body-bg, #f1f5f9);
+    border: 1px solid var(--bs-border-color-translucent, #e2e8f0);
+    color: var(--bs-body-color, #334155);
+    display: inline-block;
+    font-weight: 500;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.filter-tab-btn {
+    border-radius: 9999px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+[data-bs-theme="dark"] .req-card {
+    background-color: var(--rms-card-bg, #151921) !important;
+    border-color: var(--rms-border-color, #222a38) !important;
+}
+[data-bs-theme="dark"] .req-pod-box {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-bs-theme="dark"] .dish-chip {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <h3 class="fw-bold mb-0 text-body">
+                <i class="bi bi-bell-fill text-warning me-2"></i>Customer Bill Requests
+            </h3>
+            {% if pending_count > 0 %}
+            <span class="badge bg-warning text-dark border border-warning-subtle px-2.5 py-1 rounded-pill fw-bold">
+                {{ pending_count }} Pending Review
+            </span>
+            {% else %}
+            <span class="badge bg-secondary-subtle text-body rounded-pill px-2.5 py-1">
+                All Settled
+            </span>
+            {% endif %}
+        </div>
+        <p class="text-muted small mb-0 mt-1">
+            Real-time feed of customer-initiated bill settlement requests across tables.
+        </p>
+    </div>
+
+    <div class="d-flex gap-2 align-items-center">
+        <!-- Manual Refresh Button -->
+        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs" onclick="window.location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+
+        <a href="{% url 'billing:list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-cash-stack"></i> All Invoices
+        </a>
+    </div>
+</div>
+
+<!-- Alert Messages -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm mb-3 rounded-3" role="alert">
+            <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Filters & Search Toolbar -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 bg-body">
+    <div class="card-body p-3">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+            
+            <!-- Status Navigation Tabs -->
+            <div class="d-flex flex-wrap gap-1.5 align-items-center">
+                <a href="{% url 'billing:bill_request_list' %}" class="btn filter-tab-btn {% if status_filter == 'ALL' %}btn-primary text-white shadow-xs{% else %}btn-outline-secondary{% endif %}">
+                    All ({{ total_count }})
+                </a>
+                <a href="{% url 'billing:bill_request_list' %}?status=PENDING" class="btn filter-tab-btn {% if status_filter == 'PENDING' %}btn-warning text-dark fw-bold shadow-xs{% else %}btn-outline-secondary{% endif %}">
+                    <i class="bi bi-hourglass-split me-1"></i> Pending ({{ pending_count }})
+                </a>
+                <a href="{% url 'billing:bill_request_list' %}?status=ACCEPTED" class="btn filter-tab-btn {% if status_filter == 'ACCEPTED' %}btn-primary text-white shadow-xs{% else %}btn-outline-secondary{% endif %}">
+                    Accepted ({{ accepted_count }})
+                </a>
+                <a href="{% url 'billing:bill_request_list' %}?status=BILL_GENERATED" class="btn filter-tab-btn {% if status_filter == 'BILL_GENERATED' %}btn-info text-dark shadow-xs{% else %}btn-outline-secondary{% endif %}">
+                    Bill Generated ({{ bill_generated_count }})
+                </a>
+                <a href="{% url 'billing:bill_request_list' %}?status=COMPLETED" class="btn filter-tab-btn {% if status_filter == 'COMPLETED' %}btn-success text-white shadow-xs{% else %}btn-outline-secondary{% endif %}">
+                    Paid / Completed ({{ completed_count }})
+                </a>
+                {% if cancelled_count > 0 %}
+                <a href="{% url 'billing:bill_request_list' %}?status=CANCELLED" class="btn filter-tab-btn {% if status_filter == 'CANCELLED' %}btn-dark text-white shadow-xs{% else %}btn-outline-secondary{% endif %}">
+                    Cancelled ({{ cancelled_count }})
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Search Form -->
+            <form method="get" action="{% url 'billing:bill_request_list' %}" class="d-flex align-items-center gap-2 w-100 w-lg-auto" style="max-width: 360px;">
+                {% if status_filter and status_filter != 'ALL' %}
+                    <input type="hidden" name="status" value="{{ status_filter }}">
+                {% endif %}
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-body border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" value="{{ query }}" class="form-control border-start-0" placeholder="Filter by Table, Request #, Group...">
+                </div>
+                {% if query %}
+                    <a href="{% url 'billing:bill_request_list' %}{% if status_filter and status_filter != 'ALL' %}?status={{ status_filter }}{% endif %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                {% endif %}
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<!-- Customer Bill Requests Cards Grid View -->
+<div id="billRequestsCardsContainer">
+    {% if decorated_requests %}
+        <div class="row g-3 g-xl-4 row-cols-1 row-cols-md-2 row-cols-xl-3 mb-4">
+            {% for item in decorated_requests %}
+            {% with r=item.req %}
+            <div class="col" id="reqCardCol-{{ r.id }}">
+                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative bg-body req-card" id="reqCard-{{ r.id }}">
+                    <div class="card-body p-3 p-xl-3.5 d-flex flex-column">
+
+                        <!-- 1. Header: Request ID, Invoice Pill, and Status Badge -->
+                        <div class="d-flex align-items-start justify-content-between gap-2 pb-2.5 mb-2.5 border-bottom border-secondary-subtle">
+                            <div class="min-w-0">
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                    <a href="{% url 'billing:bill_request_detail' r.id %}" class="fw-bold font-monospace text-primary text-decoration-none fs-6 d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-receipt-cutoff"></i>
+                                        <span>{{ r.request_number }}</span>
+                                    </a>
+                                    {% if r.invoice %}
+                                        <span class="badge bg-secondary-subtle text-muted border border-secondary-subtle font-monospace px-2 py-0.5" style="font-size: 0.68rem;">
+                                            {{ r.invoice.invoice_number }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted small mt-1 d-flex align-items-center gap-1.5" style="font-size: 0.74rem;">
+                                    <i class="bi bi-clock text-secondary"></i>
+                                    <span>{{ r.requested_at|date:"h:i A" }}</span>
+                                    <span class="opacity-50">•</span>
+                                    <span>{{ r.requested_at|timesince }} ago</span>
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0 text-end">
+                                <span class="badge bg-{{ r.badge_class }} rounded-pill px-2.5 py-1 fw-bold shadow-xs d-inline-flex align-items-center gap-1" style="font-size: 0.76rem;">
+                                    {% if r.status == 'PENDING' %}
+                                        <i class="bi bi-hourglass-split"></i>
+                                    {% elif r.status == 'ACCEPTED' %}
+                                        <i class="bi bi-check2-circle"></i>
+                                    {% elif r.status == 'BILL_GENERATED' %}
+                                        <i class="bi bi-file-earmark-check"></i>
+                                    {% elif r.status == 'COMPLETED' or r.status == 'PAID' %}
+                                        <i class="bi bi-check-all"></i>
+                                    {% endif %}
+                                    <span>{{ r.get_status_display }}</span>
+                                </span>
+                                {% if r.accepted_by %}
+                                    <div class="text-muted small mt-1" style="font-size: 0.7rem;">
+                                        <i class="bi bi-person-check text-primary me-0.5"></i>{{ r.accepted_by.get_full_name|default:r.accepted_by.username }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- 2. Table & Customer Group Info Pod -->
+                        <div class="req-pod-box mb-2.5">
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.75rem;">
+                                    <i class="bi bi-grid-3x3-gap me-1"></i>Table {{ r.table.table_number }}
+                                </span>
+                                {% if r.session.join_code %}
+                                    <span class="text-muted font-monospace small" style="font-size: 0.72rem;">
+                                        Code: <strong class="text-body">#{{ r.session.join_code }}</strong>
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between gap-2 mt-1.5">
+                                <div class="min-w-0">
+                                    <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.5px;">Customer Group</span>
+                                    <div class="fw-bold text-body small text-truncate">{{ r.session.session_name }}</div>
+                                </div>
+                                {% if r.session.customer_name and r.session.customer_name != r.session.session_name %}
+                                    <div class="text-end text-muted small" style="font-size: 0.75rem;">
+                                        <i class="bi bi-person me-0.5"></i>{{ r.session.customer_name }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- 3. Ordered Dishes Section -->
+                        <div class="mb-3 flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                <span class="text-muted fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.5px;">
+                                    <i class="bi bi-card-checklist text-primary me-1"></i>Ordered Dishes
+                                </span>
+                                {% if item.items %}
+                                    <span class="badge bg-secondary-subtle text-muted rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                        {{ item.items|length }} item{{ item.items|length|pluralize }}
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            {% if item.items %}
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for it_str in item.items|slice:":4" %}
+                                        <span class="dish-chip">{{ it_str }}</span>
+                                    {% endfor %}
+                                    {% if item.items|length > 4 %}
+                                        <span class="dish-chip text-muted">+{{ item.items|length|add:"-4" }} more</span>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted small fst-italic">No ordered items recorded.</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- 4. Financial Breakdown Pod -->
+                        <div class="p-2.5 rounded-3 mb-3 d-flex align-items-center justify-content-between border border-secondary-subtle" style="background: var(--bs-tertiary-bg, rgba(255, 255, 255, 0.02));">
+                            <div>
+                                <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.65rem; letter-spacing: 0.5px;">Bill Amount</span>
+                                <div class="fw-bold font-monospace text-body fs-5 mt-0.5">
+                                    ₹{{ r.total_amount|floatformat:2 }}
+                                </div>
+                            </div>
+                            {% if r.paid_amount > 0 %}
+                                <div class="text-end">
+                                    <div class="text-success small fw-semibold" style="font-size: 0.74rem;">Paid: ₹{{ r.paid_amount|floatformat:2 }}</div>
+                                    <div class="text-danger small fw-bold" style="font-size: 0.74rem;">Due: ₹{{ r.balance_due|floatformat:2 }}</div>
+                                </div>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 rounded-pill small" style="font-size: 0.72rem;">
+                                    Awaiting Settle
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- 5. Action Controls Footer -->
+                        <div class="d-flex align-items-center justify-content-between gap-2 pt-2 border-top border-secondary-subtle mt-auto">
+                            <a href="{% url 'billing:bill_request_detail' r.id %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs" title="View Full Details">
+                                <i class="bi bi-eye"></i> <span>Details</span>
+                            </a>
+
+                            <div class="d-flex align-items-center gap-1.5">
+                                {% if r.status == 'PENDING' %}
+                                    <form method="post" action="{% url 'billing:bill_request_accept' r.id %}" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold text-dark d-inline-flex align-items-center gap-1.5 shadow-xs" title="Accept Bill Request">
+                                            <i class="bi bi-check2"></i> <span>Accept</span>
+                                        </button>
+                                    </form>
+                                {% elif r.status == 'ACCEPTED' %}
+                                    <form method="post" action="{% url 'billing:bill_request_generate_bill' r.id %}" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 py-1.5 fw-bold text-white d-inline-flex align-items-center gap-1.5 shadow-xs" title="Generate Final Bill">
+                                            <i class="bi bi-file-earmark-text"></i> <span>Generate Bill</span>
+                                        </button>
+                                    </form>
+                                {% elif r.invoice %}
+                                    <a href="{% url 'billing:invoice_detail' r.invoice.id %}" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-bold text-white d-inline-flex align-items-center gap-1.5 shadow-xs" title="View or Settle Invoice">
+                                        <i class="bi bi-receipt"></i> <span>Settle</span>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            {% endwith %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-body mb-4">
+            <div class="py-4">
+                <i class="bi bi-bell-slash fs-1 text-secondary opacity-50 d-block mb-3"></i>
+                <h5 class="fw-bold text-body">No Customer Bill Requests Found</h5>
+                <p class="text-muted small mb-0 mx-auto" style="max-width: 420px;">
+                    {% if status_filter and status_filter != 'ALL' %}
+                        No bill requests matching filter "<strong>{{ status_filter }}</strong>".
+                    {% else %}
+                        No dining tables currently have active bill settlement requests.
+                    {% endif %}
+                </p>
+                {% if status_filter and status_filter != 'ALL' %}
+                    <div class="mt-3">
+                        <a href="{% url 'billing:bill_request_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5">
+                            Clear Filters
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let lastKnownPendingCount = {{ pending_count }};
+
+// Real-Time Poller for Bill Requests (Every 5 seconds)
+async function pollBillRequests() {
+    try {
+        const res = await fetch("{% url 'billing:bill_request_poll_api' %}", {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Update Navbar badge everywhere
+        document.querySelectorAll('.pending-bill-requests-badge').forEach(badge => {
+            if (data.pending_count > 0) {
+                badge.textContent = data.pending_count;
+                badge.classList.remove('d-none');
+            } else {
+                badge.classList.add('d-none');
+            }
+        });
+
+        // If new request arrived, reload view
+        if (data.pending_count > lastKnownPendingCount) {
+            setTimeout(() => {
+                window.location.reload();
+            }, 600);
+        }
+        lastKnownPendingCount = data.pending_count;
+
+    } catch (e) {
+        console.error("Bill requests poll error:", e);
+    }
+}
+
+setInterval(pollBillRequests, 5000);
+</script>
+{% endblock %}

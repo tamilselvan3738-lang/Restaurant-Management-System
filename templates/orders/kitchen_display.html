@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Kitchen Display System (KDS){% endblock %}
+
+{% block extra_css %}
+<style>
+    .kds-card {
+        border-top: 5px solid #ff9800;
+        transition: transform 0.2s;
+    }
+    .kds-card.placed {
+        border-top-color: #f44336;
+    }
+    .kds-card.cooking {
+        border-top-color: #ff9800;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-egg-fried me-2 text-warning"></i> Kitchen Display System (KDS)</h3>
+        <p class="text-muted small mb-0">Live incoming kitchen tickets & preparation queue</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5" onclick="window.location.reload()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Refresh Queue
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for order in orders %}
+    <div class="col-md-6 col-xl-4">
+        <div class="card kds-card h-100 shadow-sm {% if order.status == 'PLACED' %}placed{% else %}cooking{% endif %}">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="fw-bold fs-6">{{ order.order_number }}</span>
+                    {% if order.table %}
+                        <span class="badge bg-dark ms-1">Table {{ order.table.table_number }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary ms-1">{{ order.get_order_type_display }}</span>
+                    {% endif %}
+                    {% if order.session %}
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1"><i class="bi bi-people-fill me-1"></i>{{ order.session.session_name }}</span>
+                    {% endif %}
+                </div>
+                <span class="badge bg-{{ order.badge_class }}">{{ order.get_status_display }}</span>
+            </div>
+
+            <div class="card-body p-3">
+                <div class="text-muted small mb-3">
+                    <i class="bi bi-clock me-1"></i> Placed: {{ order.created_at|date:"h:i A" }} (Server: {% if order.server %}{{ order.server.username }}{% else %}Table QR{% endif %})
+                </div>
+
+                {% if order.special_instructions %}
+                <div class="alert alert-warning py-1 px-2 small mb-3">
+                    <strong>Note:</strong> {{ order.special_instructions }}
+                </div>
+                {% endif %}
+
+                <!-- Items to cook -->
+                <div class="list-group list-group-flush mb-3">
+                    {% for item in order.items.all %}
+                    <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if item.menu_item.image %}
+                                <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" 
+                                     class="rounded shadow-xs flex-shrink-0" 
+                                     style="width: 40px; height: 40px; object-fit: cover; border: 1px solid rgba(0,0,0,0.08);">
+                            {% else %}
+                                <div class="rounded bg-light text-muted d-flex align-items-center justify-content-center flex-shrink-0 border"
+                                     style="width: 40px; height: 40px;">
+                                    <i class="bi bi-egg-fried opacity-50"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <span class="fw-bold fs-6">{{ item.quantity }}x</span> {{ item.menu_item.name }}
+                                {% if item.added_by_name %}
+                                    <span class="badge bg-light text-primary border rounded-pill ms-1" style="font-size: 0.7rem;">
+                                        <i class="bi bi-person-fill me-0.5"></i>{{ item.added_by_name }}
+                                    </span>
+                                {% endif %}
+                                {% if item.special_notes %}
+                                    <div class="text-danger small fst-italic"><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> {{ item.special_notes }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Status Button -->
+                        <form method="post" action="{% url 'orders:item_update_status' item.id %}" class="d-inline">
+                            {% csrf_token %}
+                            {% if item.status == 'PENDING' %}
+                                <input type="hidden" name="status" value="COOKING">
+                                <button type="submit" class="btn btn-sm btn-outline-warning">Start Cook</button>
+                            {% elif item.status == 'COOKING' %}
+                                <input type="hidden" name="status" value="READY">
+                                <button type="submit" class="btn btn-sm btn-success">Mark Ready</button>
+                            {% else %}
+                                <span class="badge bg-success small"><i class="bi bi-check2"></i> Ready</span>
+                            {% endif %}
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card-footer bg-light p-2 text-end">
+                <form method="post" action="{% url 'orders:update_status' order.id %}" class="d-inline">
+                    {% csrf_token %}
+                    {% if order.status == 'PLACED' %}
+                        <input type="hidden" name="status" value="IN_KITCHEN">
+                        <button type="submit" class="btn btn-sm btn-warning w-100 fw-bold">
+                            <i class="bi bi-fire me-1"></i> Accept & Begin Cooking
+                        </button>
+                    {% elif order.status == 'IN_KITCHEN' %}
+                        <input type="hidden" name="status" value="READY">
+                        <button type="submit" class="btn btn-sm btn-success w-100 fw-bold">
+                            <i class="bi bi-bell-fill me-1"></i> Ready for Serving
+                        </button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <i class="bi bi-check2-circle text-success fs-1 d-block mb-3"></i>
+        <h4 class="fw-bold text-muted">All Caught Up!</h4>
+        <p class="text-muted">No pending tickets in the kitchen right now.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}General System Settings{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-gear me-2 text-primary"></i> General System Settings</h5>
+                <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+                    <i class="bi bi-arrow-left"></i> <span>Back</span>
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <!-- Currency Configuration (Rupees vs Dollar) -->
+                    <div class="card bg-light border-0 mb-4 p-3 rounded-3">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
+                            <div>
+                                <label class="form-label fw-bold mb-0 text-dark">
+                                    <i class="bi bi-cash-coin me-1 text-primary"></i> Operating Currency (Rupees or Dollar)
+                                </label>
+                                <div class="text-muted small">Choose whether all dish prices, POS bills, sales reports, and invoices use <strong>Rupees (₹)</strong> or <strong>Dollars ($)</strong>.</div>
+                            </div>
+                            <span class="badge bg-primary px-3 py-2 fs-6">{{ RESTAURANT_CURRENCY }} Active</span>
+                        </div>
+                        
+                        <div class="row g-2 align-items-center mt-1">
+                            <div class="col-md-7">
+                                {{ form.currency }}
+                            </div>
+                            <div class="col-md-5 d-flex gap-2">
+                                <a href="{% url 'superadmin:switch_currency' %}?currency=%E2%82%B9" class="btn btn-sm flex-fill {% if RESTAURANT_CURRENCY == '₹' %}btn-success active fw-bold{% else %}btn-outline-success{% endif %}">
+                                    <i class="bi bi-currency-rupee me-1"></i> Rupees (₹)
+                                </a>
+                                <a href="{% url 'superadmin:switch_currency' %}?currency=$" class="btn btn-sm flex-fill {% if RESTAURANT_CURRENCY == '$' %}btn-primary active fw-bold{% else %}btn-outline-primary{% endif %}">
+                                    <i class="bi bi-currency-dollar me-1"></i> Dollar ($)
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">User Session Timeout (Minutes)</label>
+                        {{ form.session_timeout_minutes }}
+                        <div class="form-text small">Staff and admin idle sessions will be automatically logged out after this duration.</div>
+                    </div>
+
+                    <div class="form-check form-switch mb-4 ps-4">
+                        {{ form.enable_audit_logging }}
+                        <label class="form-check-label fw-bold ms-2" for="{{ form.enable_audit_logging.id_for_label }}">
+                            Enable System & Action Audit Logging
+                        </label>
+                        <div class="form-text small">Log all admin actions, role changes, and inventory restocks for security audits.</div>
+                    </div>
+
+                    <div class="pt-3 border-top text-end">
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            Save General Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

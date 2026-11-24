@@ -1,0 +1,438 @@
+{% extends 'base.html' %}
+
+{% block title %}Waiting List Management - {{ RESTAURANT_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.queue-kpi-card {
+    border-radius: 16px;
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+    background: var(--bs-card-bg, #ffffff);
+    padding: 16px 18px;
+    transition: transform 0.18s ease;
+}
+.queue-kpi-card:hover {
+    transform: translateY(-2px);
+}
+[data-bs-theme="dark"] .queue-kpi-card {
+    background-color: var(--rms-card-bg, #151921) !important;
+    border-color: var(--rms-border-color, #222a38) !important;
+}
+
+/* Queue Entry Cards */
+.queue-entry-card {
+    border-radius: 18px;
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08)) !important;
+    background: var(--bs-card-bg, #ffffff);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+.queue-entry-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.09);
+}
+.queue-entry-card.status-waiting {
+    border-left: 5px solid #f59e0b !important;
+}
+.queue-entry-card.status-called {
+    border-left: 5px solid #06b6d4 !important;
+}
+.queue-entry-card.status-assigned {
+    border-left: 5px solid #10b981 !important;
+}
+.queue-entry-card.status-seated {
+    border-left: 5px solid #059669 !important;
+    opacity: 0.88;
+}
+.queue-entry-card.status-noshow {
+    border-left: 5px solid #ef4444 !important;
+    opacity: 0.8;
+}
+.queue-entry-card.status-cancelled {
+    border-left: 5px solid #6b7280 !important;
+    opacity: 0.75;
+}
+[data-bs-theme="dark"] .queue-entry-card {
+    background-color: var(--rms-card-bg, #151921) !important;
+    border-color: var(--rms-border-color, #222a38) !important;
+}
+.entry-info-box {
+    background-color: var(--bs-tertiary-bg, #f8fafc);
+    border: 1px solid var(--bs-border-color-translucent, #e2e8f0);
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+[data-bs-theme="dark"] .entry-info-box {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.filter-pill-btn {
+    border-radius: 9999px;
+    padding: 0.45rem 1.05rem;
+    font-size: 0.84rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+.filter-search-btn {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-weight: 600;
+    padding: 0.45rem 1.25rem !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-radius: 9999px !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2.5 py-1 rounded-pill fw-semibold">
+                <i class="bi bi-people-fill me-1"></i> Guest Reception
+            </span>
+            <span class="text-body-secondary small"><i class="bi bi-broadcast me-1"></i>Live Queue</span>
+        </div>
+        <h2 class="h3 fw-bold mb-1">Digital Waiting List &amp; Live Queue</h2>
+        <p class="text-body-secondary small mb-0">Manage waiting parties, live table allocations, guest check-ins, and turnover.</p>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a href="{% url 'tables:queue_public' %}" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-1.5">
+            <i class="bi bi-box-arrow-up-right"></i> Customer Queue Page
+        </a>
+        <a href="{% url 'tables:admin_queue_manage' %}" class="btn btn-secondary btn-sm rounded-pill px-3">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </a>
+    </div>
+</div>
+
+<!-- Metrics Row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="queue-kpi-card shadow-sm h-100" style="border-left: 4px solid #f59e0b !important;">
+            <div class="d-flex justify-content-between align-items-center mb-1 text-warning small fw-semibold">
+                <span>Waiting Parties</span>
+                <i class="bi bi-hourglass-split fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-warning">{{ total_waiting }}</h3>
+            <span class="text-body-secondary small">Waiting &amp; Called</span>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="queue-kpi-card shadow-sm h-100" style="border-left: 4px solid #06b6d4 !important;">
+            <div class="d-flex justify-content-between align-items-center mb-1 text-info small fw-semibold">
+                <span>Table Assigned</span>
+                <i class="bi bi-check-circle fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-info">{{ total_assigned }}</h3>
+            <span class="text-body-secondary small">Table hold active</span>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="queue-kpi-card shadow-sm h-100" style="border-left: 4px solid #10b981 !important;">
+            <div class="d-flex justify-content-between align-items-center mb-1 text-success small fw-semibold">
+                <span>Seated Guests</span>
+                <i class="bi bi-person-check fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-success">{{ total_seated }}</h3>
+            <span class="text-body-secondary small">Dining in progress</span>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="queue-kpi-card shadow-sm h-100" style="border-left: 4px solid #3b82f6 !important;">
+            <div class="d-flex justify-content-between align-items-center mb-1 text-primary small fw-semibold">
+                <span>Available Tables</span>
+                <i class="bi bi-grid-3x3-gap-fill fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-primary">{{ available_tables_count }}</h3>
+            <span class="text-body-secondary small">{{ occupied_tables_count }} tables occupied</span>
+        </div>
+    </div>
+</div>
+
+<!-- Status Filters & Search Bar Toolbar (Fixed alignment, no wrapping) -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <div class="row g-3 align-items-center justify-content-between">
+            <!-- Left: Filter Pills -->
+            <div class="col-12 col-xl-8">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <a href="?status=WAITING{% if query %}&q={{ query }}{% endif %}" class="btn filter-pill-btn {% if status_filter == 'WAITING' %}btn-warning text-dark{% else %}btn-outline-warning text-warning{% endif %}">
+                        <i class="bi bi-hourglass-split me-1"></i> Waiting
+                        <span class="badge bg-warning bg-opacity-25 text-dark ms-1 rounded-pill">{{ total_waiting }}</span>
+                    </a>
+                    <a href="?status=ASSIGNED{% if query %}&q={{ query }}{% endif %}" class="btn filter-pill-btn {% if status_filter == 'ASSIGNED' %}btn-info text-white{% else %}btn-outline-info text-info{% endif %}">
+                        <i class="bi bi-pin-map me-1"></i> Table Assigned
+                        <span class="badge bg-info bg-opacity-25 text-white ms-1 rounded-pill">{{ total_assigned }}</span>
+                    </a>
+                    <a href="?status=SEATED{% if query %}&q={{ query }}{% endif %}" class="btn filter-pill-btn {% if status_filter == 'SEATED' %}btn-success{% else %}btn-outline-success{% endif %}">
+                        <i class="bi bi-check-all me-1"></i> Seated
+                        <span class="badge bg-success bg-opacity-25 text-success ms-1 rounded-pill">{{ total_seated }}</span>
+                    </a>
+                    <a href="?status=NO_SHOW{% if query %}&q={{ query }}{% endif %}" class="btn filter-pill-btn {% if status_filter == 'NO_SHOW' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                        <i class="bi bi-person-x me-1"></i> No-Shows
+                        <span class="badge bg-danger bg-opacity-25 text-danger ms-1 rounded-pill">{{ total_noshow }}</span>
+                    </a>
+                    <a href="?status=CANCELLED{% if query %}&q={{ query }}{% endif %}" class="btn filter-pill-btn {% if status_filter == 'CANCELLED' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                        <i class="bi bi-x-circle me-1"></i> Cancelled
+                        <span class="badge bg-secondary bg-opacity-25 text-white ms-1 rounded-pill">{{ total_cancelled }}</span>
+                    </a>
+                    <a href="?status=ALL{% if query %}&q={{ query }}{% endif %}" class="btn filter-pill-btn {% if status_filter == 'ALL' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                        <i class="bi bi-list-nested me-1"></i> All
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right: Search Form -->
+            <div class="col-12 col-xl-4">
+                <form method="GET" class="d-flex align-items-center gap-2 justify-content-xl-end">
+                    <input type="hidden" name="status" value="{{ status_filter }}">
+                    <div class="input-group input-group-sm flex-grow-1" style="min-width: 210px;">
+                        <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search text-body-secondary"></i></span>
+                        <input type="text" name="q" class="form-control border-start-0" placeholder="Token, guest name, phone..." value="{{ query }}">
+                        {% if query %}
+                        <a href="?status={{ status_filter }}" class="btn btn-outline-secondary border-start-0" title="Clear Search">
+                            <i class="bi bi-x"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary filter-search-btn">
+                        <i class="bi bi-funnel-fill"></i>
+                        <span>Filter</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Queue Entries: IN THE FORM OF CARDS ONLY (No table) -->
+{% if entries %}
+<div class="row g-3 row-cols-1 row-cols-md-2 row-cols-xl-3" id="queueCardsContainer">
+    {% for entry in entries %}
+    <div class="col" id="queue-card-{{ entry.id }}">
+        <div class="card h-100 queue-entry-card p-3.5 shadow-sm {% if entry.status == 'WAITING' %}status-waiting{% elif entry.status == 'CALLED' %}status-called{% elif entry.status == 'TABLE_ASSIGNED' %}status-assigned{% elif entry.status == 'SEATED' %}status-seated{% elif entry.status == 'NO_SHOW' %}status-noshow{% else %}status-cancelled{% endif %}">
+            
+            <!-- Card Top Header: Token, Party Size, Status Badge -->
+            <div class="d-flex justify-content-between align-items-start mb-2.5">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fw-bold px-2.5 py-1.5 rounded-pill font-monospace fs-6">
+                        #{{ entry.queue_token }}
+                    </span>
+                    <span class="badge bg-secondary bg-opacity-10 text-body-secondary border rounded-pill px-2 py-1 small">
+                        <i class="bi bi-people-fill me-1 text-primary"></i>{{ entry.guest_count }} Guest{{ entry.guest_count|pluralize }}
+                    </span>
+                </div>
+                <span class="badge {{ entry.badge_class }} rounded-pill px-2.5 py-1 text-uppercase fs-8 fw-semibold">
+                    {{ entry.get_status_display }}
+                </span>
+            </div>
+
+            <!-- Card Body: Customer Profile -->
+            <div class="d-flex align-items-center gap-2.5 mb-2.5">
+                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 bg-warning bg-opacity-10 text-warning fw-bold fs-5" style="width: 44px; height: 44px;">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0 text-truncate" style="font-size: 1.05rem;">{{ entry.customer_name }}</h5>
+                    <span class="text-body-secondary small font-monospace">
+                        <i class="bi bi-telephone-fill me-1 text-muted"></i>{{ entry.customer_phone }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Wait Time, Joined Time & Position Box -->
+            <div class="entry-info-box mb-2.5">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-body-secondary small">
+                        <i class="bi bi-clock me-1"></i>Joined: <strong>{{ entry.created_at|date:"g:i A" }}</strong>
+                    </span>
+                    <span class="badge bg-light text-dark border rounded-pill small">
+                        <i class="bi bi-stopwatch me-1 text-primary"></i>{{ entry.wait_time_display }}
+                    </span>
+                </div>
+                {% if entry.status == 'WAITING' %}
+                <div class="small text-body-secondary">
+                    <i class="bi bi-sort-numeric-down text-warning me-1"></i>Queue Position: <strong>#{{ entry.queue_position }}</strong> in line
+                </div>
+                {% elif entry.status == 'CALLED' %}
+                <div class="small text-info fw-semibold">
+                    <i class="bi bi-megaphone-fill me-1"></i>Called at {{ entry.called_at|date:"g:i A" }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Assigned Dining Table Callout (if held) -->
+            {% if entry.assigned_table %}
+            <div class="p-2.5 rounded-3 bg-success bg-opacity-10 text-success border border-success border-opacity-25 d-flex align-items-center justify-content-between mb-2.5">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-pin-map-fill fs-5"></i>
+                    <div>
+                        <strong class="d-block">Table {{ entry.assigned_table.table_number }}</strong>
+                        <small class="text-success-emphasis">Capacity: {{ entry.assigned_table.capacity }} seats</small>
+                    </div>
+                </div>
+                <span class="badge bg-success text-white rounded-pill px-2 py-1 small">Held</span>
+            </div>
+            {% endif %}
+
+            <!-- Special Notes / Dietary Requests -->
+            {% if entry.special_requirements %}
+            <div class="mb-3 p-2 rounded-3 bg-body-tertiary border small">
+                <span class="text-body-secondary fw-semibold d-block mb-0.5">
+                    <i class="bi bi-chat-left-text-fill text-primary me-1"></i>Special Notes:
+                </span>
+                <span class="fst-italic text-break">"{{ entry.special_requirements }}"</span>
+            </div>
+            {% endif %}
+
+            <!-- Card Actions Footer -->
+            <div class="mt-auto d-flex flex-wrap gap-2 pt-2 border-top border-light-subtle">
+                {% if entry.status == 'WAITING' %}
+                <form method="POST" action="{% url 'tables:admin_queue_call' entry.id %}" class="flex-grow-1">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-info text-white w-100 fw-bold d-flex align-items-center justify-content-center gap-1.5 shadow-sm rounded-pill py-2">
+                        <i class="bi bi-megaphone-fill"></i> Call Guest
+                    </button>
+                </form>
+                <button type="button" class="btn btn-primary rounded-pill px-3 fw-bold d-flex align-items-center gap-1 shadow-sm" onclick="openAssignModal('{{ entry.id }}', '{{ entry.queue_token }}', '{{ entry.customer_name }}', '{{ entry.guest_count }}')">
+                    <i class="bi bi-pin-map-fill"></i> Assign Table
+                </button>
+                <form method="POST" action="{% url 'tables:admin_queue_noshow' entry.id %}" class="d-inline" onsubmit="return confirm('Mark {{ entry.customer_name }} as No-Show?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger rounded-pill px-2.5" title="Mark No-Show">
+                        <i class="bi bi-person-x"></i>
+                    </button>
+                </form>
+
+                {% elif entry.status == 'CALLED' %}
+                <button type="button" class="btn btn-primary flex-grow-1 rounded-pill fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-1.5" onclick="openAssignModal('{{ entry.id }}', '{{ entry.queue_token }}', '{{ entry.customer_name }}', '{{ entry.guest_count }}')">
+                    <i class="bi bi-pin-map-fill"></i> Assign Table
+                </button>
+                <form method="POST" action="{% url 'tables:admin_queue_noshow' entry.id %}" class="d-inline" onsubmit="return confirm('Mark {{ entry.customer_name }} as No-Show?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger rounded-pill px-2.5" title="Mark No-Show">
+                        <i class="bi bi-person-x"></i>
+                    </button>
+                </form>
+
+                {% elif entry.status == 'TABLE_ASSIGNED' %}
+                <form method="POST" action="{% url 'tables:admin_queue_seat' entry.id %}" class="flex-grow-1">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success text-white w-100 fw-bold d-flex align-items-center justify-content-center gap-1.5 shadow-sm rounded-pill py-2">
+                        <i class="bi bi-check-circle-fill fs-6"></i> Confirm Seated
+                    </button>
+                </form>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-2.5" onclick="openAssignModal('{{ entry.id }}', '{{ entry.queue_token }}', '{{ entry.customer_name }}', '{{ entry.guest_count }}')" title="Change Table">
+                    <i class="bi bi-arrow-repeat"></i>
+                </button>
+                <form method="POST" action="{% url 'tables:admin_queue_noshow' entry.id %}" class="d-inline" onsubmit="return confirm('Mark {{ entry.customer_name }} as No-Show?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger rounded-pill px-2.5" title="Mark No-Show">
+                        <i class="bi bi-person-x"></i>
+                    </button>
+                </form>
+
+                {% elif entry.status == 'SEATED' %}
+                <div class="w-100 py-2 text-center text-success small fw-semibold bg-success bg-opacity-10 rounded-pill">
+                    <i class="bi bi-check-circle-fill me-1"></i> Seated at Table {{ entry.assigned_table.table_number }} ({{ entry.seated_at|date:"g:i A" }})
+                </div>
+
+                {% elif entry.status == 'NO_SHOW' %}
+                <div class="w-100 py-2 text-center text-danger small fst-italic bg-danger bg-opacity-10 rounded-pill">
+                    <i class="bi bi-person-x me-1"></i> Marked as No-Show
+                </div>
+
+                {% elif entry.status == 'CANCELLED' %}
+                <div class="w-100 py-2 text-center text-secondary small fst-italic bg-secondary bg-opacity-10 rounded-pill">
+                    <i class="bi bi-x-circle me-1"></i> {{ entry.cancellation_reason|default:"Cancelled" }}
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<!-- Clean Empty State Card (No table) -->
+<div class="card border-0 shadow-sm text-center py-5 rounded-4">
+    <div class="card-body">
+        <div class="display-4 text-body-secondary mb-3"><i class="bi bi-people"></i></div>
+        <h4 class="fw-bold mb-1">No Waiting Queue Entries</h4>
+        <p class="text-body-secondary mb-4">No waiting queue entries found for today under this filter.</p>
+        <a href="?status=ALL" class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-list-nested me-1"></i> View All Today's Entries
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Assign Table Modal -->
+<div class="modal fade" id="assignTableModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" id="assignTableForm" class="modal-content border-0 shadow">
+            {% csrf_token %}
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-pin-map text-primary me-2"></i>Assign Table to Guest
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="p-3 rounded-4 bg-body-tertiary mb-3 border">
+                    <span class="text-body-secondary small d-block">Party Information:</span>
+                    <h6 class="fw-bold mb-0" id="modalGuestInfo">Guest Name (Party of 2)</h6>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill font-monospace mt-1" id="modalTokenBadge">Token #Q-001</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Select Available Dining Table: <span class="text-danger">*</span></label>
+                    <select name="table_id" class="form-select" required>
+                        <option value="">-- Choose Dining Table --</option>
+                        {% for tbl in all_tables %}
+                        <option value="{{ tbl.id }}" {% if tbl.status != 'AVAILABLE' %}class="text-muted"{% endif %}>
+                            Table {{ tbl.table_number }} &bull; Capacity: {{ tbl.capacity }} seats &bull; Status: {{ tbl.get_status_display }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text small">Recommended: Select an AVAILABLE table with capacity matching or exceeding party size.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary rounded-pill fw-semibold">Confirm Table Assignment</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openAssignModal(entryId, token, name, guests) {
+    const form = document.getElementById('assignTableForm');
+    form.action = `/tables/waiting-list/${entryId}/assign/`;
+    document.getElementById('modalGuestInfo').innerText = `${name} (${guests} Person${guests > 1 ? 's' : ''})`;
+    document.getElementById('modalTokenBadge').innerText = `Token #${token}`;
+    new bootstrap.Modal(document.getElementById('assignTableModal')).show();
+}
+
+// Background auto-refresh for active waiting list
+setInterval(function() {
+    fetch("{% url 'tables:admin_queue_poll_api' %}")
+        .then(res => res.json())
+        .then(data => {
+            // Background sync
+        })
+        .catch(err => console.debug('Queue poll notice:', err));
+}, 10000);
+</script>
+{% endblock %}

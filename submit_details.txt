@@ -1,0 +1,159 @@
+    };
+
+
+
+    // Submit service request via AJAX
+
+    window.submitServiceRequest = async function() {
+
+        const btn = document.getElementById('submitServiceRequestBtn');
+
+        const alertBox = document.getElementById('serviceRequestAlertBox');
+
+        const customMsg = document.getElementById('serviceCustomMessage').value.trim();
+
+        const isNoQuantity = NO_QUANTITY_TYPES.includes(selectedType);
+
+        const qty = isNoQuantity ? 1 : (parseInt(document.getElementById('serviceQuantityInput').value) || 1);
+
+        const finalUnit = isNoQuantity ? '' : selectedUnit;
+
+
+
+        if (btn) {
+
+            btn.disabled = true;
+
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Notifying Waiter...';
+
+        }
+
+
+
+        try {
+
+            const res = await fetch(createUrl, {
+
+                method: 'POST',
+
+                headers: {
+
+                    'Content-Type': 'application/json',
+
+                    'X-CSRFToken': getCsrfToken(),
+
+                    'X-Requested-With': 'XMLHttpRequest'
+
+                },
+
+                body: JSON.stringify({
+
+                    request_type: selectedType,
+
+                    request_category: selectedCategory,
+
+                    quantity: qty,
+
+                    unit: finalUnit,
+
+                    priority: selectedPriorityVal,
+
+                    custom_message: customMsg,
+
+                    session_token: sessionToken,
+
+                    member_token: memberToken
+
+                })
+
+            });
+
+
+
+            const data = await res.json();
+
+
+
+            if (res.ok && data.success) {
+
+                if (msgInput) {
+
+                    msgInput.value = '';
+
+                    if (charDisplay) charDisplay.textContent = '0 / 255';
+
+                }
+
+
+
+                if (alertBox) {
+
+                    alertBox.className = 'alert alert-success alert-dismissible fade show rounded-3 py-2 px-3 small';
+
+                    alertBox.innerHTML = `
+
+                        <i class="bi bi-check-circle-fill me-1"></i> ${data.message}
+
+                        <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+
+                    `;
+
+                }
+
+
+
+                const historyTab = document.getElementById('tab-history-link');
+
+                if (historyTab && window.bootstrap && bootstrap.Tab) {
+
+                    new bootstrap.Tab(historyTab).show();
+
+                }
+
+
+
+                pollServiceStatus();
+
+            } else {
+
+                if (alertBox) {
+
+                    alertBox.className = 'alert alert-danger alert-dismissible fade show rounded-3 py-2 px-3 small';
+
+                    alertBox.innerHTML = `
+
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> ${data.message || 'Failed to submit request.'}
+
+                        <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+
+                    `;
+
+                }
+
+            }
+
+        } catch (err) {
+
+            console.error('Service request error:', err);
+
+            if (alertBox) {
+
+                alertBox.className = 'alert alert-danger alert-dismissible fade show rounded-3 py-2 px-3 small';
+
+                alertBox.innerHTML = `
+
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Network error. Please try again or wave to your waiter.
+
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+
+                `;
+
+            }
+
+        } finally {
+
+            if (btn) {
+
+                btn.disabled = false;
+
+                btn.innerHTML = '<i class="bi bi-send-fill me-1"></i> Send Request to Waiter';

@@ -1,0 +1,419 @@
+    // Poll live service request status
+
+    async function pollServiceStatus() {
+
+        try {
+
+            const res = await fetch(statusUrl, {
+
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+
+            });
+
+            if (!res.ok) return;
+
+            const data = await res.json();
+
+            latestRequests = data.requests || [];
+
+
+
+            const listEl = document.getElementById('serviceRequestsHistoryList');
+
+            const modalEl = document.getElementById('serviceAssistanceModal');
+
+            const isModalOpen = modalEl && (modalEl.classList.contains('show') || modalEl.style.display === 'block');
+
+
+
+            if (isModalOpen) {
+
+                window.markAllServiceNotificationsAsSeen();
+
+            } else {
+
+                const seenSigs = getSeenSignatures();
+
+                const unseenRequests = latestRequests.filter(r => {
+
+                    const isActive = r.is_pending || r.is_accepted || r.is_in_progress;
+
+                    const sig = getReqSignature(r);
+
+                    return isActive && !seenSigs.includes(sig);
+
+                });
+
+                updateBadges(unseenRequests.length);
+
+            }
+
+
+
+            // Render requests in History Tab
+
+            if (listEl) {
+
+                if (!data.requests || data.requests.length === 0) {
+
+                    listEl.innerHTML = `
+
+                        <div class="text-center py-4 text-muted small">
+
+                            <i class="bi bi-bell-slash fs-1 text-secondary opacity-50 d-block mb-2"></i>
+
+                            <div class="fw-semibold text-body">No requests yet</div>
+
+                            <div class="small">Choose an option under "New Request" to get waiter assistance.</div>
+
+                        </div>
+
+                    `;
+
+                    return;
+
+                }
+
+
+
+                let html = '<div class="d-flex flex-column gap-2.5">';
+
+                for (const r of data.requests) {
+
+                    const priorityBadge = r.priority === 'URGENT' 
+
+                        ? `<span class="badge bg-danger rounded-pill px-2 py-0.5 text-uppercase fs-9 fw-bold">URGENT</span>`
+
+                        : (r.priority === 'HIGH' ? `<span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 text-uppercase fs-9 fw-bold">HIGH</span>` : '');
+
+
+
+                    html += `
+
+                        <div class="card border rounded-3 p-2.5 bg-body shadow-xs">
+
+                            <div class="d-flex justify-content-between align-items-start mb-1.5 gap-2">
+
+                                <div class="d-flex align-items-center gap-2 min-w-0">
+
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px;">
+
+                                        <i class="bi ${r.icon_class} fs-6"></i>
+
+                                    </span>
+
+                                    <div class="min-w-0">
+
+                                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
+
+                                            <span class="fw-bold text-body small">${r.type_display}</span>
+
+                                            ${r.quantity > 1 || r.unit ? `<span class="badge bg-secondary-subtle text-body-secondary rounded-pill px-1.5 py-0.5 font-monospace" style="font-size: 0.65rem;">${r.quantity} ${r.unit || ''}</span>` : ''}
+
+                                            ${priorityBadge}
+
+                                        </div>
+
+                                        <div class="text-muted d-flex align-items-center gap-1.5 flex-wrap mt-0.5" style="font-size: 0.68rem;">
+
+                                            <span class="font-monospace">#${r.request_number}</span>
+
+                                            <span>&bull;</span>
+
+                                            <span>${r.requested_at_time}</span>
+
+                                            ${r.estimated_time ? `<span>&bull;</span><span class="text-nowrap">Est: ${r.estimated_time}</span>` : ''}
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                <span class="badge bg-${r.badge_class} rounded-pill px-2.5 py-1 small fw-bold flex-shrink-0">
+
+                                    ${r.status_display}
+
+                                </span>
+
+                            </div>
+
+
+
+                            ${r.custom_message ? `<div class="bg-body-secondary p-2 rounded-2 small text-muted mb-1.5 font-monospace" style="font-size: 0.72rem;">"${r.custom_message}"</div>` : ''}
+
+
+
+                            ${r.is_unable ? `
+
+                                <div class="bg-warning-subtle text-warning-emphasis p-2 rounded-2 small mb-1.5" style="font-size: 0.72rem;">
+
+                                    <strong><i class="bi bi-slash-circle me-1"></i>Unable to fulfil:</strong> ${r.unable_reason || 'Unavailable'}
+
+                                    ${r.alternative_suggestion ? `<div class="fst-italic mt-0.5">Alt: ${r.alternative_suggestion}</div>` : ''}
+
+                                </div>
+
+                            ` : ''}
+
+
+
+                            ${r.reported_not_fulfilled ? `
+
+                                <div class="bg-danger-subtle text-danger p-1.5 rounded-2 small mb-1.5 fw-semibold" style="font-size: 0.7rem;">
+
+                                    <i class="bi bi-exclamation-octagon-fill me-1"></i>Escalation sent to supervisor
+
+                                </div>
+
+                            ` : ''}
+
+
+
+                            <div class="d-flex justify-content-between align-items-center pt-2 mt-1 border-top border-secondary-subtle flex-wrap gap-2" style="font-size: 0.72rem;">
+
+                                <div class="d-flex align-items-center text-muted service-waiting-timer" id="waitingTimer-${r.id}" data-req-id="${r.id}" data-requested-ts="${r.requested_at_ts}" data-status="${r.status}">
+
+                                    ${r.waiter_name ? `<i class="bi bi-person-check text-primary me-1 fs-6"></i><span>Attending: <strong class="text-body">${r.waiter_name}</strong></span>` : `<i class="bi bi-hourglass-split text-warning me-1 fs-6"></i><span>Waiting: <strong class="text-body font-monospace timer-display">${r.waiting_duration}</strong></span>`}
+
+                                </div>
+
+                                
+
+                                <div class="d-flex align-items-center gap-1.5 ms-auto" id="cardActions-${r.id}">
+
+                                    <!-- Re-notice Button: Appears after 2 mins (120s) of waiting for active requests -->
+
+                                    ${(r.is_pending || r.is_accepted || r.is_in_progress) ? `
+
+                                        <button type="button" class="btn btn-warning btn-sm rounded-pill py-0.5 px-2.5 fw-bold text-dark d-inline-flex align-items-center gap-1 shadow-xs ${r.waiting_seconds >= 120 ? '' : 'd-none'}" id="renoticeBtn-${r.id}" onclick="renoticeServiceRequest(${r.id})" title="Re-alert staff about this request">
+
+                                            <i class="bi bi-bell-fill"></i>
+
+                                            <span>Re-notice</span>
+
+                                            ${r.re_notice_count > 0 ? `<span class="badge bg-dark text-white rounded-pill px-1 ms-0.5" style="font-size: 0.6rem;">${r.re_notice_count}</span>` : ''}
+
+                                        </button>
+
+                                    ` : ''}
+
+
+
+                                    ${r.is_pending ? `
+
+                                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill py-0.5 px-2.5 d-inline-flex align-items-center gap-1" onclick="cancelServiceRequest(${r.id})">
+
+                                            <i class="bi bi-x-circle"></i><span>Cancel</span>
+
+                                        </button>
+
+                                    ` : ''}
+
+
+
+                                    ${r.is_completed ? `
+
+                                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill py-0.5 px-2 fw-semibold d-inline-flex align-items-center gap-1" onclick="repeatServiceRequest(${r.id})" title="Request Again">
+
+                                            <i class="bi bi-arrow-repeat"></i><span>Again</span>
+
+                                        </button>
+
+                                        ${r.rating ? `
+
+                                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill py-0.5 px-2">★ ${r.rating}</span>
+
+                                        ` : `
+
+                                            <button type="button" class="btn btn-outline-warning btn-sm rounded-pill py-0.5 px-2 fw-semibold text-dark d-inline-flex align-items-center gap-1" onclick="openFeedbackModal(${r.id}, '${r.type_display}')">
+
+                                                <i class="bi bi-star-fill text-warning"></i><span>Rate</span>
+
+                                            </button>
+
+                                        `}
+
+                                        ${!r.reported_not_fulfilled ? `
+
+                                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill py-0.5 px-1.5" onclick="openReportNotFulfilledModal(${r.id}, '${r.type_display}')" title="Report Not Received">
+
+                                                <i class="bi bi-flag"></i>
+
+                                            </button>
+
+                                        ` : ''}
+
+                                    ` : ''}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    `;
+
+                }
+
+                html += '</div>';
+
+                listEl.innerHTML = html;
+
+                updateLiveTimers();
+
+            }
+
+
+
+        } catch (e) {
+
+            console.error('Service status poll error:', e);
+
+        }
+
+    }
+
+
+
+    // Live 1-second interval timer for active waiting requests
+
+    let liveTimerInterval = null;
+
+    function updateLiveTimers() {
+
+        const timerEls = document.querySelectorAll('.service-waiting-timer');
+
+        if (!timerEls.length) return;
+
+        const now = Date.now();
+
+
+
+        timerEls.forEach(el => {
+
+            const reqTs = parseInt(el.getAttribute('data-requested-ts'), 10);
+
+            const status = el.getAttribute('data-status');
+
+            const reqId = el.getAttribute('data-req-id');
+
+            if (!reqTs || isNaN(reqTs)) return;
+
+
+
+            // Only tick for active statuses
+
+            if (status === 'PENDING' || status === 'ACCEPTED' || status === 'IN_PROGRESS') {
+
+                const diffSec = Math.max(0, Math.floor((now - reqTs) / 1000));
+
+                const mins = Math.floor(diffSec / 60);
+
+                const secs = diffSec % 60;
+
+                const displayStr = mins > 0 ? `${mins}m ${secs < 10 ? '0' : ''}${secs}s` : `${secs}s`;
+
+
+
+                const displayEl = el.querySelector('.timer-display');
+
+                if (displayEl) {
+
+                    displayEl.textContent = displayStr;
+
+                }
+
+
+
+                // If request has been waiting for 2 minutes (120s) or more, show the Re-notice button
+
+                if (diffSec >= 120 && reqId) {
+
+                    const renoticeBtn = document.getElementById(`renoticeBtn-${reqId}`);
+
+                    if (renoticeBtn && renoticeBtn.classList.contains('d-none')) {
+
+                        renoticeBtn.classList.remove('d-none');
+
+                    }
+
+                }
+
+            }
+
+        });
+
+    }
+
+
+
+    // Helper: CSRF token retrieval
+
+    function getCsrfToken() {
+
+        const cookieValue = document.cookie
+
+            .split('; ')
+
+            .find(row => row.startsWith('csrftoken='))
+
+            ?.split('=')[1];
+
+        return cookieValue || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+    }
+
+
+
+    // Initialization: setup polling and event listeners
+
+    function initServiceWidget() {
+
+        pollServiceStatus();
+
+        setInterval(pollServiceStatus, 4500);
+
+        if (!liveTimerInterval) {
+
+            liveTimerInterval = setInterval(updateLiveTimers, 1000);
+
+        }
+
+
+
+        const modalEl = document.getElementById('serviceAssistanceModal');
+
+        if (modalEl) {
+
+            modalEl.addEventListener('show.bs.modal', handleServiceModalOpened);
+
+            modalEl.addEventListener('shown.bs.modal', handleServiceModalOpened);
+
+        }
+
+
+
+        const triggerBtns = document.querySelectorAll('[data-bs-target="#serviceAssistanceModal"], #floatingWaiterBtn');
+
+        triggerBtns.forEach(btn => {
+
+            btn.addEventListener('click', function() {
+
+                handleServiceModalOpened();
+
+            });
+
+        });
+
+
+
+        const historyTabLink = document.getElementById('tab-history-link');
+
+        if (historyTabLink) {
+
+            historyTabLink.addEventListener('click', function() {
+
+                window.markAllServiceNotificationsAsSeen();
+
+            });

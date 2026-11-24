@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Session {{ session.session_name }} • Table {{ session.table.table_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'tables:session_list' %}" class="btn btn-outline-secondary btn-sm rounded-circle p-1" style="width: 32px; height: 32px;">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h3 class="fw-bold mb-0">Table {{ session.table.table_number }} • {{ session.session_name }}</h3>
+            <span class="badge bg-{{ session.badge_class }}">{{ session.get_status_display }}</span>
+        </div>
+        <p class="text-muted small mb-0">Join Code: <strong class="font-monospace text-primary">{{ session.join_code }}</strong> • Customer: {{ session.customer_name }} ({{ session.guest_count }} guests)</p>
+    </div>
+
+    <div class="d-flex gap-2">
+        {% if invoice %}
+        <a href="{% url 'billing:invoice_detail' invoice.id %}" class="btn btn-primary btn-sm d-flex align-items-center gap-1.5">
+            <i class="bi bi-receipt"></i> View Official Invoice
+        </a>
+        <a href="{% url 'billing:print_receipt' invoice.id %}" target="_blank" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5">
+            <i class="bi bi-printer"></i> Print Bill
+        </a>
+        {% endif %}
+        {% if session.status != 'COMPLETED' %}
+        <form method="post" action="{% url 'tables:session_close' session.id %}" class="m-0" onsubmit="return confirm('Settle and close this session?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-sm d-flex align-items-center gap-1.5">
+                <i class="bi bi-check2-circle"></i> Settle & Close Session
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left: Orders List -->
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent py-3">
+                <h5 class="fw-bold mb-0">Orders Placed by this Group</h5>
+            </div>
+            <div class="card-body p-0">
+                {% for order in orders %}
+                <div class="border-bottom p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <span class="fw-bold font-monospace">#{{ order.order_number }}</span>
+                            <span class="badge bg-{{ order.badge_class }} ms-2">{{ order.get_status_display }}</span>
+                        </div>
+                        <span class="small text-muted">{{ order.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+
+                    {% if order.special_instructions %}
+                    <div class="alert alert-light py-1 px-2 small mb-2 border">
+                        <i class="bi bi-chat-left-text me-1"></i> {{ order.special_instructions }}
+                    </div>
+                    {% endif %}
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless mb-0">
+                            <thead>
+                                <tr class="text-muted small">
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items.all %}
+                                <tr>
+                                    <td>
+                                        <span class="fw-semibold">{{ item.menu_item.name }}</span>
+                                        {% if item.special_notes %}<div class="text-danger small">{{ item.special_notes }}</div>{% endif %}
+                                    </td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>₹{{ item.unit_price }}</td>
+                                    <td class="text-end fw-bold">₹{{ item.total_price }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-4 text-center text-muted">
+                    No orders have been submitted in this session.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Bill Summary & Payments -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent py-3">
+                <h5 class="fw-bold mb-0">Separate Bill Breakdown</h5>
+            </div>
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between text-muted mb-2">
+                    <span>Food Subtotal</span>
+                    <span class="fw-semibold text-dark">₹{{ session.subtotal }}</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted mb-2">
+                    <span>Tax (8.25%)</span>
+                    <span class="fw-semibold text-dark">₹{{ session.tax_amount }}</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted mb-2">
+                    <span>Service Charge (5%)</span>
+                    <span class="fw-semibold text-dark">₹{{ session.service_charge_amount }}</span>
+                </div>
+                <div class="d-flex justify-content-between fs-5 fw-bold text-dark border-top pt-2 mt-2">
+                    <span>Total Amount</span>
+                    <span class="text-primary">₹{{ session.total_amount }}</span>
+                </div>
+                <div class="d-flex justify-content-between text-success fw-semibold mt-2">
+                    <span>Paid</span>
+                    <span>₹{{ session.total_paid }}</span>
+                </div>
+                <div class="d-flex justify-content-between fs-6 fw-bold text-danger border-top pt-2 mt-2">
+                    <span>Balance Due</span>
+                    <span>₹{{ session.balance_due }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Recorded -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent py-3">
+                <h6 class="fw-bold mb-0">Payment History</h6>
+            </div>
+            <div class="card-body p-3">
+                {% if invoice and invoice.payments.exists %}
+                    {% for pay in invoice.payments.all %}
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                            <div class="fw-bold">{{ pay.get_payment_method_display }}</div>
+                            <div class="small text-muted">{{ pay.payment_date|date:"H:i - M d" }}</div>
+                        </div>
+                        <div class="fw-bold text-success">
+                            ₹{{ pay.amount }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="text-center py-3 text-muted small">
+                    No payments recorded yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

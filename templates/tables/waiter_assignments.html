@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+
+{% block title %}Waiter Floor Assignments - {{ RESTAURANT_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.waiter-card {
+    border-radius: 16px;
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+    background: var(--bs-card-bg, #ffffff);
+    padding: 16px;
+    transition: transform 0.18s ease;
+}
+.waiter-card:hover {
+    transform: translateY(-2px);
+}
+.floor-mapping-card {
+    border-radius: 16px;
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+    background: var(--bs-card-bg, #ffffff);
+    padding: 16px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.floor-mapping-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+[data-bs-theme="dark"] .waiter-card,
+[data-bs-theme="dark"] .floor-mapping-card {
+    background-color: var(--rms-card-bg, #151921) !important;
+    border-color: var(--rms-border-color, #222a38) !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2.5 py-1 rounded-pill fw-semibold">
+                <i class="bi bi-diagram-3-fill me-1"></i> Floor Operations
+            </span>
+            <span class="text-body-secondary small"><i class="bi bi-geo-alt-fill me-1"></i>Dining Zones</span>
+        </div>
+        <h2 class="h3 fw-bold mb-1">Waiter Floor Assignments</h2>
+        <p class="text-body-secondary small mb-0">Map servers to specific dining tables and floor sections for automated service routing.</p>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a href="{% url 'tables:admin_service_requests' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+            <i class="bi bi-card-checklist me-1"></i> Service Management
+        </a>
+        <a href="{% url 'tables:waiter_requests' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="bi bi-bell-fill me-1"></i> Waiter Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex justify-content-between align-items-center mb-1 text-body-secondary small fw-semibold">
+                <span>Active Assignments</span>
+                <i class="bi bi-link-45deg text-primary fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-primary">{{ total_assignments }}</h3>
+            <span class="text-body-secondary small">Table to Waiter routes</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex justify-content-between align-items-center mb-1 text-body-secondary small fw-semibold">
+                <span>Total Dining Tables</span>
+                <i class="bi bi-grid-3x3-gap-fill text-info fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-info">{{ total_tables }}</h3>
+            <span class="text-body-secondary small">Active dining tables</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex justify-content-between align-items-center mb-1 text-body-secondary small fw-semibold">
+                <span>Available Waiters</span>
+                <i class="bi bi-people-fill text-success fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-success">{{ total_waiters }}</h3>
+            <span class="text-body-secondary small">Registered service staff</span>
+        </div>
+    </div>
+</div>
+
+<!-- Main Row: Workloads & Assignment Form -->
+<div class="row g-4 mb-4">
+    <!-- Waiter Workloads Column -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-bottom py-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-person-badge text-primary me-2"></i>Staff Duty &amp; Table Coverage
+                </h5>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-3">
+                    {% for w in waiter_workloads %}
+                    <div class="col-12 col-sm-6">
+                        <div class="waiter-card shadow-sm h-100">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="fw-bold mb-0">{{ w.waiter.get_full_name|default:w.waiter.username }}</h6>
+                                    <span class="text-body-secondary small font-monospace">@{{ w.waiter.username }}</span>
+                                </div>
+                                {% if w.is_on_duty %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                                    <i class="bi bi-circle-fill me-1" style="font-size: 0.45rem;"></i>On Duty
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                                    Off Duty
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between text-body-secondary small mb-2.5 pb-2 border-bottom border-light-subtle">
+                                <span>Pending Requests:</span>
+                                <span class="badge {% if w.active_requests > 0 %}bg-warning text-dark{% else %}bg-secondary-subtle text-body-secondary border border-secondary-subtle{% endif %} rounded-pill px-2.5 py-1">
+                                    {{ w.active_requests }} active
+                                </span>
+                            </div>
+
+                            <div class="small">
+                                <span class="text-body-secondary fw-semibold d-block mb-1">Covered Tables:</span>
+                                {% if w.assigned_tables %}
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for t in w.assigned_tables %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 font-monospace fw-semibold">
+                                        T-{{ t }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <span class="text-body-secondary small fst-italic">No tables assigned</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-4 text-muted">
+                        No waiter staff found. Add waiters in Staff Management.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Assignment Form -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-bottom py-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-plus-circle text-primary me-2"></i>Assign Table to Waiter
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Select Waiter <span class="text-danger">*</span></label>
+                        {{ form.waiter }}
+                        {% if form.waiter.errors %}
+                        <div class="text-danger small mt-1">{{ form.waiter.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Select Dining Table <span class="text-danger">*</span></label>
+                        {{ form.table }}
+                        {% if form.table.errors %}
+                        <div class="text-danger small mt-1">{{ form.table.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Section / Zone (Optional)</label>
+                        {{ form.section_name }}
+                        <div class="form-text small">e.g., Main Hall, Patio, VIP Lounge, Terrace</div>
+                        {% if form.section_name.errors %}
+                        <div class="text-danger small mt-1">{{ form.section_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4 form-check form-switch">
+                        {{ form.is_active }}
+                        <label class="form-check-label small fw-semibold ms-1" for="{{ form.is_active.id_for_label }}">
+                            Active Assignment
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill fw-semibold py-2">
+                        <i class="bi bi-link-45deg me-1"></i> Save Assignment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Existing Assignments Cards View -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="fw-bold mb-0">
+            <i class="bi bi-grid-fill text-primary me-2"></i>Active Floor Mapping
+        </h5>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1.5 fw-semibold small">
+            {{ total_assignments }} Assigned Table{{ total_assignments|pluralize }}
+        </span>
+    </div>
+    <div class="card-body p-3 p-md-4">
+        {% if assignments %}
+        <div class="row g-3 row-cols-1 row-cols-md-2 row-cols-xl-3">
+            {% for a in assignments %}
+            <div class="col">
+                <div class="floor-mapping-card shadow-sm h-100">
+                    <!-- Top Bar: Table Number & Active Status -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary text-white fw-bold px-3 py-1.5 rounded-pill fs-6 font-monospace shadow-xs">
+                                <i class="bi bi-grid-3x3-gap me-1"></i>Table {{ a.table.table_number }}
+                            </span>
+                            <span class="text-body-secondary small">
+                                ({{ a.table.capacity }} seats)
+                            </span>
+                        </div>
+                        {% if a.is_active %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                                <i class="bi bi-check-circle-fill me-1"></i>Active
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                                Inactive
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Assigned Waiter Profile Card -->
+                    <div class="d-flex align-items-center gap-3 p-2.5 rounded-3 bg-body-tertiary mb-3 border">
+                        <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 bg-primary text-white fw-bold shadow-xs" style="width: 42px; height: 42px; font-size: 1.05rem;">
+                            {{ a.waiter.first_name|first|default:a.waiter.username|first|upper }}
+                        </div>
+                        <div class="min-w-0 flex-grow-1">
+                            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.68rem; letter-spacing: 0.05em;">ASSIGNED WAITER</div>
+                            <span class="fw-bold text-body text-truncate d-block">{{ a.waiter.get_full_name|default:a.waiter.username }}</span>
+                            <div class="d-flex align-items-center gap-2 mt-0.5">
+                                <span class="text-body-secondary small font-monospace">@{{ a.waiter.username }}</span>
+                                {% if a.waiter.is_on_duty %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                        <i class="bi bi-circle-fill me-1" style="font-size: 0.4rem;"></i>On Duty
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-body-secondary border border-secondary-subtle rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                                        Off Duty
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Details: Floor Section & Assigned Date -->
+                    <div class="d-flex flex-column gap-2 mb-3 small">
+                        <div class="d-flex justify-content-between align-items-center text-body-secondary">
+                            <span><i class="bi bi-geo-alt me-1 text-primary"></i>Floor Section:</span>
+                            <span class="badge bg-secondary-subtle text-body border border-secondary-subtle rounded-pill px-2.5 py-1 fw-semibold">
+                                {{ a.section_name|default:"General Floor" }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center text-body-secondary">
+                            <span><i class="bi bi-clock-history me-1 text-primary"></i>Assigned Date:</span>
+                            <span class="font-monospace text-body small">{{ a.assigned_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Action: Remove -->
+                    <div class="mt-auto pt-2 border-top border-light-subtle">
+                        <form method="POST" action="{% url 'tables:waiter_assignment_delete' a.id %}" onsubmit="return confirm('Remove assignment for Table {{ a.table.table_number }}?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100 rounded-pill py-1.5 fw-semibold d-flex align-items-center justify-content-center gap-1.5">
+                                <i class="bi bi-trash3"></i>
+                                <span>Remove Assignment</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State Card (No misaligned table headers) -->
+        <div class="text-center py-5 px-3">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary bg-opacity-10 text-primary mb-3 shadow-xs" style="width: 64px; height: 64px;">
+                <i class="bi bi-diagram-3 fs-2"></i>
+            </div>
+            <h5 class="fw-bold text-body mb-1">No Floor Assignments Configured</h5>
+            <p class="text-body-secondary small mb-0" style="max-width: 440px; margin: 0 auto;">
+                No table assignments configured yet. Use the form above to assign tables and floor zones to service staff.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,442 @@
+{% extends 'base.html' %}
+
+{% block title %}Custom Food Combos - {{ RESTAURANT_NAME }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.combo-card {
+    border-radius: 16px;
+    border: 1px solid var(--bs-border-color, #e2e8f0);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+}
+.combo-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12) !important;
+}
+.combo-img-wrap {
+    height: 185px;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    position: relative;
+    overflow: hidden;
+}
+.combo-img-wrap img.single-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+.combo-card:hover .combo-img-wrap img.single-cover-img {
+    transform: scale(1.05);
+}
+.combo-badge-save {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: #10b981;
+    color: white;
+    font-weight: 700;
+    font-size: 0.76rem;
+    padding: 0.28rem 0.65rem;
+    border-radius: 50rem;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+    z-index: 5;
+}
+.combo-badge-status {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 5;
+}
+.combo-dish-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 8px;
+    font-size: 0.76rem;
+    background: var(--bs-tertiary-bg, #f1f5f9);
+    border: 1px solid var(--bs-border-color-translucent, #e2e8f0);
+    margin: 2px;
+}
+.combo-dish-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    flex-shrink: 0;
+}
+
+/* Multi-Dish Collage Layouts */
+.combo-collage-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    background: #0f172a;
+}
+.combo-collage-grid-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    width: 100%;
+    height: 100%;
+}
+.combo-collage-grid-3 {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    width: 100%;
+    height: 100%;
+}
+.combo-collage-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    height: 100%;
+}
+.collage-cell {
+    position: relative;
+    overflow: hidden;
+    background: #1e293b;
+}
+.collage-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease;
+}
+.combo-card:hover .collage-cell img {
+    transform: scale(1.08);
+}
+.collage-dish-label {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    right: 4px;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: #f8fafc;
+    font-size: 0.62rem;
+    font-weight: 600;
+    padding: 2px 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.collage-more-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f8fafc;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+.combo-cell-border-r {
+    border-right: 1.5px solid rgba(255, 255, 255, 0.25);
+}
+.combo-cell-border-b {
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.25);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- HEADER -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-gift-fill text-warning me-2"></i>Special Food Combos
+            </h3>
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1 rounded-pill">
+                {{ total_count }} Offer{{ total_count|pluralize }}
+            </span>
+        </div>
+        <p class="text-muted small mb-0 mt-1">
+            Group 3+ menu dishes into money-saving customer combos with one single fixed selling price.
+        </p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <a href="{% url 'menu:combo_sales_report' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-graph-up-arrow"></i> Sales Analytics
+        </a>
+        <a href="{% url 'menu:combo_create' %}" class="btn btn-warning btn-sm rounded-pill px-3.5 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs fw-bold text-dark">
+            <i class="bi bi-plus-circle-fill"></i> Create New Food Combo
+        </a>
+    </div>
+</div>
+
+<!-- FILTERS & SEARCH -->
+<div class="card mb-4 border-0 shadow-sm rounded-3">
+    <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-6 col-lg-7">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="text-muted small fw-bold me-1">Status:</span>
+                    <a href="{% url 'menu:combo_list' %}" class="btn btn-sm {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                        All ({{ total_count }})
+                    </a>
+                    <a href="?status=active" class="btn btn-sm {% if status_filter == 'active' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                        <i class="bi bi-check2-circle me-1"></i> Active ({{ active_count }})
+                    </a>
+                    <a href="?status=inactive" class="btn btn-sm {% if status_filter == 'inactive' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                        <i class="bi bi-pause-circle me-1"></i> Inactive ({{ inactive_count }})
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-5">
+                <form method="GET" class="d-flex gap-2">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-body border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" class="form-control border-start-0" placeholder="Search combo by name or dish..." value="{{ search_query }}">
+                    </div>
+                    {% if search_query %}
+                    <a href="{% url 'menu:combo_list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- COMBOS GRID -->
+<div class="row g-4">
+    {% for c in combos %}
+    <div class="col-md-6 col-xl-4">
+        <div class="card combo-card h-100 shadow-sm bg-body">
+            <!-- Image / Visual Banner -->
+            <div class="combo-img-wrap">
+                {% if c.image %}
+                    <img src="{{ c.image.url }}" alt="{{ c.name }}" class="single-cover-img">
+                {% elif c.collage_preview.has_images %}
+                    {% with cp=c.collage_preview %}
+                        <div class="combo-collage-container">
+                            {% if cp.count == 1 %}
+                                <div class="collage-cell w-100 h-100">
+                                    <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}">
+                                    <span class="collage-dish-label">{{ cp.first.name }}</span>
+                                </div>
+                            {% elif cp.count == 2 %}
+                                <div class="combo-collage-grid-2">
+                                    <div class="collage-cell combo-cell-border-r">
+                                        <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}">
+                                        <span class="collage-dish-label">{{ cp.first.name }}</span>
+                                    </div>
+                                    <div class="collage-cell">
+                                        <img src="{{ cp.second.image_url }}" alt="{{ cp.second.name }}" title="{{ cp.second.name }}">
+                                        <span class="collage-dish-label">{{ cp.second.name }}</span>
+                                    </div>
+                                </div>
+                            {% elif cp.count == 3 %}
+                                <div class="combo-collage-grid-3">
+                                    <div class="collage-cell combo-cell-border-r">
+                                        <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}">
+                                        <span class="collage-dish-label">{{ cp.first.name }}</span>
+                                    </div>
+                                    <div class="d-flex flex-column h-100">
+                                        <div class="collage-cell combo-cell-border-b h-50">
+                                            <img src="{{ cp.second.image_url }}" alt="{{ cp.second.name }}" title="{{ cp.second.name }}">
+                                            <span class="collage-dish-label">{{ cp.second.name }}</span>
+                                        </div>
+                                        <div class="collage-cell h-50">
+                                            <img src="{{ cp.third.image_url }}" alt="{{ cp.third.name }}" title="{{ cp.third.name }}">
+                                            <span class="collage-dish-label">{{ cp.third.name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="combo-collage-grid-4">
+                                    <div class="collage-cell combo-cell-border-r combo-cell-border-b">
+                                        <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}">
+                                        <span class="collage-dish-label">{{ cp.first.name }}</span>
+                                    </div>
+                                    <div class="collage-cell combo-cell-border-b">
+                                        <img src="{{ cp.second.image_url }}" alt="{{ cp.second.name }}" title="{{ cp.second.name }}">
+                                        <span class="collage-dish-label">{{ cp.second.name }}</span>
+                                    </div>
+                                    <div class="collage-cell combo-cell-border-r">
+                                        <img src="{{ cp.third.image_url }}" alt="{{ cp.third.name }}" title="{{ cp.third.name }}">
+                                        <span class="collage-dish-label">{{ cp.third.name }}</span>
+                                    </div>
+                                    <div class="collage-cell position-relative">
+                                        <img src="{{ cp.fourth.image_url }}" alt="{{ cp.fourth.name }}" title="{{ cp.fourth.name }}">
+                                        {% if cp.extra_count > 0 %}
+                                            <div class="collage-more-overlay">
+                                                +{{ cp.extra_count }} more
+                                            </div>
+                                        {% else %}
+                                            <span class="collage-dish-label">{{ cp.fourth.name }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endwith %}
+                {% else %}
+                    <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white-50">
+                        <i class="bi bi-gift display-5 mb-1 text-warning"></i>
+                        <span class="small font-monospace">Special Value Combo</span>
+                    </div>
+                {% endif %}
+
+                <!-- Availability Badge -->
+                <div class="combo-badge-status">
+                    {% if c.is_available %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">
+                            <i class="bi bi-check-circle-fill me-1"></i> Active
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary text-white rounded-pill px-2.5 py-1">
+                            <i class="bi bi-pause-fill me-1"></i> Inactive
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Savings Pill -->
+                {% if c.savings_amount > 0 %}
+                <div class="combo-badge-save">
+                    Save ₹{{ c.savings_amount|floatformat:0 }} ({{ c.discount_percentage }}% OFF)
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Content Body -->
+            <div class="card-body p-3.5 d-flex flex-column justify-content-between">
+                <div>
+                    <h5 class="fw-bold mb-1 text-body">{{ c.name }}</h5>
+                    <p class="text-muted small mb-3 text-truncate-2" style="min-height: 38px;">
+                        {{ c.description|default:"Exclusive chef-curated dining combo with savings on every dish." }}
+                    </p>
+
+                    <!-- Included Component Food Items -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                            <span class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Included Dishes ({{ c.items.count }} items):
+                            </span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for item in c.items.all %}
+                            <span class="combo-dish-badge">
+                                {% if item.menu_item.image %}
+                                    <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" class="combo-dish-thumb">
+                                {% else %}
+                                    <i class="bi bi-egg-fried text-muted"></i>
+                                {% endif %}
+                                <span class="badge bg-warning text-dark rounded-pill fw-bold">{{ item.quantity }}×</span>
+                                <span class="fw-semibold text-truncate" style="max-width: 140px;">{{ item.menu_item.name }}</span>
+                                <span class="text-muted" style="font-size: 0.7rem;">(₹{{ item.menu_item.price|floatformat:0 }})</span>
+                            </span>
+                            {% empty %}
+                            <span class="text-danger small fst-italic">No dishes assigned! Edit to add 3+ items.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price Breakdown & Actions -->
+                <div>
+                    <hr class="my-2.5 border-secondary-subtle">
+                    <div class="d-flex justify-content-between align-items-end mb-3">
+                        <div>
+                            <div class="text-muted small text-decoration-line-through font-monospace">
+                                Indiv: ₹{{ c.individual_total_price|floatformat:2 }}
+                            </div>
+                            <div class="text-muted small" style="font-size: 0.72rem;">Fixed Combo Price:</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="h4 fw-bold font-monospace text-primary mb-0">
+                                ₹{{ c.price|floatformat:2 }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2">
+                        <!-- Toggle Status -->
+                        <form method="POST" action="{% url 'menu:combo_toggle_status' c.id %}" class="flex-grow-1">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm w-100 {% if c.is_available %}btn-outline-secondary{% else %}btn-outline-success{% endif %} rounded-pill" title="Toggle Visibility">
+                                {% if c.is_available %}
+                                    <i class="bi bi-pause-circle me-1"></i> Deactivate
+                                {% else %}
+                                    <i class="bi bi-play-circle me-1"></i> Activate
+                                {% endif %}
+                            </button>
+                        </form>
+
+                        <!-- Edit -->
+                        <a href="{% url 'menu:combo_edit' c.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3" title="Edit Combo">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+
+                        <!-- Delete -->
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5" data-bs-toggle="modal" data-bs-target="#deleteModal{{ c.id }}" title="Delete Combo">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Modal -->
+        <div class="modal fade" id="deleteModal{{ c.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4 border-0 shadow">
+                    <div class="modal-header border-bottom">
+                        <h5 class="modal-title text-danger fw-bold">
+                            <i class="bi bi-trash-fill me-2"></i>Delete Food Combo
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p>Are you sure you want to permanently delete combo <strong>"{{ c.name }}"</strong>?</p>
+                        <p class="small text-muted mb-0">Existing historical bills and orders that included this combo will remain preserved.</p>
+                    </div>
+                    <div class="modal-footer border-top">
+                        <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                        <form method="POST" action="{% url 'menu:combo_delete' c.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold">Delete Combo</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm p-5 text-center bg-body">
+            <i class="bi bi-gift display-3 text-secondary opacity-50 mb-3"></i>
+            <h4 class="fw-bold">No Custom Food Combos Found</h4>
+            <p class="text-muted small mx-auto mb-4" style="max-width: 480px;">
+                Create irresistible dining bundles by pairing appetizers, mains, and beverages together at a single special fixed price.
+            </p>
+            <div>
+                <a href="{% url 'menu:combo_create' %}" class="btn btn-warning text-dark fw-bold px-4 py-2 rounded-pill shadow-xs">
+                    <i class="bi bi-plus-circle me-1"></i> Create Your First Combo
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

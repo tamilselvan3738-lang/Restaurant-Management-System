@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Reviews{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-chat-square-quote me-2 text-primary"></i> Customer Reviews & Ratings</h3>
+        <p class="text-muted small mb-0">Verified diner feedback, hospitality ratings, and culinary reviews</p>
+    </div>
+    <div>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-arrow-left"></i> <span>Back</span>
+        </a>
+    </div>
+</div>
+
+<!-- Ratings Overview Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 p-3 shadow-sm border-0 text-center">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Overall Rating</div>
+            <h2 class="fw-bold mb-1 text-warning"><i class="bi bi-star-fill me-1"></i>{{ avg_rating }}</h2>
+            <div class="small text-muted">From {{ total_reviews }} verified reviews</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 p-3 shadow-sm border-0 text-center">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Food & Taste</div>
+            <h3 class="fw-bold mb-1 text-primary"><i class="bi bi-egg-fried me-1"></i>{{ avg_food }} / 5.0</h3>
+            <div class="small text-muted">Quality & kitchen execution</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 p-3 shadow-sm border-0 text-center">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Service & Hospitality</div>
+            <h3 class="fw-bold mb-1 text-success"><i class="bi bi-heart-fill me-1"></i>{{ avg_service }} / 5.0</h3>
+            <div class="small text-muted">Staff attentiveness & speed</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100 p-3 shadow-sm border-0 text-center">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Dining Ambiance</div>
+            <h3 class="fw-bold mb-1 text-info"><i class="bi bi-lamp-fill me-1"></i>{{ avg_ambiance }} / 5.0</h3>
+            <div class="small text-muted">Atmosphere & decor</div>
+        </div>
+    </div>
+</div>
+
+<!-- Reviews List -->
+<div class="row g-3">
+    {% for review in reviews %}
+    <div class="col-12">
+        <div class="card p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <h6 class="fw-bold mb-0">{{ review.customer_name }}</h6>
+                    <div class="text-muted small">{{ review.created_at|date:"F d, Y" }}</div>
+                </div>
+                <div>
+                    <span class="badge bg-warning-subtle text-warning fs-6 px-3 py-1">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= review.rating %}
+                                <i class="bi bi-star-fill"></i>
+                            {% else %}
+                                <i class="bi bi-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </span>
+                </div>
+            </div>
+
+            <p class="mb-2 text-dark">{{ review.comment }}</p>
+
+            {% if review.dish_recommended %}
+            <div class="small text-muted mb-2">
+                <i class="bi bi-hand-thumbs-up-fill text-primary me-1"></i> Recommended: <span class="fw-semibold text-dark">{{ review.dish_recommended }}</span>
+            </div>
+            {% endif %}
+
+            {% if review.response %}
+            <div class="bg-light p-3 rounded-3 border-start border-3 border-primary mt-2">
+                <div class="small fw-bold text-primary mb-1"><i class="bi bi-reply-fill me-1"></i> Response from Management:</div>
+                <div class="small text-muted">{{ review.response }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5 text-muted">
+        <i class="bi bi-chat-square-quote fs-1 d-block mb-2 text-secondary opacity-50"></i>
+        No customer reviews recorded yet.
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
