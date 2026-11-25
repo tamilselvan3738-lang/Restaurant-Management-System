@@ -207,21 +207,14 @@ class FoodCombo(models.Model):
     def component_dishes_with_images(self):
         """
         Returns list of component menu items for rendering the multi-dish collage banner.
-        Always guarantees a clean image_url fallback to default dish SVG if an image is missing or invalid.
+        Guarantees every dish has a matching high-resolution real food photo.
         """
         dishes = []
-        default_svg = '/static/images/default_dish.svg'
-        for item in self.items.all():
+        for item in self.items.select_related('menu_item', 'menu_item__category').all():
             if item.menu_item:
-                url = default_svg
-                if item.menu_item.image:
-                    try:
-                        url = item.menu_item.image.url
-                    except Exception:
-                        url = default_svg
                 dishes.append({
                     'name': item.menu_item.name,
-                    'image_url': url or default_svg,
+                    'image_url': item.menu_item.image_url,
                     'quantity': item.quantity,
                     'price': item.menu_item.price,
                 })

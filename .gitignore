@@ -14,7 +14,10 @@ ENV/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-media/
+media/*
+!media/menu_items/
+media/menu_items/*
+!media/menu_items/*.jpg
 
 # Environment Variables
 .env
@@ -33,6 +36,5 @@ __pycache__/
 *.pyc
 .env
 db.sqlite3
-media/
 staticfiles/
 .git/

@@ -55,7 +55,7 @@ class DishImageFallbacksTest(TestCase):
         combo = FoodCombo.objects.create(
             name='Start Up',
             price=Decimal('280.00'),
-            is_active=True
+            is_available=True
         )
         FoodComboItem.objects.create(combo=combo, menu_item=item1, quantity=1)
         FoodComboItem.objects.create(combo=combo, menu_item=item2, quantity=1)
@@ -85,6 +85,12 @@ class DishImageFallbacksTest(TestCase):
         resp2 = serve_media_with_fallback(req2, 'menu_items/full-measl.jpg')
         self.assertEqual(resp2.status_code, 200)
         self.assertEqual(resp2['Content-Type'], 'image/jpeg')
+
+        # Test missing watermelon juice media file
+        req3 = self.factory.get('/media/menu_items/water-millan-juice.jpg')
+        resp3 = serve_media_with_fallback(req3, 'menu_items/water-millan-juice.jpg')
+        self.assertEqual(resp3.status_code, 200)
+        self.assertEqual(resp3['Content-Type'], 'image/jpeg')
 
         # Test missing logo media file
         req_logo = self.factory.get('/media/restaurant_logos/test_logo.png')

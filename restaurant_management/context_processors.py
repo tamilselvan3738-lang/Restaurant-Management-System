@@ -30,17 +30,13 @@ def restaurant_context(request):
 
     default_logo_url = settings.STATIC_URL + 'images/default_restaurant_logo.svg'
     restaurant_logo_url = None
-    if restaurant and getattr(restaurant, 'has_logo', False):
+    if restaurant:
         try:
             restaurant_logo_url = restaurant.logo_url
         except Exception:
             restaurant_logo_url = None
-    elif restaurant and restaurant.logo:
-        try:
-            if restaurant.logo.name and restaurant.logo.storage.exists(restaurant.logo.name):
-                restaurant_logo_url = restaurant.logo.url
-        except Exception:
-            restaurant_logo_url = None
+    if not restaurant_logo_url:
+        restaurant_logo_url = default_logo_url
 
     # Live notification counters (strictly tenant-filtered)
     unseen_cancellations_count = 0

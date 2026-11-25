@@ -6,12 +6,23 @@ a menu item without uploading a picture.
 """
 
 import os
+import re
 from django.conf import settings
 
 # Keyword to static image mapping
 FOOD_KEYWORD_MAP = [
     # Biryani / Rice specialties
     (('biryani', 'beriyani', 'briyani', 'pulao', 'dum biryani'), 'biryani.jpg'),
+    # Watermelon / Coolers / Fresh beverages
+    (('water millan', 'watermelon', 'millan', 'melon', 'cooler', 'mojito'), 'watermelon.jpg'),
+    # Juices & Smoothies
+    (('orange', 'juice', 'smoothie', 'shake', 'beverage', 'mocktail'), 'juice.jpg'),
+    # Lassi & Traditional drinks
+    (('mango', 'lassi', 'badam'), 'lassi.jpg'),
+    # Coffee & Tea
+    (('coffee', 'espresso', 'tea', 'latte', 'cappuccino', 'mocha', 'brew'), 'coffee.jpg'),
+    # Cocktails & Bar drinks
+    (('cocktail', 'drink', 'negroni', 'bar', 'wine', 'beer', 'whiskey', 'gin'), 'cocktail.jpg'),
     # Full meals / Thali / Indian lunch
     (('meal', 'measl', 'thali', 'south', 'lunch', 'dinner', 'combo meal'), 'meals.jpg'),
     # Chicken / Poultry
@@ -29,17 +40,7 @@ FOOD_KEYWORD_MAP = [
     # Starters & Appetizers
     (('starter', 'bruschetta', 'arancini', 'appetizer', 'finger', 'crispy', 'fry', 'snack', 'roll'), 'starter.jpg'),
     # Desserts & Sweets
-    (('dessert', 'destert', 'sweet', 'cake', 'tiramisu', 'pudding', 'ice cream', 'ice', 'chocolate', 'lava', 'pastry', 'halwa', 'gulab'), 'dessert.jpg'),
-    # Watermelon / Coolers
-    (('water', 'millan', 'melon', 'watermelon', 'cooler'), 'watermelon.jpg'),
-    # Juices & Smoothies
-    (('orange', 'juice', 'smoothie', 'shake', 'beverage', 'mocktail'), 'juice.jpg'),
-    # Lassi & Traditional drinks
-    (('mango', 'lassi', 'badam'), 'lassi.jpg'),
-    # Coffee & Tea
-    (('coffee', 'espresso', 'tea', 'latte', 'cappuccino', 'mocha', 'brew'), 'coffee.jpg'),
-    # Cocktails & Bar drinks
-    (('cocktail', 'drink', 'negroni', 'bar', 'wine', 'beer', 'whiskey', 'gin'), 'cocktail.jpg'),
+    (('dessert', 'destert', 'sweet', 'cake', 'tiramisu', 'pudding', 'ice cream', 'chocolate', 'lava', 'pastry', 'halwa', 'gulab', 'kulfi'), 'dessert.jpg'),
 ]
 
 # Category slug / name mapping fallback
@@ -58,6 +59,12 @@ CATEGORY_MAP = {
 DEFAULT_DISH_IMAGE = '/static/images/dishes/default_dish.jpg'
 
 
+def _matches_keyword(kw, text):
+    if ' ' in kw or '-' in kw:
+        return kw in text
+    return bool(re.search(r'\b' + re.escape(kw) + r'\b', text))
+
+
 def get_dish_static_image(name='', category_name='', category_slug=''):
     """
     Finds the most relevant static dish photo URL based on name and category keywords.
@@ -65,7 +72,7 @@ def get_dish_static_image(name='', category_name='', category_slug=''):
     search_str = f"{name or ''} {category_name or ''} {category_slug or ''}".lower()
 
     for keywords, filename in FOOD_KEYWORD_MAP:
-        if any(kw in search_str for kw in keywords):
+        if any(_matches_keyword(kw, search_str) for kw in keywords):
             return f"/static/images/dishes/{filename}"
 
     # Try category fallback

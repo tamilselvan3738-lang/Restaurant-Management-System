@@ -1,5 +1,6 @@
 import mimetypes
 import os
+import re
 from django.conf import settings
 from django.http import FileResponse
 from django.views.static import serve
@@ -8,6 +9,11 @@ from django.views.static import serve
 # Food keyword mapping for intelligent image resolution
 FOOD_KEYWORD_MAP = [
     (('biryani', 'beriyani', 'briyani', 'pulao', 'dum biryani'), 'biryani.jpg'),
+    (('water millan', 'watermelon', 'millan', 'melon', 'cooler', 'mojito'), 'watermelon.jpg'),
+    (('orange', 'juice', 'smoothie', 'shake', 'beverage', 'mocktail'), 'juice.jpg'),
+    (('mango', 'lassi', 'badam'), 'lassi.jpg'),
+    (('coffee', 'espresso', 'tea', 'latte', 'cappuccino', 'mocha', 'brew'), 'coffee.jpg'),
+    (('cocktail', 'drink', 'negroni', 'bar', 'wine', 'beer', 'whiskey', 'gin'), 'cocktail.jpg'),
     (('meal', 'measl', 'thali', 'south', 'lunch', 'dinner', 'combo meal'), 'meals.jpg'),
     (('chicken', 'murgh', 'koli', 'poultry', 'tikka', 'tandoori'), 'chicken.jpg'),
     (('paneer', 'cottage', 'butter masala', 'shahi paneer'), 'paneer.jpg'),
@@ -16,13 +22,14 @@ FOOD_KEYWORD_MAP = [
     (('steak', 'ribeye', 'beef', 'mutton', 'lamb', 'tenderloin', 'meat'), 'steak.jpg'),
     (('salmon', 'fish', 'calamari', 'seafood', 'prawn', 'shrimp', 'crab'), 'salmon.jpg'),
     (('starter', 'bruschetta', 'arancini', 'appetizer', 'finger', 'crispy', 'fry', 'snack', 'roll'), 'starter.jpg'),
-    (('dessert', 'destert', 'sweet', 'cake', 'tiramisu', 'pudding', 'ice cream', 'ice', 'chocolate', 'lava', 'pastry', 'halwa', 'gulab'), 'dessert.jpg'),
-    (('water', 'millan', 'melon', 'watermelon', 'cooler'), 'watermelon.jpg'),
-    (('orange', 'juice', 'smoothie', 'shake', 'beverage', 'mocktail'), 'juice.jpg'),
-    (('mango', 'lassi', 'badam'), 'lassi.jpg'),
-    (('coffee', 'espresso', 'tea', 'latte', 'cappuccino', 'mocha', 'brew'), 'coffee.jpg'),
-    (('cocktail', 'drink', 'negroni', 'bar', 'wine', 'beer', 'whiskey', 'gin'), 'cocktail.jpg'),
+    (('dessert', 'destert', 'sweet', 'cake', 'tiramisu', 'pudding', 'ice cream', 'chocolate', 'lava', 'pastry', 'halwa', 'gulab', 'kulfi'), 'dessert.jpg'),
 ]
+
+
+def _matches_keyword(kw, text):
+    if ' ' in kw or '-' in kw:
+        return kw in text
+    return bool(re.search(r'\b' + re.escape(kw) + r'\b', text))
 
 
 def serve_media_with_fallback(request, path):
@@ -61,7 +68,7 @@ def serve_media_with_fallback(request, path):
     # 2. Contextual analysis based on requested path and query parameters
     query_name = request.GET.get('name', '')
     query_cat = request.GET.get('category', '')
-    search_str = f"{path} {query_name} {query_cat}".lower()
+    search_str = f"{path} {query_name} {query_cat}".lower().replace('-', ' ').replace('_', ' ')
 
     if 'logo' in search_str or 'restaurant' in search_str:
         fallback_file = os.path.join(static_images_dir, 'default_restaurant_logo.svg')
@@ -71,7 +78,7 @@ def serve_media_with_fallback(request, path):
         # Intelligent Food Visual Matcher
         matched_dish = None
         for keywords, filename in FOOD_KEYWORD_MAP:
-            if any(kw in search_str for kw in keywords):
+            if any(_matches_keyword(kw, search_str) for kw in keywords):
                 candidate = os.path.join(dishes_dir, filename)
                 if os.path.isfile(candidate):
                     matched_dish = candidate
