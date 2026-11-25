@@ -240,11 +240,13 @@
                 <!-- Card Footer: Price First, Then Options One by One Below Price with Clean Gap -->
                 <div class="pt-2 border-top mt-auto">
                     <!-- Price and Cost Line -->
-                    <div class="d-flex justify-content-between align-items-baseline mb-2" style="min-height: 28px;">
-                        <div class="fs-4 fw-bold text-primary">{{ RESTAURANT_CURRENCY }}{{ item.price|floatformat:2 }}</div>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-2" style="min-height: 28px;">
+                        <div class="fs-4 fw-bold text-primary lh-1 mb-0">{{ RESTAURANT_CURRENCY }}{{ item.price|floatformat:2 }}</div>
                         {% if user.is_admin_or_manager and item.cost_price > 0 %}
-                            <div class="text-muted small text-end" style="font-size: 0.73rem;" title="Cost: {{ RESTAURANT_CURRENCY }}{{ item.cost_price }} ({{ item.profit_margin }}% margin)">
-                                Cost: {{ RESTAURANT_CURRENCY }}{{ item.cost_price }} &bull; {{ item.profit_margin }}%
+                            <div class="text-muted small text-end text-nowrap lh-1 mb-0" style="font-size: 0.72rem;" title="Cost: {{ RESTAURANT_CURRENCY }}{{ item.cost_price }} ({{ item.profit_margin }}% margin)">
+                                <span>Cost: {{ RESTAURANT_CURRENCY }}{{ item.cost_price }}</span>
+                                <span class="mx-0.5">&bull;</span>
+                                <span class="{% if item.profit_margin > 0 %}text-success{% elif item.profit_margin < 0 %}text-danger{% endif %}">{{ item.profit_margin }}%</span>
                             </div>
                         {% endif %}
                     </div>

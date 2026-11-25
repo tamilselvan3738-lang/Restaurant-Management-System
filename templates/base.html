@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ RESTAURANT_NAME }}{% endblock %} | RMS</title>
+    <!-- Favicon & Touch Icons -->
+    {% include 'includes/favicons.html' %}
     <!-- Pre-render Theme & Culinary Palette Init Script to Prevent FOUT / White Flash -->
     <script>
         (function() {
@@ -74,8 +76,20 @@
         }
 
         [data-bs-theme="dark"] .top-navbar #userMenu span,
+        [data-bs-theme="dark"] .top-navbar #userMenu .fw-semibold,
         [data-bs-theme="dark"] .top-navbar .fw-bold {
             color: #f1f5f9 !important;
+        }
+
+        #userMenu.dropdown-toggle::after {
+            margin-left: 0.4rem;
+            vertical-align: 0;
+            align-self: center;
+            border-top: 0.32em solid currentColor;
+            border-right: 0.28em solid transparent;
+            border-bottom: 0;
+            border-left: 0.28em solid transparent;
+            opacity: 0.75;
         }
 
         [data-bs-theme="dark"] .top-navbar .btn-light {
@@ -1539,13 +1553,13 @@
                     <span class="badge bg-secondary badge-role text-uppercase">{% if user.is_superuser %}SUPER ADMINISTRATOR{% else %}{{ user.get_role_display }}{% endif %}</span>
                     
                     <div class="dropdown">
-                        <a href="#" class="d-flex align-items-center text-body text-decoration-none dropdown-toggle gap-2" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-weight: 600;">
+                        <a href="#" class="d-flex align-items-center text-body text-decoration-none dropdown-toggle gap-2 py-1 px-1.5 rounded-3 user-dropdown-nav" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-xs" style="width: 36px; height: 36px; font-weight: 600; font-size: 0.95rem;">
                                 {{ user.first_name|default:user.username|slice:":1"|upper }}
                             </div>
-                            <div class="text-start lh-1">
-                                <span class="fw-semibold">{{ user.get_full_name|default:user.username }}</span>
-                                <div class="text-muted font-monospace" style="font-size: 0.68rem;">@{{ user.username }}</div>
+                            <div class="text-start d-flex flex-column justify-content-center" style="line-height: 1.2;">
+                                <span class="fw-semibold text-truncate" style="font-size: 0.88rem; max-width: 150px;">{{ user.get_full_name|default:user.username }}</span>
+                                <span class="text-muted font-monospace" style="font-size: 0.70rem; margin-top: 2px;">@{{ user.username }}</span>
                             </div>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userMenu">

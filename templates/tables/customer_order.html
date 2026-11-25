@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Menu - Table {{ table.table_number }}{% if current_session %} • {{ current_session.session_name }}{% endif %} | {{ RESTAURANT_NAME }}</title>
+    <!-- Favicon & Touch Icons -->
+    {% include 'includes/favicons.html' %}
     
     <script>
         (function() {
@@ -1531,13 +1533,13 @@
 
                 if (myQty > 0) {
                     box.innerHTML = `
-                        <div class="d-flex align-items-center gap-1.5">
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-circle p-0 d-flex align-items-center justify-content-center fw-bold shadow-xs" style="width: 28px; height: 28px;" onclick="reduceFromCart(${itemId})" title="Reduce quantity">
-                                <i class="bi bi-dash fs-6"></i>
+                        <div class="d-inline-flex align-items-center" style="gap: 8px;">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 30px; height: 30px; min-width: 30px; max-height: 30px; border-width: 1.5px; padding: 0 !important; line-height: 1;" onclick="reduceFromCart(${itemId})" title="Reduce quantity">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M2 8a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 8z"/></svg>
                             </button>
-                            <span class="badge bg-primary rounded-pill px-2.5 py-1.5 small fw-bold shadow-xs">${myQty} in Cart</span>
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-circle p-0 d-flex align-items-center justify-content-center fw-bold shadow-xs" style="width: 28px; height: 28px;" onclick="addToCart(${itemId}, '', 0)" title="Add another">
-                                <i class="bi bi-plus fs-6"></i>
+                            <span class="badge bg-primary rounded-pill d-inline-flex align-items-center justify-content-center fw-bold text-white shadow-xs" style="height: 30px; padding: 0 14px; font-size: 0.82rem; line-height: 1; letter-spacing: 0.2px;">${myQty} in Cart</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-circle p-0 d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 30px; height: 30px; min-width: 30px; max-height: 30px; border-width: 1.5px; padding: 0 !important; line-height: 1;" onclick="addToCart(${itemId}, '', 0)" title="Add another">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2z"/></svg>
                             </button>
                         </div>
                     `;
@@ -1558,13 +1560,13 @@
 
                 if (myComboQty > 0) {
                     box.innerHTML = `
-                        <div class="d-flex align-items-center gap-1.5">
-                            <button type="button" class="btn btn-sm btn-outline-warning text-dark rounded-circle p-0 d-flex align-items-center justify-content-center fw-bold shadow-xs" style="width: 28px; height: 28px; border-width: 1.5px;" onclick="reduceComboFromCart(${comboId})" title="Reduce combo">
-                                <i class="bi bi-dash fs-6"></i>
+                        <div class="d-inline-flex align-items-center" style="gap: 8px;">
+                            <button type="button" class="btn btn-sm btn-outline-warning text-dark rounded-circle p-0 d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 30px; height: 30px; min-width: 30px; max-height: 30px; border-width: 1.5px; padding: 0 !important; line-height: 1;" onclick="reduceComboFromCart(${comboId})" title="Reduce combo">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M2 8a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 8z"/></svg>
                             </button>
-                            <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1.5 small fw-bold shadow-xs">${myComboQty} in Cart</span>
-                            <button type="button" class="btn btn-sm btn-outline-warning text-dark rounded-circle p-0 d-flex align-items-center justify-content-center fw-bold shadow-xs" style="width: 28px; height: 28px; border-width: 1.5px;" onclick="addComboToCart(${comboId}, '', 0)" title="Add another combo">
-                                <i class="bi bi-plus fs-6"></i>
+                            <span class="badge bg-warning text-dark rounded-pill d-inline-flex align-items-center justify-content-center fw-bold shadow-xs" style="height: 30px; padding: 0 14px; font-size: 0.82rem; line-height: 1; letter-spacing: 0.2px;">${myComboQty} in Cart</span>
+                            <button type="button" class="btn btn-sm btn-outline-warning text-dark rounded-circle p-0 d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 30px; height: 30px; min-width: 30px; max-height: 30px; border-width: 1.5px; padding: 0 !important; line-height: 1;" onclick="addComboToCart(${comboId}, '', 0)" title="Add another combo">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2z"/></svg>
                             </button>
                         </div>
                     `;

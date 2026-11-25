@@ -86,7 +86,8 @@ class MenuItem(models.Model):
     @property
     def profit_margin(self):
         if self.cost_price and self.price:
-            return round(((self.price - self.cost_price) / self.price) * 100, 1)
+            margin = round(((self.price - self.cost_price) / self.price) * 100, 1)
+            return 0.0 if abs(margin) < 0.05 else margin
         return 0.0
 
     @property

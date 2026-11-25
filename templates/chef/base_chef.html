@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Chef Portal{% endblock %} | {{ restaurant.name|default:"Kitchen Operations" }}</title>
+    <!-- Favicon & Touch Icons -->
+    {% include 'includes/favicons.html' %}
     
     <script>
         (function() {
