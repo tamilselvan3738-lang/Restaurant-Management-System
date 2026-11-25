@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Table {{ table.table_number }} | Dining Setup</title>
+    <title>{% if "table" in table.table_number|lower %}{{ table.table_number }}{% else %}Table {{ table.table_number }}{% endif %} | Dining Setup</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -356,7 +356,7 @@
             <!-- Table is Full Warning -->
             <div class="alert alert-danger rounded-4 p-3 mb-3 text-center">
                 <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Table is Currently Full</h6>
-                <p class="small mb-2">All {{ table.capacity }} seats at Table {{ table.table_number }} are occupied. If your friends gave you an invitation code, enter it below to join.</p>
+                <p class="small mb-2">All {{ table.capacity }} seats at {% if "table" in table.table_number|lower %}{{ table.table_number }}{% else %}Table {{ table.table_number }}{% endif %} are occupied. If your friends gave you an invitation code, enter it below to join.</p>
             </div>
             
             <!-- Quick Join for Full Table -->
