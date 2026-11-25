@@ -100,22 +100,12 @@
     background: rgba(234, 88, 12, 0.15) !important;
 }
 
-.cat-filter-pill {
-    cursor: pointer;
-    border-radius: 9999px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    padding: 4px 12px;
-    white-space: nowrap;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    background: var(--bs-body-bg, #f8fafc);
-    color: var(--bs-body-color, #475569);
-    transition: all 0.15s ease;
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
-.cat-filter-pill.active {
-    background: #ea580c !important;
-    color: #ffffff !important;
-    border-color: #ea580c !important;
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
 }
 
 .priority-pill {
@@ -216,23 +206,14 @@
             </ul>
 
             <!-- Modal Body -->
-            <div class="modal-body p-3.5 tab-content" style="background: #ffffff !important;">
+            <div class="modal-body p-3.5" style="background: #ffffff !important;">
                 
-                <!-- TAB 1: NEW SERVICE REQUEST -->
-                <div class="tab-pane fade show active" id="tab-request-pane" role="tabpanel">
-                    <!-- Category Filter Chips -->
-                    <div class="d-flex gap-1.5 overflow-x-auto pb-2 mb-2.5 no-scrollbar" id="categoryChipsBar">
-                        <span class="cat-filter-pill active" onclick="filterServiceCategory('ALL', this)">All Items</span>
-                        <span class="cat-filter-pill" onclick="filterServiceCategory('WATER', this)">Water</span>
-                        <span class="cat-filter-pill" onclick="filterServiceCategory('CUTLERY', this)">Plates &amp; Cutlery</span>
-                        <span class="cat-filter-pill" onclick="filterServiceCategory('TISSUE_CONDIMENT', this)">Tissues &amp; Sauces</span>
-                        <span class="cat-filter-pill" onclick="filterServiceCategory('TABLE_ASSIST', this)">Table Care</span>
-                        <span class="cat-filter-pill" onclick="filterServiceCategory('WAITER_ASSIST', this)">Call Waiter</span>
-                        <span class="cat-filter-pill" onclick="filterServiceCategory('BILLING', this)">Bill &amp; Pay</span>
-                    </div>
+                <!-- Alert placeholder for quick feedback inside modal (auto-closes after 2s) -->
+                <div id="serviceRequestAlertBox" class="d-none mb-3"></div>
 
-                    <!-- Alert placeholder for quick feedback inside modal -->
-                    <div id="serviceRequestAlertBox" class="d-none mb-3"></div>
+                <div class="tab-content">
+                    <!-- TAB 1: NEW SERVICE REQUEST -->
+                    <div class="tab-pane fade show active" id="tab-request-pane" role="tabpanel">
 
                     <!-- Predefined Service Options Grid -->
                     <div class="row g-2 mb-3" id="serviceOptionsGrid">
@@ -443,7 +424,8 @@
                     </div>
                 </div>
 
-            </div>
+                </div> <!-- End tab-content -->
+            </div> <!-- End modal-body -->
 
         </div>
     </div>
@@ -729,10 +711,32 @@
                     `;
                 }
 
-                const historyTab = document.getElementById('tab-history-link');
-                if (historyTab && window.bootstrap && bootstrap.Tab) {
-                    new bootstrap.Tab(historyTab).show();
+                // Auto-close popup message and modal automatically after 2 seconds (2000ms)
+                if (window._serviceAlertTimer) {
+                    clearTimeout(window._serviceAlertTimer);
                 }
+                window._serviceAlertTimer = setTimeout(() => {
+                    // 1. Auto-close the popup message
+                    if (alertBox) {
+                        alertBox.classList.remove('show');
+                        setTimeout(() => {
+                            alertBox.className = 'd-none mb-3';
+                            alertBox.innerHTML = '';
+                        }, 250);
+                    }
+                    // 2. Auto-close the modal popup
+                    const modalEl = document.getElementById('serviceAssistanceModal');
+                    if (modalEl) {
+                        if (window.bootstrap && bootstrap.Modal) {
+                            const inst = bootstrap.Modal.getInstance(modalEl);
+                            if (inst) inst.hide();
+                        } else {
+                            const closeBtn = modalEl.querySelector('.btn-close');
+                            if (closeBtn) closeBtn.click();
+                        }
+                    }
+                    window._serviceAlertTimer = null;
+                }, 2000);
 
                 pollServiceStatus();
             } else {
@@ -1082,6 +1086,15 @@
     };
 
     function handleServiceModalOpened() {
+        if (window._serviceAlertTimer) {
+            clearTimeout(window._serviceAlertTimer);
+            window._serviceAlertTimer = null;
+        }
+        const alertBox = document.getElementById('serviceRequestAlertBox');
+        if (alertBox) {
+            alertBox.className = 'd-none mb-3';
+            alertBox.innerHTML = '';
+        }
         window.markAllServiceNotificationsAsSeen();
         if (!liveTimerInterval) {
             liveTimerInterval = setInterval(updateLiveTimers, 1000);
@@ -1432,9 +1445,17 @@
         const historyTabLink = document.getElementById('tab-history-link');
         if (historyTabLink) {
             historyTabLink.addEventListener('click', function() {
+                if (window._serviceAlertTimer) {
+                    clearTimeout(window._serviceAlertTimer);
+                    window._serviceAlertTimer = null;
+                }
                 window.markAllServiceNotificationsAsSeen();
             });
             historyTabLink.addEventListener('shown.bs.tab', function() {
+                if (window._serviceAlertTimer) {
+                    clearTimeout(window._serviceAlertTimer);
+                    window._serviceAlertTimer = null;
+                }
                 window.markAllServiceNotificationsAsSeen();
             });
         }

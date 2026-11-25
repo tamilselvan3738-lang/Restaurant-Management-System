@@ -28,10 +28,17 @@ def restaurant_context(request):
         service_charge_rate = getattr(settings, 'RESTAURANT_SERVICE_CHARGE_RATE', 0.05)
         restaurant_name = restaurant.name if restaurant else getattr(settings, 'RESTAURANT_NAME', 'The Grand Bistro')
 
+    default_logo_url = settings.STATIC_URL + 'images/default_restaurant_logo.svg'
     restaurant_logo_url = None
-    if restaurant and restaurant.logo:
+    if restaurant and getattr(restaurant, 'has_logo', False):
         try:
-            restaurant_logo_url = restaurant.logo.url
+            restaurant_logo_url = restaurant.logo_url
+        except Exception:
+            restaurant_logo_url = None
+    elif restaurant and restaurant.logo:
+        try:
+            if restaurant.logo.name and restaurant.logo.storage.exists(restaurant.logo.name):
+                restaurant_logo_url = restaurant.logo.url
         except Exception:
             restaurant_logo_url = None
 
@@ -111,6 +118,7 @@ def restaurant_context(request):
         'RESTAURANT_CONFIG': config,
         'RESTAURANT_NAME': restaurant_name,
         'RESTAURANT_LOGO_URL': restaurant_logo_url,
+        'DEFAULT_RESTAURANT_LOGO_URL': default_logo_url,
         'RESTAURANT_CURRENCY': currency,
         'RESTAURANT_TAX_RATE': tax_rate,
         'RESTAURANT_SERVICE_CHARGE_RATE': service_charge_rate,

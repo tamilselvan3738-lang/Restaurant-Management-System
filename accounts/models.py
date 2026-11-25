@@ -81,10 +81,29 @@ class Restaurant(models.Model):
         super().save(*args, **kwargs)
 
     @property
+    def has_logo(self):
+        if not self.logo:
+            return False
+        try:
+            return bool(self.logo.name and self.logo.storage.exists(self.logo.name))
+        except Exception:
+            return False
+
+    @property
     def logo_url(self):
-        if self.logo and hasattr(self.logo, 'url'):
-            return self.logo.url
+        if self.has_logo:
+            try:
+                return self.logo.url
+            except Exception:
+                return None
         return None
+
+    @property
+    def default_logo_url(self):
+        return '/static/images/default_restaurant_logo.svg'
+
+    def get_logo_url(self):
+        return self.logo_url or self.default_logo_url
 
 
 class User(AbstractUser):

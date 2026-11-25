@@ -322,21 +322,11 @@
 
     <!-- TOP HERO BANNER WITH BRAND LOGO & TABLE INFO -->
     <div class="hero-banner">
-        {% if restaurant_logo_url %}
-            <div class="brand-logo-card">
-                <img src="{{ restaurant_logo_url }}" alt="{{ restaurant_name }}" class="top-restaurant-logo">
-            </div>
-        {% elif RESTAURANT_LOGO_URL %}
-            <div class="brand-logo-card">
-                <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ restaurant_name }}" class="top-restaurant-logo">
-            </div>
-        {% else %}
-            <div class="table-badge-pill mb-2">
-                <i class="bi bi-shop"></i> {{ restaurant_name|default:"The Grand Bistro" }}
-            </div>
-        {% endif %}
+        <div class="brand-logo-card">
+            <img src="{{ restaurant_logo_url|default:RESTAURANT_LOGO_URL }}" alt="{{ restaurant_name|default:'Restaurant' }}" class="top-restaurant-logo" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
+        </div>
 
-        <h1 class="table-title">TABLE {{ table.table_number }}</h1>
+        <h1 class="table-title">{% if "table" in table.table_number|lower %}{{ table.table_number|upper }}{% else %}TABLE {{ table.table_number }}{% endif %}</h1>
         
         <div class="table-badge-pill">
             <i class="bi bi-people-fill"></i>

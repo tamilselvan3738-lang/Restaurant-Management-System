@@ -114,6 +114,19 @@
             color: var(--rms-text-main) !important;
         }
 
+        /* Alert error styling for Django message tags */
+        .alert-error {
+            color: #842029 !important;
+            background-color: #f8d7da !important;
+            border-color: #f5c2c7 !important;
+        }
+
+        [data-bs-theme="dark"] .alert-error {
+            color: #f87171 !important;
+            background-color: rgba(220, 38, 38, 0.2) !important;
+            border-color: rgba(220, 38, 38, 0.4) !important;
+        }
+
         [data-bs-theme="dark"] .alert-light {
             background-color: #1a202c !important;
             border-color: var(--rms-border-color) !important;
@@ -690,7 +703,7 @@
         <!-- Desktop Sidebar Brand (d-none d-lg-flex) -->
         <a href="{% url 'dashboard:index' %}" class="sidebar-brand d-none d-lg-flex" title="{{ RESTAURANT_NAME }}">
             {% if RESTAURANT_LOGO_URL %}
-                <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }} Logo" class="brand-logo-img">
+                <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }} Logo" class="brand-logo-img" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
             {% else %}
                 <div class="brand-logo-placeholder">
                     <i class="bi bi-fire"></i>
@@ -703,7 +716,7 @@
         <div class="sidebar-brand d-flex d-lg-none align-items-center justify-content-between">
             <a href="{% url 'dashboard:index' %}" class="d-flex align-items-center gap-2 text-decoration-none text-white overflow-hidden" title="{{ RESTAURANT_NAME }}">
                 {% if RESTAURANT_LOGO_URL %}
-                    <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }} Logo" class="brand-logo-img">
+                    <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }} Logo" class="brand-logo-img" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                 {% else %}
                     <div class="brand-logo-placeholder">
                         <i class="bi bi-fire"></i>
@@ -727,7 +740,7 @@
                     <div class="min-w-0 flex-grow-1">
                         <div class="text-white fw-bold small text-truncate">{{ user.get_full_name|default:user.username }}</div>
                         <div class="text-white-50 font-monospace" style="font-size: 0.72rem;">@{{ user.username }}</div>
-                        <span class="badge bg-secondary badge-role text-uppercase mt-1" style="font-size: 0.65rem;">{{ user.get_role_display }}</span>
+                        <span class="badge bg-secondary badge-role text-uppercase mt-1" style="font-size: 0.65rem;">{% if user.is_superuser %}SUPER ADMINISTRATOR{% else %}{{ user.get_role_display }}{% endif %}</span>
                     </div>
                 </div>
 
@@ -784,12 +797,14 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'orders:cancelled_orders' %}" class="{% if request.resolver_match.url_name == 'cancelled_orders' %}active{% endif %} d-flex align-items-center justify-content-between">
+                    <a href="{% url 'orders:cancelled_orders' %}" class="{% if request.resolver_match.url_name == 'cancelled_orders' %}active{% endif %} d-flex align-items-center justify-content-between" onclick="document.querySelectorAll('.sidebar-cancellation-badge').forEach(b => { b.textContent = ''; b.classList.add('d-none'); b.style.setProperty('display', 'none', 'important'); });">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-x-circle text-danger"></i> Cancelled Orders
                         </div>
-                        {% if unseen_cancellations_count > 0 %}
-                            <span class="badge bg-danger rounded-pill px-2 py-0.5" id="sidebar-cancellation-badge" style="font-size: 0.72rem;">{{ unseen_cancellations_count }}</span>
+                        {% if unseen_cancellations_count > 0 and request.resolver_match.url_name != 'cancelled_orders' %}
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 sidebar-cancellation-badge" id="sidebar-cancellation-badge" style="font-size: 0.72rem;">{{ unseen_cancellations_count }}</span>
+                        {% else %}
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 sidebar-cancellation-badge d-none" style="font-size: 0.72rem; display: none !important;"></span>
                         {% endif %}
                     </a>
                 </li>
@@ -950,6 +965,11 @@
                 </li>
                 {% endif %}
                 <li>
+                    <a href="{% url 'accounts:profile' %}" class="{% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                        <i class="bi bi-person-badge"></i> My Profile
+                    </a>
+                </li>
+                <li>
                     <a href="{% url 'accounts:logout' %}" class="text-danger mt-3">
                         <i class="bi bi-box-arrow-right"></i> Logout
                     </a>
@@ -991,12 +1011,14 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'orders:cancelled_orders' %}" class="{% if request.resolver_match.url_name == 'cancelled_orders' %}active{% endif %} d-flex align-items-center justify-content-between">
+                    <a href="{% url 'orders:cancelled_orders' %}" class="{% if request.resolver_match.url_name == 'cancelled_orders' %}active{% endif %} d-flex align-items-center justify-content-between" onclick="document.querySelectorAll('.sidebar-cancellation-badge').forEach(b => { b.textContent = ''; b.classList.add('d-none'); b.style.setProperty('display', 'none', 'important'); });">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-x-circle text-danger"></i> Cancelled Orders
                         </div>
-                        {% if unseen_cancellations_count > 0 %}
-                            <span class="badge bg-danger rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">{{ unseen_cancellations_count }}</span>
+                        {% if unseen_cancellations_count > 0 and request.resolver_match.url_name != 'cancelled_orders' %}
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 sidebar-cancellation-badge" style="font-size: 0.72rem;">{{ unseen_cancellations_count }}</span>
+                        {% else %}
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 sidebar-cancellation-badge d-none" style="font-size: 0.72rem; display: none !important;"></span>
                         {% endif %}
                     </a>
                 </li>
@@ -1060,6 +1082,23 @@
                     </a>
                 </li>
 
+                <li class="menu-header">Account & Alerts</li>
+                <li>
+                    <a href="{% url 'dashboard:notifications' %}" class="{% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+                        <i class="bi bi-bell"></i> Notifications Feed
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'accounts:profile' %}" class="{% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                        <i class="bi bi-person-badge"></i> My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'accounts:logout' %}" class="text-danger mt-3">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </li>
+
             {% elif user.role == 'WAITER' %}
                 <!-- ================= WAITER / SERVER ================= -->
                 <li class="menu-header">Floor Service</li>
@@ -1091,12 +1130,14 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'orders:cancelled_orders' %}" class="{% if request.resolver_match.url_name == 'cancelled_orders' %}active{% endif %} d-flex align-items-center justify-content-between">
+                    <a href="{% url 'orders:cancelled_orders' %}" class="{% if request.resolver_match.url_name == 'cancelled_orders' %}active{% endif %} d-flex align-items-center justify-content-between" onclick="document.querySelectorAll('.sidebar-cancellation-badge').forEach(b => { b.textContent = ''; b.classList.add('d-none'); b.style.setProperty('display', 'none', 'important'); });">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-x-circle text-danger"></i> Cancelled Orders
                         </div>
-                        {% if unseen_cancellations_count > 0 %}
-                            <span class="badge bg-danger rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">{{ unseen_cancellations_count }}</span>
+                        {% if unseen_cancellations_count > 0 and request.resolver_match.url_name != 'cancelled_orders' %}
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 sidebar-cancellation-badge" style="font-size: 0.72rem;">{{ unseen_cancellations_count }}</span>
+                        {% else %}
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 sidebar-cancellation-badge d-none" style="font-size: 0.72rem; display: none !important;"></span>
                         {% endif %}
                     </a>
                 </li>
@@ -1123,7 +1164,24 @@
                     </a>
                 </li>
 
-            {% elif user.role == 'KITCHEN' %}
+                <li class="menu-header">Account & Alerts</li>
+                <li>
+                    <a href="{% url 'dashboard:notifications' %}" class="{% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+                        <i class="bi bi-bell"></i> Notifications Feed
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'accounts:profile' %}" class="{% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                        <i class="bi bi-person-badge"></i> My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'accounts:logout' %}" class="text-danger mt-3">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </li>
+
+            {% elif user.role == 'KITCHEN' or user.role == 'CHEF' %}
                 <!-- ================= CHEF / KITCHEN ================= -->
                 <li class="menu-header">Kitchen Operations</li>
                 <li>
@@ -1142,6 +1200,23 @@
                     </a>
                 </li>
 
+                <li class="menu-header">Account & Alerts</li>
+                <li>
+                    <a href="{% url 'dashboard:notifications' %}" class="{% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+                        <i class="bi bi-bell"></i> Notifications Feed
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'accounts:profile' %}" class="{% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                        <i class="bi bi-person-badge"></i> My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'accounts:logout' %}" class="text-danger mt-3">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </li>
+
             {% elif user.role == 'CASHIER' %}
                 <!-- ================= CASHIER (AUTHORIZED RESTAURANT ADMIN MODULES) ================= -->
                 <li class="menu-header">Operations & Ordering</li>
@@ -1156,12 +1231,14 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'orders:cancelled_orders' %}" class="{% if request.resolver_match.url_name == 'cancelled_orders' %}active{% endif %} d-flex align-items-center justify-content-between">
+                    <a href="{% url 'orders:cancelled_orders' %}" class="{% if request.resolver_match.url_name == 'cancelled_orders' %}active{% endif %} d-flex align-items-center justify-content-between" onclick="document.querySelectorAll('.sidebar-cancellation-badge').forEach(b => { b.textContent = ''; b.classList.add('d-none'); b.style.setProperty('display', 'none', 'important'); });">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-x-circle text-danger"></i> Cancelled Orders
                         </div>
-                        {% if unseen_cancellations_count > 0 %}
-                            <span class="badge bg-danger rounded-pill px-2 py-0.5" id="sidebar-cancellation-badge" style="font-size: 0.72rem;">{{ unseen_cancellations_count }}</span>
+                        {% if unseen_cancellations_count > 0 and request.resolver_match.url_name != 'cancelled_orders' %}
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 sidebar-cancellation-badge" id="sidebar-cancellation-badge-cashier" style="font-size: 0.72rem;">{{ unseen_cancellations_count }}</span>
+                        {% else %}
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 sidebar-cancellation-badge d-none" style="font-size: 0.72rem; display: none !important;"></span>
                         {% endif %}
                     </a>
                 </li>
@@ -1287,6 +1364,18 @@
                         <i class="bi bi-box-arrow-right"></i> Logout
                     </a>
                 </li>
+            {% else %}
+                <li class="menu-header">My Account</li>
+                <li>
+                    <a href="{% url 'accounts:profile' %}" class="{% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                        <i class="bi bi-person"></i> My Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'accounts:logout' %}" class="text-danger mt-3">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                </li>
             {% endif %}
         </ul>
     </aside>
@@ -1317,7 +1406,7 @@
                 <!-- Mobile & Tablet: Brand Logo and Restaurant Name at Left -->
                 <a href="{% url 'dashboard:index' %}" class="d-flex align-items-center gap-2 text-decoration-none d-lg-none" title="{{ RESTAURANT_NAME }}">
                     {% if RESTAURANT_LOGO_URL %}
-                        <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }}" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }}" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                     {% else %}
                         <div class="bg-primary text-white rounded-2 d-flex align-items-center justify-content-center shadow-xs" style="width: 32px; height: 32px;">
                             <i class="bi bi-fire fs-5"></i>
@@ -1355,14 +1444,14 @@
                         <span class="small fw-semibold" id="themeLabelLaptop">Dark Mode</span>
                     </button>
 
-                    <span class="badge bg-secondary badge-role text-uppercase">{{ user.get_role_display }}</span>
+                    <span class="badge bg-secondary badge-role text-uppercase">{% if user.is_superuser %}SUPER ADMINISTRATOR{% else %}{{ user.get_role_display }}{% endif %}</span>
                     
                     <div class="dropdown">
-                        <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle gap-2" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a href="#" class="d-flex align-items-center text-body text-decoration-none dropdown-toggle gap-2" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-weight: 600;">
                                 {{ user.first_name|default:user.username|slice:":1"|upper }}
                             </div>
-                            <div class="text-start line-height-1">
+                            <div class="text-start lh-1">
                                 <span class="fw-semibold">{{ user.get_full_name|default:user.username }}</span>
                                 <div class="text-muted font-monospace" style="font-size: 0.68rem;">@{{ user.username }}</div>
                             </div>
@@ -1388,7 +1477,7 @@
             {% if messages %}
                 <div class="messages mb-4">
                     {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
                             {{ message }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
@@ -1411,7 +1500,7 @@
         {% if messages %}
             <div class="container pt-3">
                 {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
@@ -1456,11 +1545,8 @@
             }
             if (btnLaptop) {
                 btnLaptop.setAttribute('title', isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode');
-                if (isDark) {
-                    btnLaptop.classList.replace('btn-outline-secondary', 'btn-outline-warning');
-                } else {
-                    btnLaptop.classList.replace('btn-outline-warning', 'btn-outline-secondary');
-                }
+                btnLaptop.classList.remove('btn-outline-secondary', 'btn-outline-warning');
+                btnLaptop.classList.add(isDark ? 'btn-outline-warning' : 'btn-outline-secondary');
             }
 
             // 2. Mobile & Tablet Hamburger Menu Toggle
@@ -1477,11 +1563,8 @@
             }
             if (btnMobile) {
                 btnMobile.setAttribute('title', isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme');
-                if (isDark) {
-                    btnMobile.classList.replace('btn-outline-light', 'btn-outline-warning');
-                } else {
-                    btnMobile.classList.replace('btn-outline-warning', 'btn-outline-light');
-                }
+                btnMobile.classList.remove('btn-outline-light', 'btn-outline-warning');
+                btnMobile.classList.add(isDark ? 'btn-outline-warning' : 'btn-outline-light');
             }
 
             // 3. Guest / Login View Toggle
@@ -1494,11 +1577,8 @@
             }
             if (btnGuest) {
                 btnGuest.setAttribute('title', isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode');
-                if (isDark) {
-                    btnGuest.classList.replace('btn-outline-secondary', 'btn-outline-warning');
-                } else {
-                    btnGuest.classList.replace('btn-outline-warning', 'btn-outline-secondary');
-                }
+                btnGuest.classList.remove('btn-outline-secondary', 'btn-outline-warning');
+                btnGuest.classList.add(isDark ? 'btn-outline-warning' : 'btn-outline-secondary');
             }
         }
 
@@ -1573,6 +1653,13 @@
                 });
             }
 
+            // Close mobile sidebar on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && sidebar && sidebar.classList.contains('show')) {
+                    closeSidebar();
+                }
+            });
+
             // ========================================================
             // SIDEBAR SCROLL PERSISTENCE & POSITION RESTORATION
             // ========================================================
@@ -1614,6 +1701,11 @@
                 // Before navigating via any link in the sidebar, immediately capture exact scrollTop
                 sidebar.querySelectorAll('a').forEach(function(link) {
                     link.addEventListener('click', function(e) {
+                        // Don't intercept bootstrap collapse or pure hash/void links
+                        if (link.getAttribute('data-bs-toggle') || link.getAttribute('href') === '#' || (link.getAttribute('href') || '').startsWith('#')) {
+                            return;
+                        }
+
                         try {
                             sessionStorage.setItem('rms_sidebar_scroll', sidebar.scrollTop);
                         } catch (e) {}
@@ -1731,7 +1823,7 @@
         });
     }
 </script>
-{% if user.is_authenticated and user.role in 'ADMIN,MANAGER,CASHIER,WAITER' or user.is_superuser %}
+{% if user.is_authenticated and user.role in 'ADMIN,MANAGER,CASHIER,WAITER,CHEF,KITCHEN' or user.is_superuser %}
 <!-- Real-Time Bill Request Floating Alert / Toast Notification -->
 <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999; max-width: 460px; pointer-events: none;">
     <div id="liveBillRequestToast" class="toast shadow-lg border-0" role="status" aria-live="polite" aria-atomic="true" style="pointer-events: auto; width: 400px; max-width: calc(100vw - 32px); border-radius: 16px; background: #111827; color: #fff; border: 2px solid #f59e0b !important; box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4) !important; display: none;">
@@ -1859,7 +1951,7 @@
             if (!AudioContext) return;
             const ctx = new AudioContext();
             if (ctx.state === 'suspended') {
-                ctx.resume();
+                ctx.resume().catch(() => {});
             }
             const now = ctx.currentTime;
             // Two-tone bell chime: E5 (659.25Hz) -> A5 (880Hz)
@@ -1897,9 +1989,9 @@
         const timeEl = document.getElementById('toastTime');
         const btnEl = document.getElementById('toastViewBtn');
 
-        if (badgeEl) badgeEl.textContent = 'Table ' + latest.table;
-        if (titleEl) titleEl.textContent = `Table ${latest.table} Requested Bill!`;
-        if (descEl) descEl.textContent = `${latest.customer} at Table ${latest.table} has requested the bill (${latest.request_number}) • Total: ₹${latest.amount}`;
+        if (badgeEl) badgeEl.textContent = 'Table ' + (latest.table || '');
+        if (titleEl) titleEl.textContent = `Table ${latest.table || ''} Requested Bill!`;
+        if (descEl) descEl.textContent = `${latest.customer || 'Customer'} at Table ${latest.table || ''} has requested the bill (${latest.request_number || ''}) • Total: ₹${latest.amount || 0}`;
         if (timeEl) timeEl.textContent = latest.time || 'Just now';
         if (btnEl && latest.detail_url) btnEl.href = latest.detail_url;
 
@@ -2125,11 +2217,13 @@
         const timeEl = document.getElementById('toastExtraFoodTime');
 
         if (tableBadge) tableBadge.textContent = `Table ${latest.table_name || 'N/A'}`;
-        if (descEl) descEl.textContent = `${latest.quantity}x ${latest.item_name} (Added by ${latest.added_by_name || 'Customer'})`;
+        if (descEl) descEl.textContent = `${latest.quantity || 1}x ${latest.item_name || 'Item'} (Added by ${latest.added_by_name || 'Customer'})`;
         if (timeEl) timeEl.textContent = latest.time_ago || 'Just now';
 
         toastEl.style.display = 'block';
         toastEl.classList.add('show');
+
+        playBillNotificationChime();
 
         if (extraFoodAutoDismissTimer) clearTimeout(extraFoodAutoDismissTimer);
         extraFoodAutoDismissTimer = setTimeout(() => {
@@ -2174,6 +2268,11 @@
             lastKnownExtraFoodCount = count;
         } catch(e) {}
     }
+
+    // Initial feed polling triggers
+    setTimeout(pollBillRequestsFeed, 1000);
+    setTimeout(pollServiceRequestsFeed, 1500);
+    setTimeout(pollExtraFoodFeed, 2000);
 
     setInterval(pollBillRequestsFeed, 4000);
     setInterval(pollServiceRequestsFeed, 5000);

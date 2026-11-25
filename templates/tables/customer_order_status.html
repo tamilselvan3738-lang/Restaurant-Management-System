@@ -150,7 +150,7 @@
             <div class="min-w-0 flex-grow-1 pe-2">
                 <div class="d-flex align-items-center gap-1.5 mb-1.5 flex-wrap">
                     <span class="badge bg-white text-dark rounded-pill px-2.5 py-1 fw-bold text-nowrap">
-                        <i class="bi bi-geo-alt-fill text-primary me-1"></i>Table {{ table.table_number }}
+                        <i class="bi bi-geo-alt-fill text-primary me-1"></i>{% if "table" in table.table_number|lower %}{{ table.table_number }}{% else %}Table {{ table.table_number }}{% endif %}
                     </span>
                     {% if session %}
                     <span class="badge bg-white bg-opacity-25 text-white rounded-pill px-2.5 py-1 text-truncate" style="max-width: 170px;">
@@ -337,7 +337,7 @@
                     <div class="d-flex align-items-stretch w-100 gap-2 overflow-hidden">
                         <!-- Left: Dish Thumbnail -->
                         {% if item.menu_item.image %}
-                            <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" class="dish-thumbnail rounded-3 shadow-xs flex-shrink-0" style="width: 54px; height: 54px; object-fit: cover; align-self: center;">
+                            <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" class="dish-thumbnail rounded-3 shadow-xs flex-shrink-0" style="width: 54px; height: 54px; object-fit: cover; align-self: center;" onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
                         {% else %}
                             <div class="dish-thumbnail rounded-3 bg-light text-muted d-flex align-items-center justify-content-center border flex-shrink-0" style="width: 54px; height: 54px; align-self: center;">
                                 <i class="bi bi-egg-fried fs-4 opacity-50"></i>

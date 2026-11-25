@@ -400,7 +400,7 @@
             <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                 <div class="d-flex align-items-center gap-1.5 min-w-0 flex-wrap">
                     <span class="badge bg-primary rounded-pill px-2.5 py-1.5 fw-bold text-truncate shadow-xs">
-                        <i class="bi bi-geo-alt-fill me-1"></i>Table {{ table.table_number }} &bull; {{ current_session.session_name }}
+                        <i class="bi bi-geo-alt-fill me-1"></i>{% if "table" in table.table_number|lower %}{{ table.table_number }}{% else %}Table {{ table.table_number }}{% endif %} &bull; {{ current_session.session_name }}
                     </span>
                     <span class="badge {% if is_leader %}bg-warning text-dark{% else %}bg-secondary text-white{% endif %} rounded-pill px-2 py-1 small fw-semibold shadow-xs">
                         {% if is_leader %}<i class="bi bi-star-fill me-1"></i>Group Leader{% else %}<i class="bi bi-person me-1"></i>Member{% endif %}
@@ -522,7 +522,7 @@
                     <!-- Picture / Graphic -->
                     <div class="position-relative" style="height: 165px; background: linear-gradient(135deg, #1e293b, #0f172a); overflow: hidden;">
                         {% if c.image %}
-                            <img src="{{ c.image.url }}" alt="{{ c.name }}" class="w-100 h-100" style="object-fit: cover;">
+                            <img src="{{ c.image.url }}" alt="{{ c.name }}" class="w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
                         {% elif c.collage_preview.has_images %}
                             {% with cp=c.collage_preview %}
                                 <div class="combo-collage-container">
@@ -625,7 +625,7 @@
                                 {% for item in c.items.all %}
                                 <span class="badge bg-white text-dark border small d-inline-flex align-items-center gap-1 py-1 px-1.5 shadow-2xs">
                                     {% if item.menu_item.image %}
-                                        <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" class="combo-dish-thumb">
+                                        <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" class="combo-dish-thumb" onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
                                     {% endif %}
                                     <span class="fw-bold">{{ item.quantity }}×</span>
                                     <span>{{ item.menu_item.name }}</span>
@@ -664,7 +664,7 @@
                     <!-- Food Picture with Overlaid Badges -->
                     <div class="position-relative" style="height: 165px; background: #f1f5f9; overflow: hidden;">
                         {% if item.image %}
-                            <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-100 h-100" style="object-fit: cover;">
+                            <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
                         {% else %}
                             <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center text-muted bg-light">
                                 <i class="bi bi-egg-fried fs-1 opacity-40 mb-1"></i>

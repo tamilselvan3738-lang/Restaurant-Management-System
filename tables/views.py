@@ -1533,11 +1533,20 @@ def customer_table_order(request, table_number):
             categories = Category.objects.filter(is_active=True).order_by('display_order', 'name')
             items = MenuItem.objects.filter(is_available=True, category__is_active=True).select_related('category')
         restaurant_logo_url = None
-        if target_restaurant and target_restaurant.logo:
+        if target_restaurant and getattr(target_restaurant, 'has_logo', False):
             try:
-                restaurant_logo_url = target_restaurant.logo.url
+                restaurant_logo_url = target_restaurant.logo_url
             except Exception:
                 restaurant_logo_url = None
+        elif target_restaurant and target_restaurant.logo:
+            try:
+                if target_restaurant.logo.name and target_restaurant.logo.storage.exists(target_restaurant.logo.name):
+                    restaurant_logo_url = target_restaurant.logo.url
+            except Exception:
+                restaurant_logo_url = None
+
+        if not restaurant_logo_url:
+            restaurant_logo_url = settings.STATIC_URL + 'images/default_restaurant_logo.svg'
 
         restaurant_name = target_restaurant.name if target_restaurant else (getattr(settings, 'RESTAURANT_NAME', 'The Grand Bistro'))
 
@@ -3309,11 +3318,20 @@ def customer_thank_you(request, table_number):
 
     target_restaurant = table.restaurant or Restaurant.objects.first()
     restaurant_logo_url = None
-    if target_restaurant and target_restaurant.logo:
+    if target_restaurant and getattr(target_restaurant, 'has_logo', False):
         try:
-            restaurant_logo_url = target_restaurant.logo.url
+            restaurant_logo_url = target_restaurant.logo_url
         except Exception:
             restaurant_logo_url = None
+    elif target_restaurant and target_restaurant.logo:
+        try:
+            if target_restaurant.logo.name and target_restaurant.logo.storage.exists(target_restaurant.logo.name):
+                restaurant_logo_url = target_restaurant.logo.url
+        except Exception:
+            restaurant_logo_url = None
+
+    if not restaurant_logo_url:
+        restaurant_logo_url = settings.STATIC_URL + 'images/default_restaurant_logo.svg'
 
     restaurant_name = target_restaurant.name if target_restaurant else (getattr(settings, 'RESTAURANT_NAME', 'The Grand Bistro'))
 

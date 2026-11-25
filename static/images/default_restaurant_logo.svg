@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6b2b"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#facc15"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#ea580c" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Background Squircle / Shield -->
+  <rect x="12" y="12" width="176" height="176" rx="44" fill="url(#brandGrad)" filter="url(#shadow)"/>
+
+  <!-- Subtle Inner Border -->
+  <rect x="18" y="18" width="164" height="164" rx="38" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="2"/>
+
+  <!-- Cloche Dome -->
+  <path d="M 54 116 C 54 74 146 74 146 116 Z" fill="#ffffff"/>
+
+  <!-- Cloche Handle -->
+  <circle cx="100" cy="70" r="8" fill="url(#goldGrad)"/>
+  <path d="M 97 76 L 103 76 L 102 82 L 98 82 Z" fill="#ffffff"/>
+
+  <!-- Platter Base -->
+  <rect x="42" y="118" width="116" height="10" rx="5" fill="url(#goldGrad)"/>
+
+  <!-- Platter Rim Underline -->
+  <path d="M 50 133 L 150 133" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-opacity="0.85"/>
+
+  <!-- Steam Aromas -->
+  <path d="M 85 54 Q 88 44 83 36" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-opacity="0.75"/>
+  <path d="M 100 50 Q 103 40 98 30" fill="none" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" stroke-opacity="0.85"/>
+  <path d="M 115 54 Q 118 44 113 36" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-opacity="0.75"/>
+
+  <!-- Star Accents -->
+  <polygon points="100,147 102,152 107,152 103,155 105,160 100,157 95,160 97,155 93,152 98,152" fill="url(#goldGrad)"/>
+  <polygon points="76,149 77.5,153 81.5,153 78.5,155.5 80,159.5 76,157 72,159.5 73.5,155.5 70.5,153 74.5,153" fill="#ffffff" fill-opacity="0.8"/>
+  <polygon points="124,149 125.5,153 129.5,153 126.5,155.5 128,159.5 124,157 120,159.5 121.5,155.5 118.5,153 122.5,153" fill="#ffffff" fill-opacity="0.8"/>
+</svg>

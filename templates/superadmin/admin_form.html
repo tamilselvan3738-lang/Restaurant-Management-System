@@ -112,7 +112,7 @@
                                              title="Single-click to open file browser and choose logo"
                                              onclick="triggerLogoUpload()">
                                             {% if admin_user.restaurant.logo %}
-                                                <img id="logoPreview" src="{{ admin_user.restaurant.logo.url }}" data-initial="{{ admin_user.restaurant.logo.url }}" alt="Company Logo Preview" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                                <img id="logoPreview" src="{{ admin_user.restaurant.logo.url }}" data-initial="{{ admin_user.restaurant.logo.url }}" alt="Company Logo Preview" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                                                 <div id="logoPlaceholder" class="text-muted d-none">
                                                     <i class="bi bi-building fs-1"></i>
                                                 </div>

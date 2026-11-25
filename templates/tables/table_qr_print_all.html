@@ -102,7 +102,7 @@
             <div class="col-md-6 col-lg-4">
                 <div class="qr-card-tent">
                     {% if RESTAURANT_LOGO_URL %}
-                        <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }}" style="max-height: 36px; max-width: 120px; object-fit: contain;" class="mb-1">
+                        <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }}" style="max-height: 36px; max-width: 120px; object-fit: contain;" class="mb-1" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                         <h5 class="fw-bold mb-0" style="color: #0f172a;">{{ RESTAURANT_NAME }}</h5>
                     {% else %}
                         <h5 class="fw-bold mb-0" style="color: #0f172a;">{{ RESTAURANT_NAME }}</h5>
@@ -110,7 +110,7 @@
                     <div class="text-muted small mb-2">Contactless Digital Ordering</div>
 
                     <div class="badge bg-dark text-white rounded-pill px-3 py-1 fs-6 mb-2 shadow-xs">
-                        TABLE {{ item.table.table_number }}
+                        {% if "table" in item.table.table_number|lower %}{{ item.table.table_number|upper }}{% else %}TABLE {{ item.table.table_number }}{% endif %}
                     </div>
                     <div class="text-muted small mb-2">{{ item.table.capacity }} Seats • {{ item.table.get_location_display }}</div>
 

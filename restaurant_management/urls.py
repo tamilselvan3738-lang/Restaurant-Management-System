@@ -1,7 +1,8 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
+from django.views.static import serve
 from accounts.views import user_login, user_logout
 from accounts import views_forgot_password
 from tables import views_queue
@@ -28,5 +29,7 @@ urlpatterns = [
     path('chef/', include('kitchen.urls_chef', namespace='chef')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Ensure media files (uploaded logos, profiles, dishes) are served across dev and production environments
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+]

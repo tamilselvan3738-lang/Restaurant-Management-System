@@ -312,13 +312,13 @@
         <!-- Brand / Header -->
         <div class="chef-brand">
             {% if RESTAURANT_LOGO_URL %}
-                <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ restaurant.name|default:RESTAURANT_NAME }} Logo" class="chef-brand-logo-img">
+                <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ restaurant.name|default:RESTAURANT_NAME }} Logo" class="chef-brand-logo-img" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
             {% elif restaurant and restaurant.logo_url %}
-                <img src="{{ restaurant.logo_url }}" alt="{{ restaurant.name }} Logo" class="chef-brand-logo-img">
+                <img src="{{ restaurant.logo_url }}" alt="{{ restaurant.name }} Logo" class="chef-brand-logo-img" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
             {% elif restaurant and restaurant.logo %}
-                <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }} Logo" class="chef-brand-logo-img">
+                <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }} Logo" class="chef-brand-logo-img" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
             {% elif user.restaurant and user.restaurant.logo_url %}
-                <img src="{{ user.restaurant.logo_url }}" alt="{{ user.restaurant.name }} Logo" class="chef-brand-logo-img">
+                <img src="{{ user.restaurant.logo_url }}" alt="{{ user.restaurant.name }} Logo" class="chef-brand-logo-img" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
             {% else %}
                 <div class="chef-brand-icon">
                     <i class="bi bi-fire"></i>
@@ -501,13 +501,13 @@
                 <!-- Mobile & Tablet: Brand Logo and Portal Title at Left (d-lg-none) -->
                 <a href="{% url 'chef:dashboard' %}" class="d-flex align-items-center gap-2 text-decoration-none d-lg-none text-body" title="{{ restaurant.name|default:'Kitchen Portal' }}">
                     {% if RESTAURANT_LOGO_URL %}
-                        <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ restaurant.name|default:RESTAURANT_NAME }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;">
+                        <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ restaurant.name|default:RESTAURANT_NAME }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                     {% elif restaurant and restaurant.logo_url %}
-                        <img src="{{ restaurant.logo_url }}" alt="{{ restaurant.name }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;">
+                        <img src="{{ restaurant.logo_url }}" alt="{{ restaurant.name }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                     {% elif restaurant and restaurant.logo %}
-                        <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;">
+                        <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                     {% elif user.restaurant and user.restaurant.logo_url %}
-                        <img src="{{ user.restaurant.logo_url }}" alt="{{ user.restaurant.name }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;">
+                        <img src="{{ user.restaurant.logo_url }}" alt="{{ user.restaurant.name }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                     {% else %}
                         <div class="chef-brand-icon shadow-xs" style="width: 32px; height: 32px; font-size: 1.05rem; border-radius: 8px;">
                             <i class="bi bi-fire"></i>

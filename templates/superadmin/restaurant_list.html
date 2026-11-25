@@ -76,11 +76,9 @@
                     <td class="ps-4">
                         <div class="d-flex align-items-center gap-3">
                             {% if item.restaurant.logo %}
-                                <img src="{{ item.restaurant.logo.url }}" alt="{{ item.restaurant.name }}" class="rounded-3 shadow-xs" style="width: 44px; height: 44px; object-fit: cover;">
+                                <img src="{{ item.restaurant.logo.url }}" alt="{{ item.restaurant.name }}" class="rounded-3 shadow-xs" style="width: 44px; height: 44px; object-fit: contain; background: #fff; padding: 2px;" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                             {% else %}
-                                <div class="rounded-3 d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary fw-bold" style="width: 44px; height: 44px;">
-                                    <i class="bi bi-shop fs-5"></i>
-                                </div>
+                                <img src="/static/images/default_restaurant_logo.svg" alt="{{ item.restaurant.name }}" class="rounded-3 shadow-xs" style="width: 44px; height: 44px; object-fit: contain; background: #fff; padding: 2px;">
                             {% endif %}
                             <div>
                                 <div class="fw-bold text-body fs-6">{{ item.restaurant.name }}</div>

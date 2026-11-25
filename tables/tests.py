@@ -808,4 +808,46 @@ class MultiTenantDuplicateTableNumberTests(TestCase):
         self.assertNotEqual(response.status_code, 500)
 
 
+class LogoFallbackAndMediaServingTests(TestCase):
+    def setUp(self):
+        from accounts.models import Restaurant
+        from tables.models import DiningTable
+
+        self.resto = Restaurant.objects.create(
+            name='Ocean Grill',
+            code='OG01',
+            logo='restaurant_logos/non_existent_file.png'
+        )
+        self.table = DiningTable.objects.create(
+            restaurant=self.resto,
+            table_number='Table 1',
+            capacity=4,
+            is_active=True,
+            qr_token='og-token-1'
+        )
+
+    def test_missing_logo_file_returns_false_for_has_logo(self):
+        """Restaurant with missing physical logo file gracefully returns has_logo=False."""
+        self.assertFalse(self.resto.has_logo)
+        self.assertIsNone(self.resto.logo_url)
+        self.assertEqual(self.resto.get_logo_url(), '/static/images/default_restaurant_logo.svg')
+
+    def test_thank_you_view_renders_default_logo_and_onerror_fallback(self):
+        """Customer thank-you page displays the default SVG logo and includes onerror handler."""
+        response = self.client.get(f'/tables/{self.table.table_number}/thank-you/?token={self.table.qr_token}')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'default_restaurant_logo.svg')
+        self.assertContains(response, 'onerror=')
+        # Check no duplicate Table Table 1
+        self.assertNotContains(response, 'Table Table 1')
+
+    def test_session_select_view_renders_default_logo_and_clean_table_title(self):
+        """Dining session select displays the default SVG logo without duplicate Table Table."""
+        response = self.client.get(f'/tables/{self.table.table_number}/order/?switch=1&token={self.table.qr_token}')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'default_restaurant_logo.svg')
+        self.assertNotContains(response, 'TABLE Table 1')
+
+
+
 
