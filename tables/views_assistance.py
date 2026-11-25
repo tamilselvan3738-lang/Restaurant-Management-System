@@ -22,6 +22,7 @@ from .models import (
     ServiceRequestEscalation,
 )
 from .services import (
+    get_dining_table_or_404,
     create_service_request,
     update_service_request_status,
     get_assigned_waiter_for_table,
@@ -92,7 +93,7 @@ def customer_service_request_create(request, table_number):
     Customer submits a service assistance request (Water, Plates, Cleaning, Call Waiter, etc.).
     Automatically binds to table, session, and tenant. Applies validation & rate-limiting.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     session = _get_customer_session(request, table)
 
     if not session:
@@ -259,7 +260,7 @@ def customer_service_request_status(request, table_number):
     """
     Live polling endpoint for customer UI to receive real-time updates on active requests.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     session = _get_customer_session(request, table)
 
     if not session:
@@ -340,7 +341,7 @@ def customer_service_request_cancel(request, table_number, request_id):
     """
     Allows dining guests to cancel their pending service request if no longer needed.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     session = _get_customer_session(request, table)
 
     if not session:
@@ -368,7 +369,7 @@ def customer_service_request_renotice(request, table_number, request_id):
     Customer sends a re-notice / reminder to staff for an active service request waiting for 2+ minutes.
     Re-alerts waiters and pops notification again across staff dashboards.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     session = _get_customer_session(request, table)
     if not session:
         return JsonResponse({'success': False, 'message': 'Unauthorized session.'}, status=403)
@@ -394,7 +395,7 @@ def customer_service_request_repeat(request, table_number, request_id):
     Customer repeats an earlier completed request (e.g., more water).
     Creates a new distinct request while preserving the original history.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     session = _get_customer_session(request, table)
     if not session:
         return JsonResponse({'success': False, 'message': 'Unauthorized session.'}, status=403)
@@ -422,7 +423,7 @@ def customer_service_request_feedback(request, table_number, request_id):
     """
     Customer submits 1-5 star rating and optional comments on completed service requests.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     session = _get_customer_session(request, table)
     if not session:
         return JsonResponse({'success': False, 'message': 'Unauthorized session.'}, status=403)
@@ -448,7 +449,7 @@ def customer_service_request_report_not_fulfilled(request, table_number, request
     Customer reports that an item marked completed was not received.
     Escalates directly to management.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     session = _get_customer_session(request, table)
     if not session:
         return JsonResponse({'success': False, 'message': 'Unauthorized session.'}, status=403)

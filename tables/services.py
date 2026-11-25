@@ -21,6 +21,190 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
+# MODULE 0: TABLE RESOLUTION & MULTI-TENANT LOOKUP ENGINE
+# ============================================================================
+
+def get_dining_table_or_404(request, table_number, is_active=None):
+    """
+    Safely resolves a DiningTable instance by table_number in both single-tenant
+    and multi-tenant environments without ever throwing MultipleObjectsReturned.
+
+    Resolution hierarchy:
+    1. Direct QR token (GET/POST 'token' query param) -> globally unique on DiningTable.
+    2. URL kwargs or request parameter 'session_token' -> globally unique on CustomerSession.
+    3. Session cached table ID (e.g. active_table_<table_number>_id or active_table_id).
+    4. Active session/member cookies (e.g. rms_session_<id>, rms_member_<id>).
+    5. Active restaurant tenant context (request.restaurant, user.restaurant, get_current_restaurant).
+    6. Exact table_number match:
+       - If exactly 1 table matches: returns it.
+       - If multiple tables match across tenants/orphans:
+           a. Prioritizes table matching current restaurant tenant if known.
+           b. Prioritize table with active sessions matching cookie session tokens.
+           c. Deterministic fallback: prioritizes tables with valid restaurants, active status, lowest ID.
+       - If 0 matches: raises Http404.
+    """
+    from django.http import Http404
+    from accounts.tenant_utils import get_current_restaurant
+
+    cleaned_number = str(table_number).strip() if table_number is not None else ''
+    if not cleaned_number:
+        raise Http404("Table number not specified.")
+
+    base_qs = DiningTable.objects.all().select_related('restaurant')
+    if is_active is not None:
+        base_qs = base_qs.filter(is_active=is_active)
+
+    # 1. Direct QR token check (globally unique on DiningTable)
+    token = None
+    if request:
+        if hasattr(request, 'GET'):
+            token = request.GET.get('token')
+        if not token and hasattr(request, 'POST'):
+            token = request.POST.get('token')
+    if token:
+        table_by_token = base_qs.filter(qr_token=token).first()
+        if table_by_token:
+            session = getattr(request, 'session', None)
+            if session is not None:
+                session[f'active_table_{cleaned_number}_id'] = table_by_token.id
+            return table_by_token
+
+    # 2. Check session_token in URL kwargs, query params, or POST body
+    session_token = None
+    if request:
+        resolver_match = getattr(request, 'resolver_match', None)
+        if resolver_match and getattr(resolver_match, 'kwargs', None):
+            session_token = resolver_match.kwargs.get('session_token')
+        if not session_token and hasattr(request, 'GET'):
+            session_token = request.GET.get('session_token')
+        if not session_token and hasattr(request, 'POST'):
+            session_token = request.POST.get('session_token')
+
+    if session_token:
+        matched_session = CustomerSession.objects.filter(
+            session_token=session_token
+        ).select_related('table__restaurant').first()
+        if matched_session and matched_session.table:
+            table = matched_session.table
+            if is_active is None or table.is_active == is_active:
+                session = getattr(request, 'session', None)
+                if session is not None:
+                    session[f'active_table_{cleaned_number}_id'] = table.id
+                return table
+
+    # 3. Check cached table ID in Django session
+    session = getattr(request, 'session', None) if request else None
+    if session is not None:
+        cached_id = session.get(f'active_table_{cleaned_number}_id') or session.get('active_table_id')
+        if cached_id:
+            cached_table = base_qs.filter(id=cached_id).first()
+            if cached_table and cached_table.table_number.strip().lower() == cleaned_number.lower():
+                return cached_table
+
+    # 4. Check cookies for active table ID (rms_session_<id>, rms_member_<id>)
+    cookies = getattr(request, 'COOKIES', {}) if request else {}
+    if cookies:
+        cookie_table_ids = []
+        cookie_session_tokens = []
+        for k, v in cookies.items():
+            if k.startswith('rms_session_') or k.startswith('rms_member_'):
+                try:
+                    tid = int(k.split('_')[-1])
+                    cookie_table_ids.append(tid)
+                except (ValueError, TypeError):
+                    pass
+                if k.startswith('rms_session_') and v:
+                    cookie_session_tokens.append(v)
+
+        if cookie_session_tokens:
+            session_obj = CustomerSession.objects.filter(
+                session_token__in=cookie_session_tokens,
+                table__table_number__iexact=cleaned_number
+            ).select_related('table__restaurant').first()
+            if session_obj and session_obj.table:
+                table = session_obj.table
+                if is_active is None or table.is_active == is_active:
+                    if session is not None:
+                        session[f'active_table_{cleaned_number}_id'] = table.id
+                    return table
+
+        if cookie_table_ids:
+            cookie_table = base_qs.filter(id__in=cookie_table_ids, table_number__iexact=cleaned_number).first()
+            if cookie_table:
+                if session is not None:
+                    session[f'active_table_{cleaned_number}_id'] = cookie_table.id
+                return cookie_table
+
+    # 5. Check tenant / restaurant context
+    restaurant = None
+    if request:
+        try:
+            restaurant = get_current_restaurant(request)
+        except Exception:
+            restaurant = None
+        if not restaurant and hasattr(request, 'restaurant') and request.restaurant:
+            restaurant = request.restaurant
+        user = getattr(request, 'user', None)
+        if not restaurant and user and getattr(user, 'is_authenticated', False):
+            restaurant = getattr(user, 'restaurant', None)
+        if not restaurant and hasattr(request, 'GET'):
+            r_code = request.GET.get('restaurant_code') or request.GET.get('code')
+            r_id = request.GET.get('restaurant_id') or request.GET.get('restaurant')
+            if r_code:
+                from accounts.models import Restaurant
+                restaurant = Restaurant.objects.filter(code__iexact=r_code.strip()).first()
+            elif r_id and str(r_id).isdigit():
+                from accounts.models import Restaurant
+                restaurant = Restaurant.objects.filter(id=int(r_id)).first()
+
+    candidates = base_qs.filter(table_number__iexact=cleaned_number)
+
+    # If tenant is known, filter to this restaurant
+    if restaurant:
+        tenant_match = candidates.filter(restaurant=restaurant).first()
+        if tenant_match:
+            if session is not None:
+                session[f'active_table_{cleaned_number}_id'] = tenant_match.id
+            return tenant_match
+
+    # 6. Fallback across all matching tables
+    candidate_count = candidates.count()
+    if candidate_count == 1:
+        table = candidates.first()
+        if session is not None:
+            session[f'active_table_{cleaned_number}_id'] = table.id
+        return table
+    elif candidate_count > 1:
+        # Multiple tables exist with this table_number across restaurants/orphans.
+        # Prefer table that has an active or bill-requested customer session
+        active_sess_table = candidates.filter(
+            sessions__status__in=[CustomerSession.Status.ACTIVE, CustomerSession.Status.BILL_REQUESTED]
+        ).first()
+        if active_sess_table:
+            table = active_sess_table
+        else:
+            table = candidates.order_by(
+                models.F('restaurant').desc(nulls_last=True),
+                '-is_active',
+                'id'
+            ).first()
+        if session is not None:
+            session[f'active_table_{cleaned_number}_id'] = table.id
+        return table
+
+    # If none found and is_active was enforced, check if an inactive table exists
+    if is_active is not None:
+        fallback_inactive = DiningTable.objects.filter(table_number__iexact=cleaned_number).select_related('restaurant').first()
+        if fallback_inactive:
+            if session is not None:
+                session[f'active_table_{cleaned_number}_id'] = fallback_inactive.id
+            return fallback_inactive
+
+    raise Http404(f"Table '{cleaned_number}' not found.")
+
+
+
+# ============================================================================
 # MODULE 1: SMART WAITER ASSISTANCE & ROUTING SERVICES
 # ============================================================================
 

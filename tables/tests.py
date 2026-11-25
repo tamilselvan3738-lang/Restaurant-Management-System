@@ -686,3 +686,126 @@ class SmartServiceRequestSystemTests(TestCase):
         self.assertNotEqual(req_a.status, ServiceRequest.Status.ACCEPTED)
 
 
+class MultiTenantDuplicateTableNumberTests(TestCase):
+    """
+    Validates that when multiple tables share the exact same table_number (e.g. 'Table 1')
+    across different restaurant tenants or orphan records, no customer or API view ever
+    raises MultipleObjectsReturned.
+    """
+    def setUp(self):
+        from accounts.models import Restaurant
+        from tables.models import DiningTable, CustomerSession
+
+        self.client = Client()
+        self.resto_a = Restaurant.objects.create(name='Bistro Alpha', code='ALPHA')
+        self.resto_b = Restaurant.objects.create(name='Bistro Beta', code='BETA')
+
+        # Create two separate tables with the IDENTICAL table_number 'Table 1'
+        self.table_a = DiningTable.objects.create(
+            restaurant=self.resto_a,
+            table_number='Table 1',
+            capacity=4,
+            is_active=True,
+            qr_token='token-alpha-table-1'
+        )
+        self.table_b = DiningTable.objects.create(
+            restaurant=self.resto_b,
+            table_number='Table 1',
+            capacity=4,
+            is_active=True,
+            qr_token='token-beta-table-1'
+        )
+
+        self.session_b = CustomerSession.objects.create(
+            table=self.table_b,
+            session_token='sess-token-beta-12345',
+            customer_name='Guest at Beta'
+        )
+
+        self.admin_b = User.objects.create_user(
+            username='admin_beta_tables',
+            email='admin@beta.com',
+            password='testpassword123',
+            role=User.Role.ADMIN,
+            restaurant=self.resto_b
+        )
+
+    def test_leave_session_with_cookie_resolves_correct_table(self):
+        """Customer leaving session with table cookie resolves the exact table without MultipleObjectsReturned."""
+        from urllib.parse import unquote
+        client = Client()
+        client.cookies[f'rms_session_{self.table_b.id}'] = self.session_b.session_token
+
+        # Call the exact URL that triggered the crash
+        response = client.get('/tables/Table 1/leave-session/')
+        self.assertEqual(response.status_code, 302)
+        # Verify redirect goes to order with switch=1
+        self.assertIn('/tables/Table 1/order/?switch=1', unquote(response.url))
+
+    def test_leave_session_with_session_cache_resolves_without_error(self):
+        """Customer leaving session with session cache resolves without MultipleObjectsReturned."""
+        from urllib.parse import unquote
+        client = Client()
+        session = client.session
+        session[f'active_table_Table 1_id'] = self.table_a.id
+        session.save()
+
+        response = client.get('/tables/Table 1/leave-session/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/tables/Table 1/order/?switch=1', unquote(response.url))
+
+    def test_leave_session_anonymous_fallback_does_not_raise_multiple_objects(self):
+        """Completely anonymous customer with no cookies/session still resolves gracefully without 500 error."""
+        from urllib.parse import unquote
+        client = Client()
+        response = client.get('/tables/Table 1/leave-session/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/tables/Table 1/order/?switch=1', unquote(response.url))
+
+    def test_authenticated_user_leave_session_resolves_tenant_table(self):
+        """Authenticated tenant admin resolves their own restaurant's Table 1."""
+        from urllib.parse import unquote
+        client = Client()
+        client.force_login(self.admin_b)
+        response = client.get('/tables/Table 1/leave-session/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/tables/Table 1/order/?switch=1', unquote(response.url))
+
+    def test_customer_request_bill_with_duplicate_table_numbers(self):
+        """Request bill resolves without MultipleObjectsReturned when duplicate table numbers exist."""
+        client = Client()
+        response = client.get(f'/tables/Table 1/request-bill/{self.session_b.session_token}/')
+        # Redirects or responds cleanly
+        self.assertIn(response.status_code, [200, 302])
+
+    def test_cart_get_with_duplicate_table_numbers(self):
+        """Cart API query resolves without MultipleObjectsReturned when duplicate table numbers exist."""
+        client = Client()
+        client.cookies[f'rms_session_{self.table_b.id}'] = self.session_b.session_token
+        response = client.get('/tables/Table 1/group/cart/')
+        self.assertNotEqual(response.status_code, 500)
+
+    def test_customer_shop_with_duplicate_table_numbers(self):
+        """Customer shop page resolves without MultipleObjectsReturned when duplicate table numbers exist."""
+        client = Client()
+        client.cookies[f'rms_session_{self.table_b.id}'] = self.session_b.session_token
+        from tables.models import GroupMember
+        GroupMember.objects.create(
+            session=self.session_b,
+            name='Guest at Beta',
+            member_token='member-token-beta-1',
+            role=GroupMember.Role.LEADER
+        )
+        client.cookies[f'rms_member_{self.table_b.id}'] = 'member-token-beta-1'
+        response = client.get('/tables/Table 1/shop/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_customer_shop_authenticated_admin_with_duplicate_table_numbers(self):
+        """Customer shop visited by authenticated admin resolves without MultipleObjectsReturned."""
+        client = Client()
+        client.force_login(self.admin_b)
+        response = client.get('/tables/Table 1/shop/')
+        self.assertNotEqual(response.status_code, 500)
+
+
+

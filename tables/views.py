@@ -28,6 +28,7 @@ from accounts.tenant_utils import (
     get_tenant_object_or_404,
     filter_by_tenant,
 )
+from .services import get_dining_table_or_404
 
 
 # ============================================================================
@@ -778,29 +779,7 @@ def customer_table_order(request, table_number):
       - If no active session or guest requests switch/join, displays the Group Selection screen.
       - If active session, loads the shared digital menu with real-time cart.
     """
-    token = request.GET.get('token')
-    table = None
-    if token:
-        table = DiningTable.objects.filter(qr_token=token, is_active=True).select_related('restaurant').first()
-        if table:
-            request.session[f'active_table_{table_number}_id'] = table.id
-
-    if not table:
-        cached_id = request.session.get(f'active_table_{table_number}_id')
-        if cached_id:
-            table = DiningTable.objects.filter(id=cached_id, is_active=True).select_related('restaurant').first()
-
-    if not table:
-        matching = DiningTable.objects.filter(table_number=table_number, is_active=True).select_related('restaurant')
-        if matching.count() == 1:
-            table = matching.first()
-        elif matching.count() > 1:
-            if hasattr(request, 'restaurant') and request.restaurant:
-                table = matching.filter(restaurant=request.restaurant).first()
-            if not table:
-                raise Http404("Table QR token required to identify restaurant.")
-        else:
-            raise Http404("Table not found.")
+    table = get_dining_table_or_404(request, table_number, is_active=True)
 
     if table.restaurant and table.restaurant.status == Restaurant.RestaurantStatus.SUSPENDED:
         return render(request, 'accounts/tenant_suspended.html', {
@@ -1668,7 +1647,7 @@ def customer_table_order(request, table_number):
 
 def api_group_cart_get(request, table_number):
     """Returns current active items in the shared cart and member roster."""
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
 
     if not current_session or not current_member:
@@ -1756,7 +1735,7 @@ def api_group_cart_add(request, table_number):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Method not allowed.'}, status=405)
 
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
 
     if not current_session or not current_member:
@@ -1864,7 +1843,7 @@ def api_group_cart_reduce(request, table_number):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Method not allowed.'}, status=405)
 
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
 
     if not current_session or not current_member:
@@ -1926,7 +1905,7 @@ def api_group_cart_update(request, table_number, item_id):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Method not allowed.'}, status=405)
 
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
 
     if not current_session or not current_member:
@@ -1976,7 +1955,7 @@ def api_group_cart_remove(request, table_number, item_id):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Method not allowed.'}, status=405)
 
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
 
     if not current_session or not current_member:
@@ -2008,7 +1987,7 @@ def api_group_submit_order(request, table_number):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Method not allowed.'}, status=405)
 
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
 
     if not current_session or not current_member:
@@ -2230,7 +2209,7 @@ def api_group_submit_order(request, table_number):
 
 def api_group_cart_sync(request, table_number):
     """Lightweight real-time polling fallback endpoint."""
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
 
     if not current_session or not current_member:
@@ -2294,7 +2273,7 @@ def api_group_cart_sync(request, table_number):
 
 def api_group_members(request, table_number):
     """Returns active group member roster."""
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
 
     if not current_session or not current_member:
@@ -2328,7 +2307,7 @@ def api_group_members(request, table_number):
 @require_POST
 def api_group_member_remove(request, table_number, member_id):
     """Allows the group leader to remove a non-leader member from the active dining group."""
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
 
     if not current_session or not current_member:
@@ -2383,7 +2362,7 @@ def api_group_member_remove(request, table_number, member_id):
 
 def customer_leave_group(request, table_number):
     """Allows a member to leave their current group."""
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
 
     if current_member:
@@ -2409,7 +2388,7 @@ def customer_leave_group(request, table_number):
 
 def customer_leave_session(request, table_number):
     """Allows guest to exit their current session to start fresh or join another group."""
-    table = get_object_or_404(DiningTable, table_number=table_number)
+    table = get_dining_table_or_404(request, table_number, is_active=None)
     session_cookie_key = f'rms_session_{table.id}'
     member_cookie_key = f'rms_member_{table.id}'
 
@@ -2436,7 +2415,7 @@ def customer_request_bill(request, table_number, session_token):
     5. Show confirmation message to customer:
        'Your bill request has been sent successfully. Our staff will assist you shortly.'
     """
-    table = get_object_or_404(DiningTable, table_number=table_number)
+    table = get_dining_table_or_404(request, table_number, is_active=None)
     session = get_object_or_404(CustomerSession, table=table, session_token=session_token)
 
     if session.status in [CustomerSession.Status.COMPLETED, CustomerSession.Status.CANCELLED]:
@@ -2526,7 +2505,7 @@ def customer_request_bill(request, table_number, session_token):
 
 def customer_pay_bill(request, table_number, session_token):
     """Customer pays their group bill or split share online (UPI / Card / Cash at counter)."""
-    table = get_object_or_404(DiningTable, table_number=table_number)
+    table = get_dining_table_or_404(request, table_number, is_active=None)
     session = get_object_or_404(CustomerSession, table=table, session_token=session_token)
     current_session, current_member = _get_active_session_and_member(request, table)
 
@@ -2629,14 +2608,15 @@ def customer_shop(request, table_number):
     Dedicated Customer Shop Page for mobile QR ordering.
     Displays submitted items attributed to group members, kitchen status, bill, and split options.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
     session_cookie_key = f'rms_session_{table.id}'
     member_cookie_key = f'rms_member_{table.id}'
 
     if not current_session or not current_member:
         messages.warning(request, "You have been removed from the dining group by the group leader.")
-        resp = redirect(f"/tables/{table.table_number}/order/?switch=1&removed=1")
+        token_param = f"&token={table.qr_token}" if getattr(table, 'qr_token', None) else ""
+        resp = redirect(f"/tables/{table.table_number}/order/?switch=1&removed=1{token_param}")
         return _clear_customer_table_session(request, resp, table.id)
 
     if current_session.status in [CustomerSession.Status.BILL_REQUESTED, CustomerSession.Status.COMPLETED, CustomerSession.Status.CANCELLED]:
@@ -2774,7 +2754,7 @@ def api_customer_shop_live(request, table_number):
     Real-time polling endpoint for the customer Shop page.
     Returns JSON updates on order preparation status, countdowns, and items.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     current_session, current_member = _get_active_session_and_member(request, table)
 
     if not current_session or not current_member:
@@ -2905,7 +2885,7 @@ def uuid_str():
 
 def customer_order_status(request, table_number, order_id):
     """Live order tracking page for customer watching their meal progress."""
-    table = get_object_or_404(DiningTable, table_number=table_number)
+    table = get_dining_table_or_404(request, table_number, is_active=None)
     order = get_object_or_404(Order, id=order_id, table=table)
     session = order.session
 
@@ -2952,7 +2932,7 @@ def api_customer_order_live(request, table_number, order_id):
     Real-time lightweight JSON endpoint polled by customer mobile tracking screen.
     Returns the live 5-step status progression, kitchen staff details, and 5-minute countdown.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number)
+    table = get_dining_table_or_404(request, table_number, is_active=None)
     order = get_object_or_404(Order.objects.select_related('accepted_by', 'table', 'session'), id=order_id, table=table)
 
     session_cookie_key = f'rms_session_{table.id}'
@@ -3045,7 +3025,7 @@ def customer_cancel_item(request, table_number, order_id, item_id):
     - Preserves audit trail & logs in OrderCancellationLog.
     - Does NOT release table seats.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     order = get_object_or_404(Order, id=order_id, table=table)
 
     session_cookie_key = f'rms_session_{table.id}'
@@ -3180,7 +3160,7 @@ def customer_cancel_order(request, table_number, order_id):
     - Does NOT cancel other groups' orders or bills at the same table.
     - Does NOT release seats automatically; customer must choose Leave Table when ready.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     order = get_object_or_404(Order, id=order_id, table=table)
 
     session_cookie_key = f'rms_session_{table.id}'
@@ -3281,7 +3261,7 @@ def customer_close_session(request, table_number):
     - Leaves other groups' seats and sessions at the table intact.
     - Clears customer browser session cookie.
     """
-    table = get_object_or_404(DiningTable, table_number=table_number, is_active=True)
+    table = get_dining_table_or_404(request, table_number, is_active=True)
     session_cookie_key = f'rms_session_{table.id}'
     session_token = (
         request.POST.get('session_token') or
@@ -3324,7 +3304,7 @@ def customer_close_session(request, table_number):
 
 def customer_thank_you(request, table_number):
     """Customer departure confirmation page."""
-    table = get_object_or_404(DiningTable, table_number=table_number)
+    table = get_dining_table_or_404(request, table_number, is_active=None)
     is_bill_requested = (request.GET.get('bill_requested') == '1')
 
     target_restaurant = table.restaurant or Restaurant.objects.first()
@@ -3430,7 +3410,7 @@ def table_qr_card(request, table_id):
 @login_required
 @role_required([User.Role.ADMIN, User.Role.MANAGER, User.Role.CASHIER])
 def table_qr_print_all(request):
-    tables = DiningTable.objects.filter(is_active=True).order_by('table_number')
+    tables = filter_by_tenant(DiningTable.objects.filter(is_active=True), request).order_by('table_number')
     config = RestaurantConfig.get_config()
     persistent_domain = (config.qr_domain or '').strip()
     raw_host = request.get_host()
