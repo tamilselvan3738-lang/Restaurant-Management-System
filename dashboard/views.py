@@ -212,95 +212,299 @@ def customers_view(request):
     date_str = request.GET.get('date', '').strip()
     payment_method = request.GET.get('payment_method', 'ALL').strip().upper()
 
-    if restaurant:
-        orders_query = Order.objects.filter(restaurant=restaurant).exclude(customer_name__in=['', 'Guest']).prefetch_related('items__menu_item')
-    elif request.user.is_superuser and not is_impersonating:
-        orders_query = Order.objects.exclude(customer_name__in=['', 'Guest']).prefetch_related('items__menu_item')
-    else:
-        orders_query = Order.objects.none()
-
-    if search_query:
-        orders_query = orders_query.filter(
-            Q(customer_name__icontains=search_query) | Q(customer_phone__icontains=search_query)
-        )
-
     selected_date = None
     if date_str:
         try:
             selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-            orders_query = orders_query.filter(created_at__date=selected_date)
         except ValueError:
             date_str = ''
-
-    if payment_method in ['CASH', 'UPI', 'ONLINE']:
-        paid_inv_filter = Q(payments__payment_method=payment_method, status=Invoice.Status.PAID)
-        if restaurant:
-            paid_inv_filter &= Q(restaurant=restaurant)
-        paid_invoices = Invoice.objects.filter(paid_inv_filter)
-        orders_query = orders_query.filter(
-            Q(invoices__in=paid_invoices) | Q(session__invoices__in=paid_invoices)
-        ).distinct()
-
-    customer_data = []
-    seen_names = set()
-    total_filtered_orders_count = orders_query.count()
-    total_filtered_revenue = Decimal('0.00')
 
     today_date = timezone.localdate().strftime('%Y-%m-%d')
     yesterday_date = (timezone.localdate() - timedelta(days=1)).strftime('%Y-%m-%d')
 
-    for ord in orders_query.order_by('-created_at'):
-        c_name = ord.customer_name.strip()
-        if c_name in seen_names:
+    # 1. Fetch Invoices strictly scoped by tenant
+    if restaurant:
+        invoices_qs = Invoice.objects.filter(restaurant=restaurant)
+    elif request.user.is_superuser and not is_impersonating:
+        invoices_qs = Invoice.objects.all()
+    else:
+        invoices_qs = Invoice.objects.none()
+
+    invoices_qs = invoices_qs.select_related(
+        'table', 'session', 'session__table', 'order', 'order__table'
+    ).prefetch_related(
+        'payments',
+        'session__orders__items__menu_item',
+        'order__items__menu_item'
+    ).order_by('-created_at')
+
+    # 2. Fetch Standalone Orders (orders not linked to an invoice directly or through a session)
+    if restaurant:
+        orders_qs = Order.objects.filter(
+            restaurant=restaurant,
+            invoices__isnull=True,
+            session__invoices__isnull=True
+        )
+    elif request.user.is_superuser and not is_impersonating:
+        orders_qs = Order.objects.filter(
+            invoices__isnull=True,
+            session__invoices__isnull=True
+        )
+    else:
+        orders_qs = Order.objects.none()
+
+    orders_qs = orders_qs.select_related('table', 'session').prefetch_related('items__menu_item').order_by('-created_at')
+
+    transactions = []
+
+    # Process all invoices
+    for inv in invoices_qs:
+        # Determine payment method
+        completed_payments = [p for p in inv.payments.all() if p.status == Payment.Status.COMPLETED]
+        if completed_payments:
+            latest_pay = sorted(completed_payments, key=lambda p: p.payment_date or inv.created_at, reverse=True)[0]
+            raw_pm = (latest_pay.payment_method or '').upper()
+            if raw_pm in ['UPI', 'ONLINE', 'QR', 'CARD', 'CREDIT_CARD', 'DEBIT_CARD']:
+                pay_method = 'UPI'
+            elif raw_pm == 'CASH':
+                pay_method = 'CASH'
+            else:
+                pay_method = raw_pm
+        elif inv.status == Invoice.Status.PAID:
+            pay_method = 'CASH'
+        else:
+            pay_method = 'PENDING'
+
+        # Payment method filter
+        if payment_method in ['CASH', 'UPI'] and pay_method != payment_method:
             continue
-        seen_names.add(c_name)
 
-        if restaurant:
-            all_c_orders = Order.objects.filter(restaurant=restaurant, customer_name=c_name)
-            c_invoices = Invoice.objects.filter(restaurant=restaurant, status=Invoice.Status.PAID).filter(
-                Q(order__in=all_c_orders) | Q(session__orders__in=all_c_orders)
-            )
+        # Visit timestamp and date filtering
+        visit_time = inv.paid_at or inv.created_at
+        visit_date = timezone.localtime(visit_time).date() if timezone.is_aware(visit_time) else visit_time.date()
+
+        if selected_date and visit_date != selected_date:
+            continue
+
+        # Table identification
+        table_obj = inv.table or (inv.session.table if inv.session else None) or (inv.order.table if inv.order else None)
+        if table_obj:
+            table_number = table_obj.display_name
+        elif inv.order and inv.order.order_type == Order.OrderType.TAKEAWAY:
+            table_number = "Takeaway"
         else:
-            all_c_orders = Order.objects.filter(customer_name=c_name)
-            c_invoices = Invoice.objects.filter(
-                Q(order__in=all_c_orders) | Q(session__orders__in=all_c_orders), status=Invoice.Status.PAID
-            )
+            table_number = "Dine-In"
 
-        c_order_count = all_c_orders.count()
-        c_phone = ord.customer_phone or "Not provided"
-        c_last_order = ord.created_at
-        c_total_spent = c_invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
-        total_filtered_revenue += ord.total_amount
-
-        # Loyalty Tier
-        if c_order_count >= 10 or c_total_spent > Decimal('500.00'):
-            tier = 'VIP Platinum'
-            badge_class = 'primary'
-        elif c_order_count >= 5 or c_total_spent > Decimal('200.00'):
-            tier = 'Regular Gold'
-            badge_class = 'success'
+        # Customer display name resolution
+        c_name = ""
+        if inv.customer_name and inv.customer_name.strip().lower() not in ['', 'guest']:
+            c_name = inv.customer_name.strip()
+        elif inv.order and inv.order.customer_name and inv.order.customer_name.strip().lower() not in ['', 'guest']:
+            c_name = inv.order.customer_name.strip()
+        elif inv.session and inv.session.customer_name and inv.session.customer_name.strip().lower() not in ['', 'guest']:
+            c_name = inv.session.customer_name.strip()
         else:
-            tier = 'New Guest'
-            badge_class = 'secondary'
+            for p in completed_payments:
+                if p.paid_by_name and p.paid_by_name.strip().lower() not in ['', 'guest']:
+                    c_name = p.paid_by_name.strip()
+                    break
 
-        fav_items = OrderItem.objects.filter(order__in=all_c_orders)\
-            .values('menu_item__name')\
-            .annotate(qty=Sum('quantity'))\
-            .order_by('-qty')[:2]
-        fav_dishes_list = [f"{item['menu_item__name']} ({item['qty']})" for item in fav_items if item['menu_item__name']]
-        fav_dish_str = ", ".join(fav_dishes_list) if fav_dishes_list else "None recorded"
+        is_guest = False
+        if not c_name:
+            is_guest = True
+            if inv.session and inv.session.session_name and inv.session.session_name.strip().lower() not in ['', 'guest']:
+                c_name = f"{inv.session.session_name} ({table_number})"
+            else:
+                c_name = f"Guest ({table_number})"
 
-        customer_data.append({
+        c_phone = inv.customer_phone or (inv.session.customer_phone if inv.session else '') or (inv.order.customer_phone if inv.order else '')
+        if not c_phone:
+            c_phone = "Not provided"
+
+        # Dishes ordered aggregation
+        items_map = {}
+        if inv.session:
+            for ord_obj in inv.session.orders.exclude(status=Order.Status.CANCELLED):
+                for item in ord_obj.items.exclude(status='CANCELLED'):
+                    item_name = item.menu_item.name if item.menu_item else (item.combo_name or "Menu Item")
+                    if item_name not in items_map:
+                        items_map[item_name] = {'name': item_name, 'quantity': 0, 'total_price': Decimal('0.00')}
+                    items_map[item_name]['quantity'] += item.quantity
+                    items_map[item_name]['total_price'] += item.total_price
+
+        if inv.order:
+            for item in inv.order.items.exclude(status='CANCELLED'):
+                item_name = item.menu_item.name if item.menu_item else (item.combo_name or "Menu Item")
+                if item_name not in items_map:
+                    items_map[item_name] = {'name': item_name, 'quantity': 0, 'total_price': Decimal('0.00')}
+                items_map[item_name]['quantity'] += item.quantity
+                items_map[item_name]['total_price'] += item.total_price
+
+        if not items_map and inv.session and hasattr(inv.session, 'cart'):
+            for ci in inv.session.cart.items.all():
+                item_name = ci.menu_item.name if ci.menu_item else (ci.combo_name or "Menu Item")
+                price = (ci.unit_price_snapshot or Decimal('0.00')) * ci.quantity
+                if item_name not in items_map:
+                    items_map[item_name] = {'name': item_name, 'quantity': 0, 'total_price': Decimal('0.00')}
+                items_map[item_name]['quantity'] += ci.quantity
+                items_map[item_name]['total_price'] += price
+
+        items_list = list(items_map.values())
+        items_count = sum(it['quantity'] for it in items_list)
+        order_num = inv.invoice_number
+
+        # Text search matching
+        if search_query:
+            sq = search_query.lower()
+            match = (
+                sq in c_name.lower() or
+                sq in c_phone.lower() or
+                sq in table_number.lower() or
+                sq in order_num.lower() or
+                any(sq in it['name'].lower() for it in items_list)
+            )
+            if not match:
+                continue
+
+        transactions.append({
+            'source': 'invoice',
+            'id': inv.id,
             'name': c_name,
             'phone': c_phone,
-            'orders_count': c_order_count,
-            'total_spent': c_total_spent,
-            'last_visit': c_last_order,
-            'tier': tier,
-            'badge_class': badge_class,
-            'favorite_dish': fav_dish_str,
-            'latest_order_number': ord.order_number,
+            'is_guest': is_guest,
+            'visit_time': visit_time,
+            'order_number': order_num,
+            'payment_method': pay_method,
+            'table_number': table_number,
+            'total_amount': inv.total_amount,
+            'items_count': items_count,
+            'items': items_list,
         })
+
+    # Process standalone orders
+    for ord_obj in orders_qs:
+        pay_method = 'CASH' if ord_obj.status == Order.Status.COMPLETED else 'PENDING'
+
+        if payment_method in ['CASH', 'UPI'] and pay_method != payment_method:
+            continue
+
+        visit_time = ord_obj.created_at
+        visit_date = timezone.localtime(visit_time).date() if timezone.is_aware(visit_time) else visit_time.date()
+
+        if selected_date and visit_date != selected_date:
+            continue
+
+        table_number = ord_obj.table.display_name if ord_obj.table else ("Takeaway" if ord_obj.order_type == Order.OrderType.TAKEAWAY else "Dine-In")
+
+        c_name = ord_obj.customer_name.strip()
+        is_guest = False
+        if not c_name or c_name.lower() == 'guest':
+            is_guest = True
+            if ord_obj.session and ord_obj.session.session_name and ord_obj.session.session_name.strip().lower() not in ['', 'guest']:
+                c_name = f"{ord_obj.session.session_name} ({table_number})"
+            else:
+                c_name = f"Guest ({table_number})"
+
+        c_phone = ord_obj.customer_phone or "Not provided"
+
+        items_map = {}
+        for item in ord_obj.items.exclude(status='CANCELLED'):
+            item_name = item.menu_item.name if item.menu_item else (item.combo_name or "Menu Item")
+            if item_name not in items_map:
+                items_map[item_name] = {'name': item_name, 'quantity': 0, 'total_price': Decimal('0.00')}
+            items_map[item_name]['quantity'] += item.quantity
+            items_map[item_name]['total_price'] += item.total_price
+
+        items_list = list(items_map.values())
+        items_count = sum(it['quantity'] for it in items_list)
+        order_num = ord_obj.order_number
+
+        if search_query:
+            sq = search_query.lower()
+            match = (
+                sq in c_name.lower() or
+                sq in c_phone.lower() or
+                sq in table_number.lower() or
+                sq in order_num.lower() or
+                any(sq in it['name'].lower() for it in items_list)
+            )
+            if not match:
+                continue
+
+        transactions.append({
+            'source': 'order',
+            'id': ord_obj.id,
+            'name': c_name,
+            'phone': c_phone,
+            'is_guest': is_guest,
+            'visit_time': visit_time,
+            'order_number': order_num,
+            'payment_method': pay_method,
+            'table_number': table_number,
+            'total_amount': ord_obj.total_amount,
+            'items_count': items_count,
+            'items': items_list,
+        })
+
+    # Sort all transactions newest first
+    transactions.sort(key=lambda x: x['visit_time'] or timezone.now(), reverse=True)
+
+    total_filtered_orders_count = len(transactions)
+    total_filtered_revenue = sum((t['total_amount'] for t in transactions), Decimal('0.00'))
+
+    # Grouping customer cards
+    grouped_customers = {}
+
+    for t in transactions:
+        if t['is_guest']:
+            key = f"guest_{t['source']}_{t['id']}"
+        elif t['phone'] != 'Not provided':
+            key = f"cust_phone_{t['phone']}"
+        else:
+            key = f"cust_name_{t['name'].lower()}"
+
+        if key not in grouped_customers:
+            grouped_customers[key] = {
+                'name': t['name'],
+                'phone': t['phone'],
+                'last_visit': t['visit_time'],
+                'total_spent': Decimal('0.00'),
+                'order_count': 0,
+                'latest_order': {
+                    'order_number': t['order_number'],
+                    'payment_method': t['payment_method'],
+                    'table_number': t['table_number'],
+                    'total_amount': t['total_amount'],
+                    'items_count': t['items_count'],
+                    'items': t['items'],
+                },
+                'all_orders': [],
+            }
+
+        grouped_customers[key]['total_spent'] += t['total_amount']
+        grouped_customers[key]['order_count'] += 1
+        grouped_customers[key]['all_orders'].append(t)
+
+    customer_data = []
+    for c in grouped_customers.values():
+        count = c['order_count']
+        spent = c['total_spent']
+
+        if count >= 10 or spent > Decimal('500.00'):
+            tier = 'VIP Platinum'
+            tier_badge = 'primary'
+        elif count >= 5 or spent > Decimal('200.00'):
+            tier = 'Regular Gold'
+            tier_badge = 'success'
+        else:
+            tier = 'New Guest'
+            tier_badge = 'secondary'
+
+        c['tier'] = tier
+        c['tier_badge'] = tier_badge
+        c['orders_count'] = count
+        c['badge_class'] = tier_badge
+        customer_data.append(c)
 
     avg_spend = round(total_filtered_revenue / total_filtered_orders_count, 2) if total_filtered_orders_count > 0 else Decimal('0.00')
 
@@ -311,7 +515,9 @@ def customers_view(request):
         'total_filtered_revenue': total_filtered_revenue,
         'avg_spend': avg_spend,
         'search_query': search_query,
+        'selected_date': date_str,
         'date_str': date_str,
+        'selected_payment_method': payment_method,
         'payment_method': payment_method,
         'today_date': today_date,
         'yesterday_date': yesterday_date,
