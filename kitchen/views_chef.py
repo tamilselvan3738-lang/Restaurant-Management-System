@@ -284,8 +284,8 @@ def chef_accept_order(request, order_id):
 
     with transaction.atomic():
         try:
-            # Row-level locking to guarantee atomic single-staff acceptance
-            order = Order.objects.select_for_update().select_related('table', 'session', 'server').get(id=order_id)
+            # Row-level locking to guarantee atomic single-staff acceptance without outer join lock failure
+            order = Order.objects.select_for_update().get(id=order_id)
         except Order.DoesNotExist:
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': 'Order not found.'}, status=404)

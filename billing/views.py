@@ -764,14 +764,45 @@ def bill_request_list(request):
 def get_tenant_bill_request(request, pk, for_update=False):
     """
     Safely resolves a BillRequest by pk respecting multi-tenancy, orphan backfilling,
-    and concurrent access, without ever crashing with an unhandled 404.
+    and concurrent access, without ever crashing with an unhandled 404 or PostgreSQL
+    'FOR UPDATE cannot be applied to the nullable side of an outer join' error.
     """
     restaurant = get_current_restaurant(request)
     user = getattr(request, 'user', None)
 
-    qs = BillRequest.objects.select_related('table', 'session', 'invoice', 'accepted_by', 'restaurant')
     if for_update:
-        qs = qs.select_for_update()
+        # PostgreSQL error: "FOR UPDATE cannot be applied to the nullable side of an outer join".
+        # Therefore, do NOT perform select_related or multi-table joins during row-locking.
+        # Query only the single BillRequest table for row-locking:
+        bill_req = BillRequest.objects.select_for_update().filter(pk=pk).first()
+        if not bill_req:
+            return None
+
+        # Verify tenant isolation on the locked instance
+        if not (user and user.is_authenticated and user.is_superuser and not is_impersonating_restaurant(request)):
+            if restaurant:
+                is_authorized = (
+                    bill_req.restaurant_id == restaurant.id or
+                    bill_req.restaurant_id is None or
+                    (bill_req.table_id and getattr(bill_req.table, 'restaurant_id', None) == restaurant.id) or
+                    (bill_req.session_id and getattr(bill_req.session, 'restaurant_id', None) == restaurant.id)
+                )
+                if not is_authorized:
+                    return None
+
+        # Auto-heal orphaned record if restaurant is known
+        target_restaurant = restaurant or getattr(bill_req.table, 'restaurant', None) or getattr(bill_req.session, 'restaurant', None)
+        if not bill_req.restaurant_id and target_restaurant:
+            try:
+                bill_req.restaurant = target_restaurant
+                bill_req.save(update_fields=['restaurant'])
+            except Exception:
+                pass
+
+        return bill_req
+
+    # Non-locking query (for_update=False): safe to use select_related and join filters
+    qs = BillRequest.objects.select_related('table', 'session', 'invoice', 'accepted_by', 'restaurant')
 
     # 1. Super Admin global mode (not impersonating)
     if user and user.is_authenticated and user.is_superuser and not is_impersonating_restaurant(request):
@@ -802,7 +833,7 @@ def get_tenant_bill_request(request, pk, for_update=False):
     # 2. Auto-heal orphaned record if restaurant is known
     if bill_req:
         target_restaurant = restaurant or getattr(bill_req.table, 'restaurant', None) or getattr(bill_req.session, 'restaurant', None)
-        if not bill_req.restaurant and target_restaurant:
+        if not bill_req.restaurant_id and target_restaurant:
             try:
                 bill_req.restaurant = target_restaurant
                 bill_req.save(update_fields=['restaurant'])
