@@ -236,6 +236,60 @@
             border-color: var(--rms-primary);
         }
 
+        /* Enhanced Interactive Form Check Card */
+        .form-check-card {
+            background-color: var(--rms-card-bg, #ffffff);
+            border: 1px solid var(--bs-border-color, #e2e8f0);
+            border-radius: 0.75rem;
+            padding: 0.875rem 1rem;
+            transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .form-check-card:hover {
+            border-color: var(--rms-primary, #e65100);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-check-card .form-check-input {
+            float: none !important;
+            margin: 0.15rem 0 0 0 !important;
+            flex-shrink: 0 !important;
+            width: 1.2rem !important;
+            height: 1.2rem !important;
+            cursor: pointer;
+        }
+
+        .form-check-card:has(.form-check-input:checked) {
+            border-color: var(--rms-primary, #e65100);
+            background-color: rgba(230, 81, 0, 0.04);
+        }
+
+        [data-bs-theme="dark"] .form-check-card {
+            background-color: #161c26;
+            border-color: #263143;
+        }
+
+        [data-bs-theme="dark"] .form-check-card:hover {
+            border-color: var(--rms-primary, #f97316);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        }
+
+        [data-bs-theme="dark"] .form-check-card:has(.form-check-input:checked) {
+            border-color: var(--rms-primary, #f97316);
+            background-color: rgba(249, 115, 22, 0.12);
+        }
+
+        /* Ensure standard form-check inside row/column never clips */
+        .row > [class*="col-"] > .form-check {
+            padding-left: 1.75em;
+            margin-bottom: 0;
+        }
+
         [data-bs-theme="dark"] .form-control,
         [data-bs-theme="dark"] .form-select {
             background-color: #10141d;

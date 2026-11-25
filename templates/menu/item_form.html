@@ -105,17 +105,27 @@
                     </div>
 
                     <div class="row g-3 mb-4">
-                        <div class="col-md-6 form-check ps-4">
-                            {{ form.is_available }}
-                            <label class="form-check-label fw-semibold" for="{{ form.is_available.id_for_label }}">
-                                Available for Ordering (In Stock)
-                            </label>
+                        <div class="col-md-6">
+                            <div class="form-check-card h-100" onclick="if(event.target.tagName !== 'INPUT' && event.target.tagName !== 'LABEL') { document.getElementById('{{ form.is_available.id_for_label }}').click(); }">
+                                {{ form.is_available }}
+                                <div class="flex-grow-1">
+                                    <label class="form-check-label fw-semibold d-block text-body mb-0" for="{{ form.is_available.id_for_label }}" style="cursor: pointer;">
+                                        Available for Ordering (In Stock)
+                                    </label>
+                                    <div class="text-muted small mt-1">Dish is visible and orderable by customers and staff</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6 form-check ps-4">
-                            {{ form.is_special }}
-                            <label class="form-check-label fw-semibold" for="{{ form.is_special.id_for_label }}">
-                                Highlight as Chef Special / Recommendation
-                            </label>
+                        <div class="col-md-6">
+                            <div class="form-check-card h-100" onclick="if(event.target.tagName !== 'INPUT' && event.target.tagName !== 'LABEL') { document.getElementById('{{ form.is_special.id_for_label }}').click(); }">
+                                {{ form.is_special }}
+                                <div class="flex-grow-1">
+                                    <label class="form-check-label fw-semibold d-block text-body mb-0" for="{{ form.is_special.id_for_label }}" style="cursor: pointer;">
+                                        Highlight as Chef Special / Recommendation
+                                    </label>
+                                    <div class="text-muted small mt-1">Featured prominently with a chef recommendation badge</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

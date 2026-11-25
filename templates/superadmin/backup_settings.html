@@ -14,9 +14,9 @@
                 <form method="post">
                     {% csrf_token %}
 
-                    <div class="form-check form-switch mb-4 ps-4">
+                    <div class="form-check form-switch mb-4">
                         {{ form.auto_backup_enabled }}
-                        <label class="form-check-label fw-bold ms-2" for="{{ form.auto_backup_enabled.id_for_label }}">
+                        <label class="form-check-label fw-bold" for="{{ form.auto_backup_enabled.id_for_label }}">
                             Enable Automated Database Snapshots
                         </label>
                         <div class="form-text small">Automatically creates local point-in-time database snapshot copies.</div>

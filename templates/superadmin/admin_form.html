@@ -222,42 +222,50 @@
                     </h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <div class="form-check p-3 border rounded-3 bg-light h-100">
+                            <div class="form-check-card h-100" onclick="if(event.target.tagName !== 'INPUT' && event.target.tagName !== 'LABEL') { document.getElementById('{{ form.can_manage_staff.id_for_label }}').click(); }">
                                 {{ form.can_manage_staff }}
-                                <label class="form-check-label fw-semibold ms-2" for="{{ form.can_manage_staff.id_for_label }}">
-                                    Staff Management
-                                </label>
-                                <div class="text-muted small ps-4">Can add, edit, and assign roles to restaurant personnel</div>
+                                <div class="flex-grow-1">
+                                    <label class="form-check-label fw-semibold d-block text-body mb-0" for="{{ form.can_manage_staff.id_for_label }}" style="cursor: pointer;">
+                                        Staff Management
+                                    </label>
+                                    <div class="text-muted small mt-1">Can add, edit, and assign roles to restaurant personnel</div>
+                                </div>
                             </div>
                         </div>
 
                         <div class="col-md-6">
-                            <div class="form-check p-3 border rounded-3 bg-light h-100">
+                            <div class="form-check-card h-100" onclick="if(event.target.tagName !== 'INPUT' && event.target.tagName !== 'LABEL') { document.getElementById('{{ form.can_view_financials.id_for_label }}').click(); }">
                                 {{ form.can_view_financials }}
-                                <label class="form-check-label fw-semibold ms-2" for="{{ form.can_view_financials.id_for_label }}">
-                                    Financials & Reports
-                                </label>
-                                <div class="text-muted small ps-4">Can view total revenue, sales analytics, and invoice history</div>
+                                <div class="flex-grow-1">
+                                    <label class="form-check-label fw-semibold d-block text-body mb-0" for="{{ form.can_view_financials.id_for_label }}" style="cursor: pointer;">
+                                        Financials & Reports
+                                    </label>
+                                    <div class="text-muted small mt-1">Can view total revenue, sales analytics, and invoice history</div>
+                                </div>
                             </div>
                         </div>
 
                         <div class="col-md-6">
-                            <div class="form-check p-3 border rounded-3 bg-light h-100">
+                            <div class="form-check-card h-100" onclick="if(event.target.tagName !== 'INPUT' && event.target.tagName !== 'LABEL') { document.getElementById('{{ form.can_manage_discounts.id_for_label }}').click(); }">
                                 {{ form.can_manage_discounts }}
-                                <label class="form-check-label fw-semibold ms-2" for="{{ form.can_manage_discounts.id_for_label }}">
-                                    Bill Discount Approvals
-                                </label>
-                                <div class="text-muted small ps-4">Authorized to apply discounts & promotions at checkout</div>
+                                <div class="flex-grow-1">
+                                    <label class="form-check-label fw-semibold d-block text-body mb-0" for="{{ form.can_manage_discounts.id_for_label }}" style="cursor: pointer;">
+                                        Bill Discount Approvals
+                                    </label>
+                                    <div class="text-muted small mt-1">Authorized to apply discounts & promotions at checkout</div>
+                                </div>
                             </div>
                         </div>
 
                         <div class="col-md-6">
-                            <div class="form-check p-3 border rounded-3 bg-light h-100">
+                            <div class="form-check-card h-100" onclick="if(event.target.tagName !== 'INPUT' && event.target.tagName !== 'LABEL') { document.getElementById('{{ form.can_edit_menu.id_for_label }}').click(); }">
                                 {{ form.can_edit_menu }}
-                                <label class="form-check-label fw-semibold ms-2" for="{{ form.can_edit_menu.id_for_label }}">
-                                    Menu & Inventory Control
-                                </label>
-                                <div class="text-muted small ps-4">Can create dishes, change prices, and restock inventory</div>
+                                <div class="flex-grow-1">
+                                    <label class="form-check-label fw-semibold d-block text-body mb-0" for="{{ form.can_edit_menu.id_for_label }}" style="cursor: pointer;">
+                                        Menu & Inventory Control
+                                    </label>
+                                    <div class="text-muted small mt-1">Can create dishes, change prices, and restock inventory</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -317,17 +325,27 @@
                         <i class="bi bi-toggles text-primary me-2"></i> Account Status
                     </h6>
                     <div class="row g-3 mb-4">
-                        <div class="col-md-6 form-check ps-4">
-                            {{ form.is_active }}
-                            <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}">
-                                Account Active (Permitted to log in)
-                            </label>
+                        <div class="col-md-6">
+                            <div class="form-check-card h-100" onclick="if(event.target.tagName !== 'INPUT' && event.target.tagName !== 'LABEL') { document.getElementById('{{ form.is_active.id_for_label }}').click(); }">
+                                {{ form.is_active }}
+                                <div class="flex-grow-1">
+                                    <label class="form-check-label fw-semibold d-block text-body mb-0" for="{{ form.is_active.id_for_label }}" style="cursor: pointer;">
+                                        Account Active
+                                    </label>
+                                    <div class="text-muted small mt-1">Permitted to log in and perform administrative tasks</div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6 form-check ps-4">
-                            {{ form.is_suspended }}
-                            <label class="form-check-label fw-semibold text-danger" for="{{ form.is_suspended.id_for_label }}">
-                                Account Suspended
-                            </label>
+                        <div class="col-md-6">
+                            <div class="form-check-card h-100" onclick="if(event.target.tagName !== 'INPUT' && event.target.tagName !== 'LABEL') { document.getElementById('{{ form.is_suspended.id_for_label }}').click(); }">
+                                {{ form.is_suspended }}
+                                <div class="flex-grow-1">
+                                    <label class="form-check-label fw-semibold d-block text-danger mb-0" for="{{ form.is_suspended.id_for_label }}" style="cursor: pointer;">
+                                        Account Suspended
+                                    </label>
+                                    <div class="text-muted small mt-1">Temporarily block user access to the restaurant portal</div>
+                                </div>
+                            </div>
                         </div>
                         {% if form.suspension_reason %}
                         <div class="col-12">

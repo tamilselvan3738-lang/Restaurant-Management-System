@@ -49,9 +49,9 @@
                         <div class="form-text small">Staff and admin idle sessions will be automatically logged out after this duration.</div>
                     </div>
 
-                    <div class="form-check form-switch mb-4 ps-4">
+                    <div class="form-check form-switch mb-4">
                         {{ form.enable_audit_logging }}
-                        <label class="form-check-label fw-bold ms-2" for="{{ form.enable_audit_logging.id_for_label }}">
+                        <label class="form-check-label fw-bold" for="{{ form.enable_audit_logging.id_for_label }}">
                             Enable System & Action Audit Logging
                         </label>
                         <div class="form-text small">Log all admin actions, role changes, and inventory restocks for security audits.</div>

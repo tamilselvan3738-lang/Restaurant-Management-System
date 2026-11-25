@@ -16,9 +16,9 @@
                 <form method="post">
                     {% csrf_token %}
 
-                    <div class="form-check form-switch mb-4 ps-4">
+                    <div class="form-check form-switch mb-4">
                         {{ form.enforce_strong_password }}
-                        <label class="form-check-label fw-bold ms-2" for="{{ form.enforce_strong_password.id_for_label }}">
+                        <label class="form-check-label fw-bold" for="{{ form.enforce_strong_password.id_for_label }}">
                             Enforce Complex Password Validation
                         </label>
                         <div class="form-text small">Requires minimum length, mix of alphanumeric characters, and prohibits common dictionary passwords.</div>
