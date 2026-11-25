@@ -840,10 +840,10 @@
 
         window.shareModalCode = function() {
             if (!currentJoinCode) return;
-            const shareText = `Join our dining group at Table {{ table.table_number }}! Our invitation code is ${currentJoinCode}`;
+            const shareText = `Join our dining group at {{ table.display_name|default:table.table_number }}! Our invitation code is ${currentJoinCode}`;
             if (navigator.share) {
                 navigator.share({
-                    title: `Table {{ table.table_number }} Group Invite`,
+                    title: `{{ table.display_name|default:table.table_number }} Group Invite`,
                     text: shareText
                 }).catch(() => {});
             } else {

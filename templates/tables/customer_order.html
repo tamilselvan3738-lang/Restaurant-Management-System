@@ -459,7 +459,7 @@
                     <span class="text-truncate">{{ RESTAURANT_NAME }}</span>
                 </h5>
                 <div class="small opacity-75 text-truncate" style="font-size: 0.75rem;">
-                    Table {{ table.table_number }} &bull; Digital Menu
+                    {{ table.display_name|default:table.table_number }} &bull; Digital Menu
                 </div>
             </div>
             <div class="d-flex align-items-center flex-shrink-0" style="gap: 8px;">
@@ -881,7 +881,7 @@
                             <i class="bi bi-cart-check text-primary me-1"></i> Review Shared Group Order
                         </h5>
                         <div class="small text-muted">
-                            Table {{ table.table_number }} &bull; {{ current_session.session_name }} (<span id="modalHeaderMemberCount">{{ member_count }}</span> members)
+                            {{ table.display_name|default:table.table_number }} &bull; {{ current_session.session_name }} (<span id="modalHeaderMemberCount">{{ member_count }}</span> members)
                         </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -965,7 +965,7 @@
                         <div class="fs-2 fw-bold font-monospace text-primary letter-spacing-2" id="shareJoinCodeText">
                             {{ current_session.join_code }}
                         </div>
-                        <div class="small text-muted mb-2">Companions at Table {{ table.table_number }} can join using this code</div>
+                        <div class="small text-muted mb-2">Companions at {{ table.display_name|default:table.table_number }} can join using this code</div>
                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" onclick="copyJoinCode()">
                             <i class="bi bi-clipboard me-1"></i> Copy Code
                         </button>
@@ -1021,7 +1021,7 @@
         <div class="offcanvas-header border-bottom">
             <div>
                 <h5 class="offcanvas-title fw-bold" id="billDrawerLabel">{{ current_session.session_name }} Bill & Orders</h5>
-                <div class="small text-muted">Table {{ table.table_number }} • Join Code: {{ current_session.join_code }}</div>
+                <div class="small text-muted">{{ table.display_name|default:table.table_number }} • Join Code: {{ current_session.join_code }}</div>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
@@ -1125,7 +1125,7 @@
                         <i class="bi bi-people-fill"></i>
                     </div>
                     <h5 class="fw-bold mb-1">Invite Companions to Your Bill</h5>
-                    <p class="text-muted small mb-3">Friends at Table {{ table.table_number }} can join and share this cart & bill.</p>
+                    <p class="text-muted small mb-3">Friends at {{ table.display_name|default:table.table_number }} can join and share this cart & bill.</p>
 
                     <div class="bg-light p-3 rounded-4 mb-3">
                         <div class="small text-muted fw-semibold mb-1">6-Digit Group Join Code</div>
@@ -1148,7 +1148,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content rounded-4 border-0 shadow-lg p-3">
                 <div class="modal-header border-0 pb-0 justify-content-between align-items-center">
-                    <h5 class="modal-title fw-bold">Join Group Bill at Table {{ table.table_number }}</h5>
+                    <h5 class="modal-title fw-bold">Join Group Bill at {{ table.display_name|default:table.table_number }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">

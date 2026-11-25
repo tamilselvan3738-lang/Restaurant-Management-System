@@ -685,7 +685,7 @@
                             {% if bill_request.status == 'ACCEPTED' %}
                                 Accepted by <strong>{% if bill_request.accepted_by %}{{ bill_request.accepted_by.get_full_name|default:bill_request.accepted_by.username }}{% else %}Staff{% endif %}</strong>. Staff is on the way to your table with the bill.
                             {% elif bill_request.status == 'BILL_GENERATED' %}
-                                Your final invoice is ready. Staff will bring your receipt to table {{ table.table_number }}.
+                                Your final invoice is ready. Staff will bring your receipt to {{ table.display_name|default:table.table_number }}.
                             {% else %}
                                 Your bill request has been sent successfully. Our staff will assist you shortly.
                             {% endif %}

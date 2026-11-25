@@ -331,7 +331,7 @@
                                 <i class="bi bi-receipt me-1 text-primary"></i>Order #{{ order.order_number }}
                             </span>
                             <span class="badge bg-white text-dark border px-2 py-1" style="font-size: 0.74rem;">
-                                <i class="bi bi-geo-alt-fill me-1 text-danger"></i>Table {{ table.table_number }}
+                                <i class="bi bi-geo-alt-fill me-1 text-danger"></i>{{ table.display_name|default:table.table_number }}
                             </span>
                             <span class="badge bg-white text-dark border px-2 py-1 font-monospace" id="readyTimestampBadge" style="font-size: 0.74rem;">
                                 <i class="bi bi-clock-history me-1 text-success"></i>Ready at: {{ order.ready_at|date:"h:i A"|default:"Just now" }}
@@ -508,7 +508,7 @@
             <div class="mt-3 pt-3 border-top">
                 <a href="{% url 'tables:customer_order' table.table_number %}" class="btn btn-primary rounded-pill w-100 py-2.5 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
                     <i class="bi bi-plus-circle-fill"></i>
-                    <span>Add More Food to Table {{ table.table_number }}</span>
+                    <span>Add More Food to {{ table.display_name|default:table.table_number }}</span>
                 </a>
             </div>
         </div>
@@ -692,12 +692,12 @@
                         <div class="fs-1 text-primary mb-2">
                             <i class="bi bi-box-arrow-right"></i>
                         </div>
-                        <h5 class="fw-bold text-dark mb-2">Leave Table {{ table.table_number }}?</h5>
+                        <h5 class="fw-bold text-dark mb-2">Leave {{ table.display_name|default:table.table_number }}?</h5>
                         <p class="small text-muted mb-3">
-                            This will close your ordering session and automatically release your occupied seats at Table {{ table.table_number }}.
+                            This will close your ordering session and automatically release your occupied seats at {{ table.display_name|default:table.table_number }}.
                         </p>
                         <div class="alert alert-light border small text-muted text-start py-2 px-3 rounded-3 mb-0">
-                            <i class="bi bi-info-circle text-primary me-1"></i> If other companion groups are sitting at Table {{ table.table_number }}, their separate bills and seats remain active.
+                            <i class="bi bi-info-circle text-primary me-1"></i> If other companion groups are sitting at {{ table.display_name|default:table.table_number }}, their separate bills and seats remain active.
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-0 d-flex gap-2">

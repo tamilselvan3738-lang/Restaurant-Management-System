@@ -138,7 +138,7 @@
         <div class="d-inline-flex align-items-center gap-1.5 bg-white bg-opacity-20 px-3 py-1 rounded-pill small mb-2 fw-semibold">
             <i class="bi bi-pie-chart-fill"></i> Group Bill Splitting & Settlement
         </div>
-        <h3 class="fw-bold mb-1">Table {{ table.table_number }} &bull; {{ session.session_name }}</h3>
+        <h3 class="fw-bold mb-1">{{ table.display_name|default:table.table_number }} &bull; {{ session.session_name }}</h3>
         <p class="mb-0 text-white-50 small">
             Invoice: #{{ invoice.invoice_number }} &bull; Paying as: <strong class="text-white">{{ member_name }}</strong>
         </p>
