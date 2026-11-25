@@ -58,27 +58,27 @@
         <p class="text-muted small mb-0">Payment settlements, transaction receipts, and sales audit</p>
     </div>
     
-    <div class="d-flex flex-wrap align-items-center justify-content-start justify-content-xl-end gap-2.5">
+    <div class="d-flex flex-wrap align-items-center justify-content-start justify-content-xl-end gap-2.5 w-100 w-xl-auto">
         <!-- Action Buttons Group -->
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs text-nowrap">
+        <div class="d-flex align-items-center gap-2 flex-wrap w-100 w-sm-auto">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-sm-grow-0">
                 <i class="bi bi-arrow-left"></i> Back
             </a>
-            <a href="{% url 'billing:consolidated_list' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs text-nowrap">
+            <a href="{% url 'billing:consolidated_list' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-sm-grow-0">
                 <i class="bi bi-collection-fill"></i> Consolidated Bills
             </a>
-            <a href="{% url 'billing:merge_bills_select' %}" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs fw-semibold text-dark text-nowrap">
+            <a href="{% url 'billing:merge_bills_select' %}" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs fw-semibold text-dark flex-fill flex-sm-grow-0">
                 <i class="bi bi-intersect"></i> Merge Customer Bills
             </a>
         </div>
 
         <!-- Financial Summary Stat Badges (Tightly paired, never separated) -->
-        <div class="d-flex align-items-center gap-2 flex-nowrap flex-shrink-0">
-            <div class="card p-2 px-3 bg-success-subtle border-success shadow-xs mb-0 rounded-3 text-nowrap" style="min-width: 110px;">
+        <div class="d-flex align-items-center gap-2 flex-nowrap flex-shrink-0 w-100 w-sm-auto">
+            <div class="card p-2 px-3 bg-success-subtle border-success shadow-xs mb-0 rounded-3 text-nowrap flex-fill" style="min-width: 100px;">
                 <span class="text-success small fw-semibold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.04em; display: block; line-height: 1.2;">Total Settled</span>
                 <h5 class="fw-bold text-success mb-0 font-monospace" style="font-size: 1.15rem; line-height: 1.2;">₹{{ total_revenue|floatformat:2 }}</h5>
             </div>
-            <div class="card p-2 px-3 bg-danger-subtle border-danger shadow-xs mb-0 rounded-3 text-nowrap" style="min-width: 110px;">
+            <div class="card p-2 px-3 bg-danger-subtle border-danger shadow-xs mb-0 rounded-3 text-nowrap flex-fill" style="min-width: 100px;">
                 <span class="text-danger small fw-semibold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.04em; display: block; line-height: 1.2;">Outstanding</span>
                 <h5 class="fw-bold text-danger mb-0 font-monospace" style="font-size: 1.15rem; line-height: 1.2;">₹{{ total_unpaid|floatformat:2 }}</h5>
             </div>
@@ -111,7 +111,7 @@
             </div>
 
             <!-- Fast Search Input -->
-            <div style="min-width: 280px; max-width: 400px;">
+            <div class="w-100 w-lg-auto" style="min-width: 200px; max-width: 400px;">
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-body-tertiary border-end-0 rounded-start-pill ps-3 text-muted">
                         <i class="bi bi-search"></i>

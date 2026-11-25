@@ -65,6 +65,23 @@
     background: rgba(255, 255, 255, 0.95);
     border: 1px solid rgba(0, 0, 0, 0.15);
 }
+@media (max-width: 576px) {
+    .floating-merge-bar {
+        border-radius: 16px !important;
+        flex-direction: column !important;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem !important;
+        bottom: 10px;
+    }
+    .floating-merge-bar > div {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .floating-merge-bar button {
+        width: 100%;
+        justify-content: center;
+    }
+}
 .card-select-overlay {
     position: absolute;
     top: 0;
@@ -98,11 +115,11 @@
         </p>
     </div>
 
-    <div class="d-flex gap-2 align-items-center">
-        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+    <div class="d-flex gap-2 align-items-center flex-wrap w-100 w-md-auto">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0">
             <i class="bi bi-arrow-left"></i> Back
         </a>
-        <a href="{% url 'billing:consolidated_list' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+        <a href="{% url 'billing:consolidated_list' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0">
             <i class="bi bi-collection-fill"></i> View Consolidated Bills
         </a>
     </div>

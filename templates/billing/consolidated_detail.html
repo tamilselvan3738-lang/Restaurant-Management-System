@@ -49,18 +49,18 @@
         </p>
     </div>
 
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+    <div class="d-flex flex-wrap gap-2 align-items-center w-100 w-md-auto">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0">
             <i class="bi bi-arrow-left"></i> Back
         </a>
-        <a href="{% url 'billing:consolidated_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+        <a href="{% url 'billing:consolidated_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0">
             <i class="bi bi-collection"></i> All Consolidated
         </a>
-        <a href="{% url 'billing:consolidated_print' bill.id %}" target="_blank" class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+        <a href="{% url 'billing:consolidated_print' bill.id %}" target="_blank" class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0">
             <i class="bi bi-printer"></i> Print Invoice
         </a>
         {% if can_void %}
-        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs" data-bs-toggle="modal" data-bs-target="#voidConfirmModal">
+        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#voidConfirmModal">
             <i class="bi bi-arrow-counterclockwise"></i> Void / Unmerge
         </button>
         {% endif %}
@@ -412,11 +412,11 @@
                     All {{ bill.original_invoices.count }} attached original customer bills will be automatically restored to independent unpaid status, and this consolidated bill will be marked as VOIDED.
                 </div>
             </div>
-            <div class="modal-footer border-top">
-                <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-                <form method="POST" action="{% url 'billing:consolidated_void' bill.id %}">
+            <div class="modal-footer border-top flex-wrap gap-2">
+                <button type="button" class="btn btn-secondary rounded-pill px-3 flex-fill flex-sm-grow-0" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{% url 'billing:consolidated_void' bill.id %}" class="flex-fill flex-sm-grow-0 m-0">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold">
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold w-100">
                         Confirm Void / Unmerge
                     </button>
                 </form>

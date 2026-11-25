@@ -622,6 +622,7 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            overflow: visible !important;
         }
 
         /* Top Navbar */
@@ -632,9 +633,10 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 1060;
+            position: -webkit-sticky !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 1060 !important;
         }
 
         .page-content {
@@ -699,9 +701,14 @@
             }
             .main-wrapper {
                 margin-left: 0;
+                overflow: visible !important;
             }
             .top-navbar {
                 padding: 12px 18px;
+                position: -webkit-sticky !important;
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 1060 !important;
             }
         }
     </style>
@@ -1437,7 +1444,7 @@
                             <i class="bi bi-fire fs-5"></i>
                         </div>
                     {% endif %}
-                    <span class="fw-bold fs-6 text-body text-truncate" style="max-width: 220px;">{{ RESTAURANT_NAME }}</span>
+                    <span class="fw-bold fs-6 text-body text-truncate" style="max-width: clamp(90px, 30vw, 220px);">{{ RESTAURANT_NAME }}</span>
                 </a>
 
                 <!-- Desktop: Live Time Clock Pill (d-none d-lg-flex) -->

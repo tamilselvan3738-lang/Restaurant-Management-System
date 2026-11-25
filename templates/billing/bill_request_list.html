@@ -52,6 +52,23 @@
     border-color: rgba(255, 255, 255, 0.1) !important;
     color: #e2e8f0 !important;
 }
+@media (max-width: 576px) {
+    .filter-tab-btn {
+        padding: 0.28rem 0.6rem;
+        font-size: 0.75rem;
+    }
+    .req-card-actions {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    .req-card-actions .btn,
+    .req-card-actions form {
+        width: 100%;
+    }
+    .req-card-actions form .btn {
+        width: 100%;
+    }
+}
 </style>
 {% endblock %}
 
@@ -78,13 +95,13 @@
         </p>
     </div>
 
-    <div class="d-flex gap-2 align-items-center">
+    <div class="d-flex gap-2 align-items-center flex-wrap w-100 w-md-auto">
         <!-- Manual Refresh Button -->
-        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs" onclick="window.location.reload()">
+        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0" onclick="window.location.reload()">
             <i class="bi bi-arrow-clockwise"></i> Refresh
         </button>
 
-        <a href="{% url 'billing:list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+        <a href="{% url 'billing:list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0">
             <i class="bi bi-cash-stack"></i> All Invoices
         </a>
     </div>
@@ -273,28 +290,28 @@
                         </div>
 
                         <!-- 5. Action Controls Footer -->
-                        <div class="d-flex align-items-center justify-content-between gap-2 pt-2 border-top border-secondary-subtle mt-auto">
-                            <a href="{% url 'billing:bill_request_detail' r.id %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs" title="View Full Details">
+                        <div class="d-flex align-items-center justify-content-between gap-2 pt-2 border-top border-secondary-subtle mt-auto req-card-actions">
+                            <a href="{% url 'billing:bill_request_detail' r.id %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs" title="View Full Details">
                                 <i class="bi bi-eye"></i> <span>Details</span>
                             </a>
 
-                            <div class="d-flex align-items-center gap-1.5">
+                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
                                 {% if r.status == 'PENDING' %}
                                     <form method="post" action="{% url 'billing:bill_request_accept' r.id %}" class="m-0">
                                         {% csrf_token %}
-                                        <button type="submit" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold text-dark d-inline-flex align-items-center gap-1.5 shadow-xs" title="Accept Bill Request">
+                                        <button type="submit" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold text-dark d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs" title="Accept Bill Request">
                                             <i class="bi bi-check2"></i> <span>Accept</span>
                                         </button>
                                     </form>
                                 {% elif r.status == 'ACCEPTED' %}
                                     <form method="post" action="{% url 'billing:bill_request_generate_bill' r.id %}" class="m-0">
                                         {% csrf_token %}
-                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 py-1.5 fw-bold text-white d-inline-flex align-items-center gap-1.5 shadow-xs" title="Generate Final Bill">
+                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 py-1.5 fw-bold text-white d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs" title="Generate Final Bill">
                                             <i class="bi bi-file-earmark-text"></i> <span>Generate Bill</span>
                                         </button>
                                     </form>
                                 {% elif r.invoice %}
-                                    <a href="{% url 'billing:invoice_detail' r.invoice.id %}" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-bold text-white d-inline-flex align-items-center gap-1.5 shadow-xs" title="View or Settle Invoice">
+                                    <a href="{% url 'billing:invoice_detail' r.invoice.id %}" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-bold text-white d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs" title="View or Settle Invoice">
                                         <i class="bi bi-receipt"></i> <span>Settle</span>
                                     </a>
                                 {% endif %}

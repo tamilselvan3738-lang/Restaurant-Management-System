@@ -177,7 +177,7 @@
             <!-- Dish Image Header with Image / Fallback -->
             <div class="position-relative menu-item-img-container" style="height: 180px; overflow: hidden; background-color: #f8fafc;">
                 {% if item.image %}
-                    <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-100 h-100 menu-dish-img" style="object-fit: cover;">
+                    <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-100 h-100 menu-dish-img" style="object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
                 {% else %}
                     <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center text-muted bg-light">
                         <i class="bi bi-egg-fried fs-1 text-secondary opacity-50 mb-1"></i>

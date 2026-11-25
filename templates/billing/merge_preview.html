@@ -52,8 +52,8 @@
         </p>
     </div>
 
-    <div class="d-flex gap-2">
-        <a href="{% url 'billing:merge_bills_select' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+    <div class="d-flex gap-2 w-100 w-md-auto">
+        <a href="{% url 'billing:merge_bills_select' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0 text-center">
             <i class="bi bi-arrow-left"></i> Change Selection
         </a>
     </div>
@@ -106,7 +106,7 @@
                         </span>
                     </div>
 
-                    <div class="d-flex align-items-center gap-2 ms-auto">
+                    <div class="d-flex align-items-center gap-2 ms-0 ms-md-auto mt-1 mt-md-0">
                         <span class="text-muted small" style="font-size: 0.74rem;">Bill Total:</span>
                         <span class="fw-bold font-monospace text-warning fs-5">
                             ₹{{ b.total|floatformat:2 }}

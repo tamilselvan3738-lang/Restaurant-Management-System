@@ -6,6 +6,7 @@ from django.views.static import serve
 from accounts.views import user_login, user_logout
 from accounts import views_forgot_password
 from tables import views_queue
+from restaurant_management.views_media import serve_media_with_fallback
 
 urlpatterns = [
     path('queue/', views_queue.public_queue_view, name='queue_root'),
@@ -29,7 +30,8 @@ urlpatterns = [
     path('chef/', include('kitchen.urls_chef', namespace='chef')),
 ]
 
-# Ensure media files (uploaded logos, profiles, dishes) are served across dev and production environments
+# Ensure media files (uploaded logos, profiles, dishes) are served across dev and production environments,
+# with automated graceful SVG fallbacks if a media file is missing or on ephemeral hosting.
 urlpatterns += [
-    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    re_path(r'^media/(?P<path>.*)$', serve_media_with_fallback),
 ]

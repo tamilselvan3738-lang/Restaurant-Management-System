@@ -88,6 +88,16 @@ class MenuItem(models.Model):
             return round(((self.price - self.cost_price) / self.price) * 100, 1)
         return 0.0
 
+    @property
+    def image_url(self):
+        default_svg = '/static/images/default_dish.svg'
+        if self.image:
+            try:
+                return self.image.url
+            except Exception:
+                return default_svg
+        return default_svg
+
 
 class Ingredient(models.Model):
     UNIT_CHOICES = [
@@ -199,24 +209,36 @@ class FoodCombo(models.Model):
     @property
     def component_dishes_with_images(self):
         """
-        Returns list of component menu items that have an image.
-        Uses prefetched items and menu_item if available to avoid extra queries.
+        Returns list of component menu items for rendering the multi-dish collage banner.
+        Always guarantees a clean image_url fallback to default dish SVG if an image is missing or invalid.
         """
         dishes = []
+        default_svg = '/static/images/default_dish.svg'
         for item in self.items.all():
-            if item.menu_item and item.menu_item.image:
-                try:
-                    url = item.menu_item.image.url
-                except Exception:
-                    url = None
-                if url:
-                    dishes.append({
-                        'name': item.menu_item.name,
-                        'image_url': url,
-                        'quantity': item.quantity,
-                        'price': item.menu_item.price,
-                    })
+            if item.menu_item:
+                url = default_svg
+                if item.menu_item.image:
+                    try:
+                        url = item.menu_item.image.url
+                    except Exception:
+                        url = default_svg
+                dishes.append({
+                    'name': item.menu_item.name,
+                    'image_url': url or default_svg,
+                    'quantity': item.quantity,
+                    'price': item.menu_item.price,
+                })
         return dishes
+
+    @property
+    def image_url(self):
+        default_svg = '/static/images/default_dish.svg'
+        if self.image:
+            try:
+                return self.image.url
+            except Exception:
+                return default_svg
+        return default_svg
 
     @property
     def collage_preview(self):

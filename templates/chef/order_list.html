@@ -294,7 +294,8 @@
                                     {% if item.menu_item.image %}
                                         <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" 
                                              class="rounded-2 shadow-xs flex-shrink-0" 
-                                             style="width: 36px; height: 36px; object-fit: cover; border: 1px solid rgba(0,0,0,0.08);">
+                                             style="width: 36px; height: 36px; object-fit: cover; border: 1px solid rgba(0,0,0,0.08);"
+                                             onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
                                     {% else %}
                                         <div class="rounded-2 bg-light text-muted d-flex align-items-center justify-content-center flex-shrink-0 border"
                                              style="width: 36px; height: 36px;">
@@ -348,7 +349,8 @@
                                         {% if extra_item.menu_item.image %}
                                             <img src="{{ extra_item.menu_item.image.url }}" alt="{{ extra_item.menu_item.name }}" 
                                                  class="rounded-2 shadow-xs flex-shrink-0" 
-                                                 style="width: 28px; height: 28px; object-fit: cover;">
+                                                 style="width: 28px; height: 28px; object-fit: cover;"
+                                                 onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
                                         {% else %}
                                             <div class="rounded-2 bg-light text-muted d-flex align-items-center justify-content-center flex-shrink-0 border"
                                                  style="width: 28px; height: 28px;">
