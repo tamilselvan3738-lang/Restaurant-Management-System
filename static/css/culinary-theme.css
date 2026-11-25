@@ -321,6 +321,23 @@ body {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
+.sidebar-menu li a i {
+    width: 22px;
+    min-width: 22px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sidebar-menu li a > div,
+.sidebar-menu li a .d-flex.align-items-center {
+    display: flex;
+    align-items: center;
+    gap: 12px !important;
+}
+
 /* 3.4 Buttons with Culinary Gradients & Shine Sweep */
 .btn-primary {
     background: var(--rms-gradient-primary) !important;
@@ -580,11 +597,13 @@ a.cat-pill.active:focus {
 /* 3.8 Distinct Culinary Category Badges */
 .dish-img-badge {
     background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid rgba(0, 0, 0, 0.18) !important;
     font-weight: 700 !important;
     font-size: 0.7rem !important;
     padding: 4px 8px !important;
     border-radius: 20px !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2) !important;
     display: inline-flex !important;
     align-items: center !important;
     gap: 4px !important;
@@ -626,7 +645,8 @@ a.cat-pill.active:focus {
     color: #b91c1c !important;
     border: 1.5px solid #dc2626 !important;
 }
-.dish-img-badge.badge-cat-desserts {
+.dish-img-badge.badge-cat-desserts,
+.dish-img-badge.badge-cat-destert {
     background-color: #ffffff !important;
     color: #be185d !important;
     border: 1.5px solid #db2777 !important;
@@ -638,7 +658,9 @@ a.cat-pill.active:focus {
 }
 
 [data-bs-theme="dark"] .dish-img-badge {
-    background-color: #0f172a !important;
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8) !important;
 }
 [data-bs-theme="dark"] .dish-img-badge.badge-cat-veg {
@@ -676,7 +698,8 @@ a.cat-pill.active:focus {
     color: #f87171 !important;
     border: 1.5px solid #ef4444 !important;
 }
-[data-bs-theme="dark"] .dish-img-badge.badge-cat-desserts {
+[data-bs-theme="dark"] .dish-img-badge.badge-cat-desserts,
+[data-bs-theme="dark"] .dish-img-badge.badge-cat-destert {
     background-color: #0f172a !important;
     color: #f472b6 !important;
     border: 1.5px solid #ec4899 !important;

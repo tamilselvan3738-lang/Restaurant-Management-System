@@ -2431,18 +2431,26 @@ def customer_request_bill(request, table_number, session_token):
         messages.info(request, "This customer session is already completed or closed.")
         return redirect('tables:customer_order', table_number=table.table_number)
 
-    # Ensure invoice is up to date
+    # Determine restaurant tenant from table, session, or server
+    first_ord = session.orders.exclude(status=Order.Status.CANCELLED).first()
+    restaurant = (
+        getattr(table, 'restaurant', None)
+        or getattr(session, 'restaurant', None)
+        or (first_ord.server.restaurant if (first_ord and first_ord.server and first_ord.server.restaurant) else None)
+    )
+
+    # Ensure invoice is up to date and linked to restaurant
     invoice, _ = Invoice.objects.get_or_create(
         session=session,
-        defaults={'table': table, 'invoice_type': Invoice.InvoiceType.SESSION_BILL}
+        defaults={
+            'table': table,
+            'restaurant': restaurant,
+            'invoice_type': Invoice.InvoiceType.SESSION_BILL
+        }
     )
+    if not invoice.restaurant and restaurant:
+        invoice.restaurant = restaurant
     invoice.recalculate(save=True)
-
-    # Determine restaurant from server if available
-    restaurant = None
-    first_ord = session.orders.exclude(status=Order.Status.CANCELLED).first()
-    if first_ord and first_ord.server and first_ord.server.restaurant:
-        restaurant = first_ord.server.restaurant
 
     from billing.models import BillRequest
 

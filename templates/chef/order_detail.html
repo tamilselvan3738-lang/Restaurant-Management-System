@@ -40,7 +40,7 @@
                 <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between gap-3 bg-body shadow-2xs">
                     <div class="d-flex align-items-center gap-2.5 min-w-0">
                         {% if extra.menu_item.image %}
-                            <img src="{{ extra.menu_item.image.url }}" alt="{{ extra.menu_item.name }}" class="rounded-2 flex-shrink-0" style="width: 38px; height: 38px; object-fit: cover;">
+                            <img src="{{ extra.menu_item.image.url }}" alt="{{ extra.menu_item.name }}" class="rounded-2 flex-shrink-0" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
                         {% endif %}
                         <div class="min-w-0">
                             <div class="fw-bold text-body text-truncate">{{ extra.menu_item.name }}</div>
@@ -83,7 +83,8 @@
                             {% if item.menu_item.image %}
                                 <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" 
                                      class="rounded-3 shadow-xs flex-shrink-0" 
-                                     style="width: 56px; height: 56px; object-fit: cover; border: 1px solid rgba(255,255,255,0.08);">
+                                     style="width: 56px; height: 56px; object-fit: cover; border: 1px solid rgba(255,255,255,0.08);"
+                                     onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
                             {% else %}
                                 <div class="rounded-3 bg-secondary-subtle text-muted d-flex align-items-center justify-content-center flex-shrink-0 border"
                                      style="width: 56px; height: 56px;">

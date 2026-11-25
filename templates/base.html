@@ -571,7 +571,19 @@
         .sidebar-menu li a i {
             font-size: 1.15rem;
             width: 22px;
+            min-width: 22px;
             text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-menu li a > div,
+        .sidebar-menu li a .d-flex.align-items-center {
+            display: flex;
+            align-items: center;
+            gap: 12px !important;
         }
 
         /* Sidebar Submenu / Dropdown Styling */
@@ -694,10 +706,19 @@
                 transform: translateX(100%);
                 transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
                 box-shadow: -6px 0 25px rgba(0, 0, 0, 0.35);
+                z-index: 10050 !important;
             }
             .sidebar.show {
                 transform: translateX(0);
                 margin-left: 0;
+                z-index: 10050 !important;
+            }
+            .sidebar-backdrop {
+                z-index: 10040 !important;
+            }
+            .sidebar-backdrop.show {
+                display: block;
+                z-index: 10040 !important;
             }
             .main-wrapper {
                 margin-left: 0;
@@ -1522,10 +1543,10 @@
     </div>
 {% else %}
     <!-- Guest view (Login page, etc.) with Theme Toggle -->
-    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
-        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 d-inline-flex align-items-center gap-2 shadow-sm bg-body" id="themeToggleGuest" onclick="toggleTheme()" title="Switch Theme (Dark / Light)" aria-label="Toggle theme">
+    <div class="guest-theme-toggle-wrap position-fixed top-0 end-0 p-2 p-sm-3" style="z-index: 1050;">
+        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 px-sm-3 py-1 d-inline-flex align-items-center gap-1.5 shadow-sm bg-body" id="themeToggleGuest" onclick="toggleTheme()" title="Switch Theme (Dark / Light)" aria-label="Toggle theme">
             <i class="bi bi-moon-stars-fill" id="themeIconGuest"></i>
-            <span class="small fw-semibold" id="themeLabelGuest">Dark Mode</span>
+            <span class="small fw-semibold d-none d-sm-inline" id="themeLabelGuest">Dark Mode</span>
         </button>
     </div>
     {% block unauthenticated_content %}
@@ -1858,11 +1879,11 @@
 {% if user.is_authenticated and user.role in 'ADMIN,MANAGER,CASHIER,WAITER,CHEF,KITCHEN' or user.is_superuser %}
 <!-- Real-Time Bill Request Floating Alert / Toast Notification -->
 <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999; max-width: 460px; pointer-events: none;">
-    <div id="liveBillRequestToast" class="toast shadow-lg border-0" role="status" aria-live="polite" aria-atomic="true" style="pointer-events: auto; width: 400px; max-width: calc(100vw - 32px); border-radius: 16px; background: #111827; color: #fff; border: 2px solid #f59e0b !important; box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4) !important; display: none;">
+    <div id="liveBillRequestToast" class="toast shadow-lg border-0" role="status" aria-live="polite" aria-atomic="true" style="pointer-events: auto; width: 420px; max-width: calc(100vw - 32px); border-radius: 16px; background: #0f172a; color: #fff; border: 2px solid #f59e0b !important; box-shadow: 0 10px 30px -5px rgba(245, 158, 11, 0.45) !important; display: none;">
         <div class="p-3">
             <div class="d-flex align-items-start gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 mt-0.5" style="width: 44px; height: 44px; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.5);">
-                    <i class="bi bi-bell-fill fs-5"></i>
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 mt-0.5" style="width: 44px; height: 44px; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1.5px solid #f59e0b;">
+                    <i class="bi bi-bell-fill fs-5 animate-bounce"></i>
                 </div>
                 <div class="flex-grow-1 min-w-0">
                     <div class="d-flex align-items-center justify-content-between mb-1.5">
@@ -1874,10 +1895,23 @@
                             <button type="button" class="btn-close btn-close-white" onclick="dismissBillRequestToast()" aria-label="Close" style="font-size: 0.7rem;"></button>
                         </div>
                     </div>
-                    <h6 class="fw-bold mb-1 text-white" id="toastTitle" style="font-size: 0.95rem; line-height: 1.3;">Bill Requested by Customer!</h6>
-                    <p class="small text-white-50 mb-3" id="toastDesc" style="font-size: 0.8rem; line-height: 1.45; word-break: break-word;">
-                        Customer is ready for settlement.
-                    </p>
+                    <h6 class="fw-bold mb-1.5 text-white" id="toastTitle" style="font-size: 0.95rem; line-height: 1.3;">Customer Requested Bill!</h6>
+                    
+                    <!-- Table, Person, and Amount Highlight Pod -->
+                    <div class="p-2.5 rounded-3 mb-2.5" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12);">
+                        <div class="d-flex align-items-center justify-content-between small mb-1">
+                            <span class="text-white-50"><i class="bi bi-person-fill text-warning me-1"></i>Person:</span>
+                            <strong class="text-warning text-truncate ms-2" id="toastBillPerson">Guest</strong>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between small">
+                            <span class="text-white-50"><i class="bi bi-cash-stack text-success me-1"></i>Amount:</span>
+                            <div class="d-flex align-items-center gap-1.5">
+                                <strong class="text-success font-monospace fs-6" id="toastBillAmount">₹0.00</strong>
+                                <span class="text-white-50 small font-monospace" id="toastBillDue"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-flex align-items-center gap-2">
                         <a href="{% url 'billing:bill_request_list' %}" class="btn btn-warning btn-sm rounded-pill px-3.5 py-1.5 fw-bold text-dark text-nowrap d-inline-flex align-items-center gap-1.5 shadow-sm" id="toastViewBtn" style="font-size: 0.82rem; white-space: nowrap;">
                             <i class="bi bi-receipt"></i> <span>Review & Settle</span>
@@ -2013,19 +2047,30 @@
 
     function showBillRequestToast(latest, count) {
         const toastEl = document.getElementById('liveBillRequestToast');
-        if (!toastEl) return;
+        if (!toastEl || !latest) return;
 
         const badgeEl = document.getElementById('toastBadgeTable');
         const titleEl = document.getElementById('toastTitle');
-        const descEl = document.getElementById('toastDesc');
+        const personEl = document.getElementById('toastBillPerson');
+        const amountEl = document.getElementById('toastBillAmount');
+        const dueEl = document.getElementById('toastBillDue');
         const timeEl = document.getElementById('toastTime');
         const btnEl = document.getElementById('toastViewBtn');
 
-        if (badgeEl) badgeEl.textContent = 'Table ' + (latest.table || '');
-        if (titleEl) titleEl.textContent = `Table ${latest.table || ''} Requested Bill!`;
-        if (descEl) descEl.textContent = `${latest.customer || 'Customer'} at Table ${latest.table || ''} has requested the bill (${latest.request_number || ''}) • Total: ₹${latest.amount || 0}`;
+        const tbl = String(latest.table || '');
+        if (badgeEl) badgeEl.textContent = tbl.toLowerCase().includes('table') ? tbl : 'Table ' + tbl;
+        if (titleEl) titleEl.textContent = `${tbl.toLowerCase().includes('table') ? tbl : 'Table ' + tbl} Requested Bill!`;
+        if (personEl) personEl.textContent = latest.person || latest.customer_name || 'Guest';
+        if (amountEl) amountEl.textContent = '₹' + (latest.total_amount || latest.amount || '0.00');
+        if (dueEl) {
+            if (latest.balance_due && latest.balance_due !== latest.total_amount) {
+                dueEl.textContent = `(Due: ₹${latest.balance_due})`;
+            } else {
+                dueEl.textContent = '';
+            }
+        }
         if (timeEl) timeEl.textContent = latest.time || 'Just now';
-        if (btnEl && latest.detail_url) btnEl.href = latest.detail_url;
+        if (btnEl) btnEl.href = latest.detail_url || "{% url 'billing:bill_request_list' %}";
 
         toastEl.style.display = 'block';
         toastEl.classList.add('show');
@@ -2035,11 +2080,12 @@
         if (autoDismissTimer) clearTimeout(autoDismissTimer);
         autoDismissTimer = setTimeout(() => {
             window.dismissBillRequestToast();
-        }, 12000);
+        }, 14000);
     }
 
     // Auto-vanish Bill Requests badge if viewing bill requests
-    if (window.location.pathname.includes('/billing/bill-requests') || window.location.pathname.includes('/bill-requests')) {
+    const isViewingBillRequests = window.location.pathname.includes('/billing/requests') || window.location.pathname.includes('/bill-requests');
+    if (isViewingBillRequests) {
         document.querySelectorAll('.pending-bill-requests-badge').forEach(b => {
             b.textContent = '';
             b.classList.add('d-none');
@@ -2051,7 +2097,7 @@
     }
 
     async function pollBillRequestsFeed() {
-        if (window.location.pathname.includes('/billing/bill-requests') || window.location.pathname.includes('/bill-requests')) {
+        if (window.location.pathname.includes('/billing/requests') || window.location.pathname.includes('/bill-requests')) {
             document.querySelectorAll('.pending-bill-requests-badge').forEach(b => {
                 b.textContent = '';
                 b.classList.add('d-none');

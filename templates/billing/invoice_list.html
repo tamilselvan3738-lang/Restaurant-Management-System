@@ -60,14 +60,14 @@
     
     <div class="d-flex flex-wrap align-items-center justify-content-start justify-content-xl-end gap-2.5 w-100 w-xl-auto">
         <!-- Action Buttons Group -->
-        <div class="d-flex align-items-center gap-2 flex-wrap w-100 w-sm-auto">
-            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-sm-grow-0">
+        <div class="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap w-100 w-xl-auto">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0 text-nowrap">
                 <i class="bi bi-arrow-left"></i> Back
             </a>
-            <a href="{% url 'billing:consolidated_list' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-sm-grow-0">
+            <a href="{% url 'billing:consolidated_list' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0 text-nowrap">
                 <i class="bi bi-collection-fill"></i> Consolidated Bills
             </a>
-            <a href="{% url 'billing:merge_bills_select' %}" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs fw-semibold text-dark flex-fill flex-sm-grow-0">
+            <a href="{% url 'billing:merge_bills_select' %}" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs fw-semibold text-dark flex-fill flex-md-grow-0 text-nowrap">
                 <i class="bi bi-intersect"></i> Merge Customer Bills
             </a>
         </div>

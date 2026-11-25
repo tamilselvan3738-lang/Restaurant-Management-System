@@ -409,9 +409,11 @@
                 max-width: 85vw;
                 transform: translateX(100%);
                 box-shadow: -4px 0 28px rgba(0, 0, 0, 0.45);
+                z-index: 10050 !important;
             }
             .chef-sidebar.show {
                 transform: translateX(0);
+                z-index: 10050 !important;
             }
             .chef-main {
                 margin-left: 0;
@@ -425,10 +427,11 @@
                 bottom: 0;
                 background: rgba(0, 0, 0, 0.55);
                 backdrop-filter: blur(2px);
-                z-index: 1035;
+                z-index: 10040 !important;
             }
             .chef-sidebar-backdrop.show {
                 display: block;
+                z-index: 10040 !important;
             }
         }
     </style>
@@ -470,7 +473,7 @@
             <!-- User Profile Box -->
             <div class="d-flex align-items-center gap-2.5 mb-2.5">
                 {% if user.profile_picture %}
-                    <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" class="rounded-circle shadow-xs flex-shrink-0" style="width: 42px; height: 42px; object-fit: cover;">
+                    <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" class="rounded-circle shadow-xs flex-shrink-0" style="width: 42px; height: 42px; object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/default_avatar.svg';">
                 {% else %}
                     <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-xs flex-shrink-0 fw-bold" style="width: 42px; height: 42px; font-size: 1.15rem;">
                         {{ user.first_name|default:user.username|make_list|first|upper }}
@@ -685,7 +688,7 @@
                     <!-- User profile badge -->
                     <div class="d-flex align-items-center gap-2 ps-2 border-start">
                         {% if user.profile_picture %}
-                            <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" class="rounded-circle shadow-sm" style="width: 36px; height: 36px; object-fit: cover;">
+                            <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" class="rounded-circle shadow-sm" style="width: 36px; height: 36px; object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/default_avatar.svg';">
                         {% else %}
                             <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px; font-weight: 700; font-size: 0.9rem;">
                                 {{ user.first_name|default:user.username|make_list|first|upper }}

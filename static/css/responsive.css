@@ -252,10 +252,29 @@ input[type="email"],
 input[type="password"],
 input[type="search"],
 input[type="tel"] {
-    max-width: 100% !important;
+    max-width: 100%;
     width: 100%;
     font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
     box-sizing: border-box !important;
+}
+
+/* Input Group Precision Alignment across all screen widths */
+.input-group {
+    flex-wrap: nowrap !important;
+    max-width: 100% !important;
+}
+
+.input-group > .form-control,
+.input-group > .form-select,
+.input-group > input {
+    width: 1% !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+}
+
+.input-group > .input-group-text,
+.input-group > .btn {
+    flex-shrink: 0 !important;
 }
 
 /* ============================================================================
@@ -316,6 +335,18 @@ input[type="tel"] {
     }
     .chef-content {
         padding: 16px !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    /* Mobile sidebar drawer layers above all sticky headers and banners */
+    .sidebar.show,
+    .chef-sidebar.show {
+        z-index: 10050 !important;
+    }
+    .sidebar-backdrop.show,
+    .chef-sidebar-backdrop.show {
+        z-index: 10040 !important;
     }
 }
 

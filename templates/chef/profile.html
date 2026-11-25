@@ -30,7 +30,7 @@
             <div class="card border-0 shadow-sm rounded-3 bg-white mb-4 text-center p-4">
                 <div class="position-relative d-inline-block mx-auto mb-3">
                     {% if user.profile_picture %}
-                        <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" class="rounded-circle shadow" style="width: 100px; height: 100px; object-fit: cover;">
+                        <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" class="rounded-circle shadow" style="width: 100px; height: 100px; object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/default_avatar.svg';">
                     {% else %}
                         <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow mx-auto" style="width: 100px; height: 100px; font-weight: 700; font-size: 2.2rem;">
                             {{ user.first_name|default:user.username|make_list|first|upper }}

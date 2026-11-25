@@ -11,7 +11,7 @@ from django.db import transaction
 from django.db.models import Q
 from accounts.models import User
 from accounts.decorators import role_required
-from accounts.tenant_utils import get_current_restaurant, get_tenant_object_or_404, filter_by_tenant
+from accounts.tenant_utils import get_current_restaurant, get_tenant_object_or_404, filter_by_tenant, is_impersonating_restaurant
 from orders.models import Order
 from tables.models import DiningTable, CustomerSession
 from .models import Invoice, Payment, ConsolidatedBill, ConsolidatedBillItem, ConsolidatedPayment, BillRequest
@@ -708,7 +708,19 @@ def bill_request_list(request):
     ).prefetch_related(
         'session__orders__items__menu_item'
     )
-    requests_qs = filter_by_tenant(requests_qs, request).order_by('-requested_at')
+    restaurant = get_current_restaurant(request)
+    user = getattr(request, 'user', None)
+    if user and user.is_authenticated and user.is_superuser and not is_impersonating_restaurant(request):
+        rest_filter = request.GET.get('restaurant_id') or request.GET.get('restaurant')
+        if rest_filter and rest_filter.isdigit():
+            requests_qs = requests_qs.filter(Q(restaurant_id=int(rest_filter)) | Q(table__restaurant_id=int(rest_filter)))
+    elif restaurant:
+        requests_qs = requests_qs.filter(
+            Q(restaurant=restaurant) | Q(table__restaurant=restaurant) | Q(session__restaurant=restaurant) | Q(restaurant__isnull=True)
+        )
+    else:
+        requests_qs = filter_by_tenant(requests_qs, request)
+    requests_qs = requests_qs.order_by('-requested_at')
 
     # Counts per status for tab counters
     total_count = requests_qs.count()
@@ -893,13 +905,24 @@ def bill_request_cancel(request, pk):
 def bill_request_poll_api(request):
     """
     Step 10: Real-time JSON polling endpoint for Admin & Cashier navbar/dashboard.
-    Returns the count of pending bill requests and active items so the dashboard
-    updates live without manual page refresh, with audio alert support.
+    Returns the count of pending bill requests and active items with full details
+    (table, customer/person name, total amount, balance due, time, action URLs).
     """
-    qs = filter_by_tenant(
-        BillRequest.objects.filter(status=BillRequest.Status.PENDING).select_related('table', 'session'),
-        request
-    )
+    restaurant = get_current_restaurant(request)
+    user = getattr(request, 'user', None)
+
+    qs = BillRequest.objects.filter(status=BillRequest.Status.PENDING).select_related('table', 'session', 'restaurant')
+
+    if user and user.is_authenticated and user.is_superuser and not is_impersonating_restaurant(request):
+        rest_filter = request.GET.get('restaurant_id') or request.GET.get('restaurant')
+        if rest_filter and rest_filter.isdigit():
+            qs = qs.filter(Q(restaurant_id=int(rest_filter)) | Q(table__restaurant_id=int(rest_filter)))
+    elif restaurant:
+        qs = qs.filter(
+            Q(restaurant=restaurant) | Q(table__restaurant=restaurant) | Q(session__restaurant=restaurant) | Q(restaurant__isnull=True)
+        )
+    else:
+        qs = filter_by_tenant(qs, request)
 
     pending_count = qs.count()
     latest = qs.order_by('-requested_at').first()
@@ -913,14 +936,36 @@ def bill_request_poll_api(request):
         else:
             table_summary = f"Table {table_number} (+{pending_count - 1})"
 
+        customer_name = latest.session.customer_name if latest.session and latest.session.customer_name else ""
+        session_name = latest.session.session_name if latest.session and latest.session.session_name else ""
+
+        if customer_name and session_name and customer_name != session_name:
+            person_display = f"{customer_name} ({session_name})"
+        elif customer_name:
+            person_display = customer_name
+        elif session_name:
+            person_display = session_name
+        else:
+            person_display = "Guest"
+
+        total_fmt = f"{latest.total_amount:.2f}"
+        balance_fmt = f"{latest.balance_due:.2f}"
+        paid_fmt = f"{latest.paid_amount:.2f}"
+
         latest_data = {
             'id': latest.id,
             'request_number': latest.request_number,
             'table': table_number,
-            'customer': latest.session.session_name if latest.session else "Guest",
-            'amount': str(latest.total_amount),
+            'person': person_display,
+            'customer_name': customer_name or "Guest",
+            'session_name': session_name or "",
+            'total_amount': total_fmt,
+            'balance_due': balance_fmt,
+            'paid_amount': paid_fmt,
+            'amount': total_fmt,
             'time': latest.requested_at.strftime('%I:%M %p'),
             'detail_url': reverse('billing:bill_request_detail', args=[latest.id]),
+            'accept_url': reverse('billing:bill_request_accept', args=[latest.id]),
         }
 
     return JsonResponse({
