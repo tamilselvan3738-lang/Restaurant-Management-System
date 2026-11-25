@@ -1389,9 +1389,9 @@ a.cat-pill.active:focus {
 .badge.bg-primary.bg-opacity-15,
 .badge.bg-primary.bg-opacity-20,
 .badge.bg-primary.bg-opacity-25 {
-    background-color: rgba(var(--rms-primary-rgb), var(--bs-bg-opacity, 0.12)) !important;
+    background-color: #ffedd5 !important;
     color: #c2410c !important;
-    border-color: rgba(var(--rms-primary-rgb), 0.3) !important;
+    border: 1px solid #fdba74 !important;
 }
 
 .badge.bg-warning-subtle,
@@ -1400,9 +1400,9 @@ a.cat-pill.active:focus {
 .badge.bg-warning.bg-opacity-15,
 .badge.bg-warning.bg-opacity-20,
 .badge.bg-warning.bg-opacity-25 {
-    background-color: rgba(245, 158, 11, var(--bs-bg-opacity, 0.14)) !important;
+    background-color: #fef3c7 !important;
     color: #92400e !important;
-    border-color: rgba(245, 158, 11, 0.3) !important;
+    border: 1px solid #fcd34d !important;
 }
 
 .badge.bg-info-subtle,
@@ -1411,9 +1411,9 @@ a.cat-pill.active:focus {
 .badge.bg-info.bg-opacity-15,
 .badge.bg-info.bg-opacity-20,
 .badge.bg-info.bg-opacity-25 {
-    background-color: rgba(14, 165, 233, var(--bs-bg-opacity, 0.14)) !important;
+    background-color: #e0f2fe !important;
     color: #0369a1 !important;
-    border-color: rgba(14, 165, 233, 0.3) !important;
+    border: 1px solid #7dd3fc !important;
 }
 
 .badge.bg-success-subtle,
@@ -1422,9 +1422,9 @@ a.cat-pill.active:focus {
 .badge.bg-success.bg-opacity-15,
 .badge.bg-success.bg-opacity-20,
 .badge.bg-success.bg-opacity-25 {
-    background-color: rgba(34, 197, 94, var(--bs-bg-opacity, 0.14)) !important;
+    background-color: #dcfce7 !important;
     color: #15803d !important;
-    border-color: rgba(34, 197, 94, 0.3) !important;
+    border: 1px solid #86efac !important;
 }
 
 .badge.bg-danger-subtle,
@@ -1433,9 +1433,9 @@ a.cat-pill.active:focus {
 .badge.bg-danger.bg-opacity-15,
 .badge.bg-danger.bg-opacity-20,
 .badge.bg-danger.bg-opacity-25 {
-    background-color: rgba(239, 68, 68, var(--bs-bg-opacity, 0.14)) !important;
+    background-color: #fee2e2 !important;
     color: #b91c1c !important;
-    border-color: rgba(239, 68, 68, 0.3) !important;
+    border: 1px solid #fca5a5 !important;
 }
 
 .badge.bg-secondary-subtle,
@@ -1444,9 +1444,9 @@ a.cat-pill.active:focus {
 .badge.bg-secondary.bg-opacity-15,
 .badge.bg-secondary.bg-opacity-20,
 .badge.bg-secondary.bg-opacity-25 {
-    background-color: rgba(100, 116, 139, var(--bs-bg-opacity, 0.12)) !important;
-    color: #334155 !important;
-    border-color: rgba(100, 116, 139, 0.25) !important;
+    background-color: #f1f5f9 !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
 }
 
 /* 3. Dark Mode Subtle & Opacity Badges */
@@ -1456,9 +1456,9 @@ a.cat-pill.active:focus {
 [data-bs-theme="dark"] .badge.bg-primary.bg-opacity-15,
 [data-bs-theme="dark"] .badge.bg-primary.bg-opacity-20,
 [data-bs-theme="dark"] .badge.bg-primary.bg-opacity-25 {
-    background-color: rgba(var(--rms-primary-rgb), var(--bs-bg-opacity, 0.2)) !important;
+    background-color: rgba(230, 81, 0, 0.22) !important;
     color: #fb923c !important;
-    border-color: rgba(var(--rms-primary-rgb), 0.38) !important;
+    border: 1px solid rgba(251, 146, 60, 0.4) !important;
 }
 
 [data-bs-theme="dark"] .badge.bg-warning-subtle,
@@ -1467,9 +1467,9 @@ a.cat-pill.active:focus {
 [data-bs-theme="dark"] .badge.bg-warning.bg-opacity-15,
 [data-bs-theme="dark"] .badge.bg-warning.bg-opacity-20,
 [data-bs-theme="dark"] .badge.bg-warning.bg-opacity-25 {
-    background-color: rgba(245, 158, 11, var(--bs-bg-opacity, 0.2)) !important;
+    background-color: rgba(245, 158, 11, 0.22) !important;
     color: #fde047 !important;
-    border-color: rgba(245, 158, 11, 0.38) !important;
+    border: 1px solid rgba(253, 224, 71, 0.4) !important;
 }
 
 [data-bs-theme="dark"] .badge.bg-info-subtle,
@@ -1478,9 +1478,9 @@ a.cat-pill.active:focus {
 [data-bs-theme="dark"] .badge.bg-info.bg-opacity-15,
 [data-bs-theme="dark"] .badge.bg-info.bg-opacity-20,
 [data-bs-theme="dark"] .badge.bg-info.bg-opacity-25 {
-    background-color: rgba(14, 165, 233, var(--bs-bg-opacity, 0.2)) !important;
+    background-color: rgba(14, 165, 233, 0.22) !important;
     color: #38bdf8 !important;
-    border-color: rgba(14, 165, 233, 0.38) !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
 }
 
 [data-bs-theme="dark"] .badge.bg-success-subtle,
@@ -1489,9 +1489,9 @@ a.cat-pill.active:focus {
 [data-bs-theme="dark"] .badge.bg-success.bg-opacity-15,
 [data-bs-theme="dark"] .badge.bg-success.bg-opacity-20,
 [data-bs-theme="dark"] .badge.bg-success.bg-opacity-25 {
-    background-color: rgba(34, 197, 94, var(--bs-bg-opacity, 0.2)) !important;
+    background-color: rgba(34, 197, 94, 0.22) !important;
     color: #4ade80 !important;
-    border-color: rgba(34, 197, 94, 0.38) !important;
+    border: 1px solid rgba(74, 222, 128, 0.4) !important;
 }
 
 [data-bs-theme="dark"] .badge.bg-danger-subtle,
@@ -1500,9 +1500,9 @@ a.cat-pill.active:focus {
 [data-bs-theme="dark"] .badge.bg-danger.bg-opacity-15,
 [data-bs-theme="dark"] .badge.bg-danger.bg-opacity-20,
 [data-bs-theme="dark"] .badge.bg-danger.bg-opacity-25 {
-    background-color: rgba(239, 68, 68, var(--bs-bg-opacity, 0.2)) !important;
+    background-color: rgba(239, 68, 68, 0.22) !important;
     color: #f87171 !important;
-    border-color: rgba(239, 68, 68, 0.38) !important;
+    border: 1px solid rgba(248, 113, 113, 0.4) !important;
 }
 
 [data-bs-theme="dark"] .badge.bg-secondary-subtle,
@@ -1512,8 +1512,8 @@ a.cat-pill.active:focus {
 [data-bs-theme="dark"] .badge.bg-secondary.bg-opacity-20,
 [data-bs-theme="dark"] .badge.bg-secondary.bg-opacity-25 {
     background-color: rgba(255, 255, 255, 0.08) !important;
-    color: #cbd5e1 !important;
-    border-color: rgba(255, 255, 255, 0.16) !important;
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
 }
 
 /* 4. Solid Badges (Ensuring Pure White or High-Contrast Text) */

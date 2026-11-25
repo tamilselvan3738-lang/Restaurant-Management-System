@@ -33,6 +33,15 @@
 .bg-role-kitchen { background: #10b981 !important; }
 .bg-role-cashier { background: #8b5cf6 !important; }
 .bg-role-default { background: #6366f1 !important; }
+@media (max-width: 576px) {
+    .staff-header-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+    .staff-header-actions .btn {
+        width: 100%;
+    }
+}
 </style>
 {% endblock %}
 
@@ -49,7 +58,7 @@
             Manage restaurant personnel, unique credentials (Employee ID, Username, Email, Phone), roles, and operational access
         </p>
     </div>
-    <div class="d-flex gap-2 align-items-center flex-shrink-0">
+    <div class="d-flex gap-2 align-items-center flex-shrink-0 staff-header-actions">
         <a href="javascript:history.back()" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1.5 shadow-xs rounded-pill px-3 py-2 fw-semibold text-nowrap">
             <i class="bi bi-arrow-left"></i> Back
         </a>

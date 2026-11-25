@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- Culinary Theme -->
     <link rel="stylesheet" href="{% static 'css/culinary-theme.css' %}?v=20261124a">
+    <!-- Master Mobile Responsive Engine Stylesheet -->
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=20261125a">
     <style>
         :root {
             --rms-primary: #e65100;
@@ -21,7 +23,7 @@
         body {
             background-color: var(--shop-bg);
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-            padding-bottom: 90px;
+            padding-bottom: 110px;
             color: #1e293b;
         }
         .shop-header {
@@ -78,7 +80,7 @@
             left: 20px;
             right: 20px;
             height: 3px;
-            background: #e2e8f0;
+            background: #cbd5e1;
             z-index: 1;
         }
         .step-node {
@@ -91,41 +93,43 @@
             width: 38px;
             height: 38px;
             border-radius: 50%;
-            background: #ffffff;
-            border: 3px solid #cbd5e1;
+            background: #f8fafc;
+            border: 2.5px solid #94a3b8;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-size: 0.95rem;
-            color: #94a3b8;
-            margin-bottom: 5px;
+            color: #475569;
+            margin-bottom: 6px;
             transition: all 0.3s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
         .step-node.completed .step-circle {
-            background: #16a34a;
-            border-color: #16a34a;
-            color: #ffffff;
+            background: #16a34a !important;
+            border-color: #16a34a !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
         }
         .step-node.active .step-circle {
-            background: var(--rms-primary);
-            border-color: #ffccbc;
-            color: #ffffff;
-            box-shadow: 0 0 0 4px rgba(var(--rms-primary-rgb), 0.2);
+            background: #ea580c !important;
+            border-color: #ffedd5 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.25), 0 2px 6px rgba(234, 88, 12, 0.3);
             animation: pulse-ring 2s infinite;
         }
         .step-label {
-            font-size: 0.68rem;
-            font-weight: 600;
-            color: #64748b;
-            line-height: 1.2;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #334155;
+            line-height: 1.25;
         }
         .step-node.active .step-label {
-            color: var(--rms-primary);
-            font-weight: 700;
+            color: #c2410c;
+            font-weight: 800;
         }
         .step-node.completed .step-label {
-            color: #16a34a;
-            font-weight: 600;
+            color: #15803d;
+            font-weight: 700;
         }
         @keyframes pulse-ring {
             0%, 100% { transform: scale(1); }
@@ -205,12 +209,15 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            color: #64748b;
+            color: #475569;
             text-decoration: none;
             font-size: 0.72rem;
-            font-weight: 600;
+            font-weight: 700;
             gap: 2px;
             transition: color 0.15s;
+        }
+        .shop-nav-tab:hover, .shop-nav-tab:focus {
+            color: #0f172a;
         }
         .shop-nav-tab.active {
             color: #ea580c;
@@ -269,16 +276,16 @@
         <div class="card border-0 shadow-sm rounded-4 mb-3 p-3 bg-white">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.74rem;">
-                        <i class="bi bi-grid-3x3-gap me-1"></i>{% if "table" in table.table_number|lower %}{{ table.table_number }}{% else %}Table {{ table.table_number }}{% endif %}
+                    <span class="badge px-2.5 py-1 rounded-pill fw-bold" style="font-size: 0.75rem; background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); color: #ffffff; box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);">
+                        <i class="bi bi-grid-3x3-gap me-1 text-white"></i>{% if "table" in table.table_number|lower %}{{ table.table_number }}{% else %}Table {{ table.table_number }}{% endif %}
                     </span>
-                    <span class="badge bg-secondary-subtle text-dark border px-2.5 py-1 rounded-pill fw-semibold ms-1" style="font-size: 0.74rem;">
-                        <i class="bi bi-people-fill me-1"></i>{{ current_session.session_name }}
+                    <span class="badge px-2.5 py-1 rounded-pill fw-semibold ms-1" style="font-size: 0.75rem; background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1;">
+                        <i class="bi bi-people-fill me-1 text-primary"></i>{{ current_session.session_name }}
                     </span>
                 </div>
                 <div class="text-end">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-bold" id="headerStatusBadge" style="font-size: 0.74rem;">
-                        {{ active_order.get_status_display|default:"Active Order" }}
+                    <span class="badge px-2.5 py-1 rounded-pill fw-bold" id="headerStatusBadge" style="font-size: 0.75rem; background: #dcfce7; color: #15803d; border: 1px solid #86efac;">
+                        <i class="bi bi-check-circle-fill me-1 text-success"></i>{{ active_order.get_status_display|default:"Active Order" }}
                     </span>
                 </div>
             </div>
@@ -302,8 +309,8 @@
                 <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-1.5" style="font-size: 0.92rem;">
                     <i class="bi bi-fire text-warning"></i> Live Kitchen Progress
                 </h6>
-                <span class="text-muted small font-monospace" style="font-size: 0.72rem;" id="livePollPulse">
-                    <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 7px; height: 7px;"></span> Live
+                <span class="badge rounded-pill px-2 py-0.5 fw-bold d-inline-flex align-items-center gap-1 font-monospace" style="font-size: 0.72rem; background: #dcfce7; color: #15803d; border: 1px solid #86efac;" id="livePollPulse">
+                    <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 6px; height: 6px;"></span> LIVE
                 </span>
             </div>
 
@@ -509,12 +516,16 @@
                     </div>
                 </div>
                 {% empty %}
-                <div class="card border-0 shadow-sm rounded-4 p-5 text-center text-muted bg-white">
-                    <i class="bi bi-basket3 fs-1 opacity-50 mb-2"></i>
-                    <h6>No orders in this session yet</h6>
-                    <p class="small mb-3">Browse our delicious digital menu and send dishes to the kitchen!</p>
-                    <a href="{% url 'tables:customer_order' table.table_number %}" class="btn btn-primary rounded-pill px-4 align-self-center fw-bold">
-                        Browse Food Menu
+                <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-white">
+                    <div class="d-inline-flex align-items-center justify-content-center mx-auto mb-3 rounded-circle" style="width: 64px; height: 64px; background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5;">
+                        <i class="bi bi-bag-plus-fill" style="font-size: 1.85rem;"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1" style="font-size: 1.05rem;">No orders in this session yet</h6>
+                    <p class="small mb-3 mx-auto" style="max-width: 320px; font-size: 0.85rem; color: #475569 !important;">
+                        Browse our delicious digital menu and send dishes directly to the kitchen!
+                    </p>
+                    <a href="{% url 'tables:customer_order' table.table_number %}" class="btn rounded-pill px-4 py-2 align-self-center fw-bold shadow-sm d-inline-flex align-items-center gap-2 text-white" style="background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); border: none;">
+                        <i class="bi bi-book-fill"></i> Browse Food Menu
                     </a>
                 </div>
                 {% endfor %}
@@ -526,8 +537,8 @@
                 <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-1.5" style="font-size: 0.95rem;">
                     <i class="bi bi-receipt text-warning"></i> My Consolidated Bill
                 </h6>
-                <span class="badge bg-secondary-subtle text-dark border px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.72rem;">
-                    {{ current_session.session_name }}
+                <span class="badge px-2.5 py-1 rounded-pill fw-semibold" style="font-size: 0.75rem; background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1;">
+                    <i class="bi bi-people-fill me-1 text-primary"></i>{{ current_session.session_name }}
                 </span>
             </div>
 

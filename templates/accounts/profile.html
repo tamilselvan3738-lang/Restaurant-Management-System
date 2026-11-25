@@ -2,6 +2,25 @@
 
 {% block title %}My Profile - {{ RESTAURANT_NAME }}{% endblock %}
 
+{% block extra_css %}
+<style>
+@media (max-width: 576px) {
+    .profile-action-footer {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    .profile-action-footer button {
+        width: 100% !important;
+    }
+    .profile-action-footer .text-muted {
+        min-width: 0 !important;
+        text-align: center;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-2">
     <!-- Header with Breadcrumb -->
@@ -232,7 +251,7 @@
                         </div>
 
                         <!-- Submit Button -->
-                        <div class="pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div class="pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-3 profile-action-footer">
                             <div class="text-muted small d-flex align-items-center gap-2 flex-grow-1" style="min-width: 250px;">
                                 <i class="bi bi-shield-lock flex-shrink-0 text-secondary"></i>
                                 <span>Changes will immediately take effect across all portal sessions.</span>

@@ -1,25 +1,46 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipt #{{ invoice.invoice_number }} - {{ RESTAURANT_NAME }}</title>
+    <!-- Master Mobile Responsive Engine Stylesheet -->
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=20261125a">
     <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Courier New', Courier, monospace;
             background-color: #f8f9fa;
             margin: 0;
             padding: 20px;
             color: #000;
+            overflow-x: hidden;
         }
 
         .receipt-container {
             max-width: 340px;
+            width: 100%;
             margin: 0 auto;
             background: #ffffff;
             padding: 24px 20px;
             border: 1px dashed #ccc;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 8px !important; }
+            .receipt-container { padding: 14px 10px !important; }
+            table { font-size: 12px !important; }
+        }
+
+        @media (max-width: 320px) {
+            body { padding: 4px !important; }
+            .receipt-container { padding: 10px 6px !important; }
+            table { font-size: 11px !important; }
         }
 
         .header {

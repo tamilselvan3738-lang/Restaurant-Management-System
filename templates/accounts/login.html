@@ -10,11 +10,24 @@
     border-radius: 22px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
+@media (max-width: 480px) {
+    .login-card {
+        border-radius: 16px;
+    }
+    .login-card .card-body {
+        padding: 1.5rem 1.25rem !important;
+    }
+}
+@media (max-width: 320px) {
+    .login-card .card-body {
+        padding: 1.25rem 0.85rem !important;
+    }
+}
 </style>
 {% endblock %}
 
 {% block auth_content %}
-<div class="d-flex align-items-center justify-content-center min-vh-100 py-5">
+<div class="d-flex align-items-center justify-content-center min-vh-100 py-3 py-md-5 px-3">
     <div class="card login-card border-0">
         <div class="card-body p-4 p-md-5">
             <!-- Restaurant Brand Header -->
