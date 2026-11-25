@@ -108,6 +108,22 @@ def ensure_database_ready():
         except Exception:
             pass
 
+        # 6. Ensure media directory exists and seed default dishes
+        try:
+            from django.conf import settings
+            import shutil
+            media_menu_dir = os.path.join(str(settings.MEDIA_ROOT), 'menu_items')
+            os.makedirs(media_menu_dir, exist_ok=True)
+            static_dishes_dir = os.path.join(str(settings.BASE_DIR), 'static', 'images', 'dishes')
+            if os.path.isdir(static_dishes_dir):
+                for fname in os.listdir(static_dishes_dir):
+                    src_file = os.path.join(static_dishes_dir, fname)
+                    dest_file = os.path.join(media_menu_dir, fname)
+                    if os.path.isfile(src_file) and not os.path.exists(dest_file):
+                        shutil.copy2(src_file, dest_file)
+        except Exception:
+            pass
+
         _INITIALIZED = True
         print(f"[BOOTSTRAP] Database initialized: Superadmin '{username}' and Admin 'tamil' ready.")
     except Exception as exc:

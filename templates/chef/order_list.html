@@ -291,17 +291,10 @@
                             {% if not item.is_combo_header %}
                             <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %} {% if item.is_cancelled %}opacity-50{% endif %}">
                                 <div class="d-flex align-items-center gap-2 flex-grow-1 me-2" style="min-width: 0;">
-                                    {% if item.menu_item.image %}
-                                        <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" 
-                                             class="rounded-2 shadow-xs flex-shrink-0" 
-                                             style="width: 36px; height: 36px; object-fit: cover; border: 1px solid rgba(0,0,0,0.08);"
-                                             onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
-                                    {% else %}
-                                        <div class="rounded-2 bg-light text-muted d-flex align-items-center justify-content-center flex-shrink-0 border"
-                                             style="width: 36px; height: 36px;">
-                                            <i class="bi bi-egg-fried opacity-50" style="font-size: 0.95rem;"></i>
-                                        </div>
-                                    {% endif %}
+                                    <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" 
+                                         class="rounded-2 shadow-xs flex-shrink-0" 
+                                         style="width: 36px; height: 36px; object-fit: cover; border: 1px solid rgba(0,0,0,0.08);"
+                                         onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
                                     <div class="d-flex align-items-center gap-1.5 flex-grow-1" style="min-width: 0;">
                                         <span class="badge {% if item.is_cancelled %}bg-danger{% else %}bg-primary-subtle text-primary{% endif %} fw-bold text-nowrap flex-shrink-0" style="font-size: 0.72rem;">{{ item.quantity }}x</span>
                                         <span class="text-body fw-medium text-truncate {% if item.is_cancelled %}text-decoration-line-through text-muted{% endif %}" title="{{ item.menu_item.name }}" style="font-size: 0.85rem;">{{ item.menu_item.name }}</span>
@@ -346,17 +339,10 @@
                             {% for extra_item in order.extra_items %}
                                 <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded-2 border border-warning-subtle shadow-xs">
                                     <div class="d-flex align-items-center gap-2 text-truncate me-2" style="min-width: 0;">
-                                        {% if extra_item.menu_item.image %}
-                                            <img src="{{ extra_item.menu_item.image.url }}" alt="{{ extra_item.menu_item.name }}" 
-                                                 class="rounded-2 shadow-xs flex-shrink-0" 
-                                                 style="width: 28px; height: 28px; object-fit: cover;"
-                                                 onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
-                                        {% else %}
-                                            <div class="rounded-2 bg-light text-muted d-flex align-items-center justify-content-center flex-shrink-0 border"
-                                                 style="width: 28px; height: 28px;">
-                                                <i class="bi bi-egg-fried opacity-50" style="font-size: 0.82rem;"></i>
-                                            </div>
-                                        {% endif %}
+                                        <img src="{{ extra_item.menu_item.image_url }}" alt="{{ extra_item.menu_item.name }}" 
+                                             class="rounded-2 shadow-xs flex-shrink-0" 
+                                             style="width: 28px; height: 28px; object-fit: cover;"
+                                             onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
                                         <div class="text-truncate">
                                             <div class="d-flex align-items-center gap-1">
                                                 <span class="badge bg-warning text-dark fw-bold font-monospace" style="font-size: 0.72rem;">+{{ extra_item.extra_quantity }}x</span>

@@ -503,13 +503,7 @@
                             {% for it in ord.items.all %}
                             <div class="order-item-row {% if it.status == 'CANCELLED' %}bg-danger-subtle bg-opacity-25 opacity-75{% endif %}" id="itemRow-{{ it.id }}">
                                 <div class="order-item-main">
-                                    {% if it.menu_item.image %}
-                                        <img src="{{ it.menu_item.image.url }}" alt="{{ it.menu_item.name }}" class="dish-thumb" onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
-                                    {% else %}
-                                        <div class="rounded-3 bg-secondary-subtle text-muted d-flex align-items-center justify-content-center flex-shrink-0 border" style="width: 54px; height: 54px;">
-                                            <i class="bi bi-egg-fried fs-4 opacity-50"></i>
-                                        </div>
-                                    {% endif %}
+                                    <img src="{{ it.menu_item.image_url }}" alt="{{ it.menu_item.name }}" class="dish-thumb" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
                                     <div class="order-item-info">
                                         <!-- Line 1: Quantity badge, Dish Name, +EXTRA Badge & Total Price -->
                                         <div class="d-flex align-items-start justify-content-between gap-2 min-w-0">

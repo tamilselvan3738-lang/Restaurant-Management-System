@@ -122,14 +122,7 @@
                 <div class="card pos-item-card overflow-hidden shadow-sm" onclick="addToCart({{ item.id }}, '{{ item.name|escapejs }}', {{ item.price }})">
                     <!-- Dish Image Header -->
                     <div class="position-relative" style="height: 125px; background-color: #f1f5f9; overflow: hidden;">
-                        {% if item.image %}
-                            <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-100 h-100 pos-dish-img" style="object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
-                        {% else %}
-                            <div class="w-100 h-100 d-flex flex-column align-items-center justify-content-center text-muted bg-light">
-                                <i class="bi bi-egg-fried fs-2 opacity-40 mb-1"></i>
-                                <span style="font-size: 0.68rem;">No Image</span>
-                            </div>
-                        {% endif %}
+                        <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-100 h-100 pos-dish-img" style="object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
 
                         <!-- Overlaid Image Header Badges -->
                         <div class="position-absolute top-0 start-0 end-0 p-2 d-flex justify-content-between align-items-start pointer-events-none" style="z-index: 2;">

@@ -1532,19 +1532,7 @@ def customer_table_order(request, table_number):
         else:
             categories = Category.objects.filter(is_active=True).order_by('display_order', 'name')
             items = MenuItem.objects.filter(is_available=True, category__is_active=True).select_related('category')
-        restaurant_logo_url = None
-        if target_restaurant and getattr(target_restaurant, 'has_logo', False):
-            try:
-                restaurant_logo_url = target_restaurant.logo_url
-            except Exception:
-                restaurant_logo_url = None
-        elif target_restaurant and target_restaurant.logo:
-            try:
-                if target_restaurant.logo.name and target_restaurant.logo.storage.exists(target_restaurant.logo.name):
-                    restaurant_logo_url = target_restaurant.logo.url
-            except Exception:
-                restaurant_logo_url = None
-
+        restaurant_logo_url = target_restaurant.logo_url if target_restaurant else (settings.STATIC_URL + 'images/default_restaurant_logo.svg')
         if not restaurant_logo_url:
             restaurant_logo_url = settings.STATIC_URL + 'images/default_restaurant_logo.svg'
 
@@ -1597,7 +1585,7 @@ def customer_table_order(request, table_number):
             'is_combo': ci.is_combo,
             'combo_id': ci.combo_id,
             'name': (ci.combo_name or (ci.combo.name if ci.combo else 'Combo')) if ci.is_combo else (ci.menu_item.name if ci.menu_item else 'Item'),
-            'image_url': (ci.combo.image.url if ci.combo and ci.combo.image else '') if ci.is_combo else (ci.menu_item.image.url if ci.menu_item and ci.menu_item.image else ''),
+            'image_url': (ci.combo.image_url if ci.combo else '') if ci.is_combo else (ci.menu_item.image_url if ci.menu_item else ''),
             'quantity': ci.quantity,
             'unit_price': str(ci.unit_price),
             'total_price': str(it_total),
@@ -1681,7 +1669,7 @@ def api_group_cart_get(request, table_number):
             'is_combo': item.is_combo,
             'combo_id': item.combo_id,
             'name': (item.combo_name or (item.combo.name if item.combo else 'Combo')) if item.is_combo else (item.menu_item.name if item.menu_item else 'Item'),
-            'image_url': (item.combo.image.url if item.combo and item.combo.image else '') if item.is_combo else (item.menu_item.image.url if item.menu_item and item.menu_item.image else ''),
+            'image_url': (item.combo.image_url if item.combo else '') if item.is_combo else (item.menu_item.image_url if item.menu_item else ''),
             'quantity': item.quantity,
             'unit_price': str(item.unit_price),
             'total_price': str(it_total),
@@ -3334,19 +3322,7 @@ def customer_thank_you(request, table_number):
     is_bill_requested = (request.GET.get('bill_requested') == '1')
 
     target_restaurant = table.restaurant or Restaurant.objects.first()
-    restaurant_logo_url = None
-    if target_restaurant and getattr(target_restaurant, 'has_logo', False):
-        try:
-            restaurant_logo_url = target_restaurant.logo_url
-        except Exception:
-            restaurant_logo_url = None
-    elif target_restaurant and target_restaurant.logo:
-        try:
-            if target_restaurant.logo.name and target_restaurant.logo.storage.exists(target_restaurant.logo.name):
-                restaurant_logo_url = target_restaurant.logo.url
-        except Exception:
-            restaurant_logo_url = None
-
+    restaurant_logo_url = target_restaurant.logo_url if target_restaurant else (settings.STATIC_URL + 'images/default_restaurant_logo.svg')
     if not restaurant_logo_url:
         restaurant_logo_url = settings.STATIC_URL + 'images/default_restaurant_logo.svg'
 

@@ -48,9 +48,7 @@
                             <tr class="bg-white rounded-2 mb-1 shadow-2xs">
                                 <td class="ps-2 py-2">
                                     <div class="d-flex align-items-center gap-2">
-                                        {% if extra.menu_item.image %}
-                                            <img src="{{ extra.menu_item.image.url }}" alt="{{ extra.menu_item.name }}" class="rounded" style="width: 32px; height: 32px; object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
-                                        {% endif %}
+                                        <img src="{{ extra.menu_item.image_url }}" alt="{{ extra.menu_item.name }}" class="rounded" style="width: 32px; height: 32px; object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
                                         <div>
                                             <strong class="text-dark">{{ extra.menu_item.name }}</strong>
                                             {% if extra.initial_quantity > 0 %}
@@ -105,17 +103,10 @@
                     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
                         <!-- Left: Dish Media & Metadata -->
                         <div class="d-flex align-items-center gap-3 min-w-0">
-                            {% if item.menu_item.image %}
-                                <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" 
-                                     class="rounded-3 shadow-xs flex-shrink-0" 
-                                     style="width: 56px; height: 56px; object-fit: cover; border: 1px solid rgba(255,255,255,0.08);"
-                                     onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
-                            {% else %}
-                                <div class="rounded-3 bg-secondary-subtle text-muted d-flex align-items-center justify-content-center flex-shrink-0 border"
-                                     style="width: 56px; height: 56px;">
-                                    <i class="bi bi-egg-fried fs-4 text-secondary"></i>
-                                </div>
-                            {% endif %}
+                            <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" 
+                                 class="rounded-3 shadow-xs flex-shrink-0" 
+                                 style="width: 56px; height: 56px; object-fit: cover; border: 1px solid rgba(255,255,255,0.08);"
+                                 onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
                             
                             <div class="min-w-0">
                                 <div class="d-flex align-items-center gap-2 flex-wrap mb-1">

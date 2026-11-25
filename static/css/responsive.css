@@ -240,23 +240,60 @@ h6, .h6 { font-size: clamp(0.85rem, 1.5vw, 1.0rem) !important; line-height: 1.45
     box-sizing: border-box;
 }
 
-/* Modals must never overflow mobile viewports */
-.modal-dialog {
-    margin: 0.5rem auto !important;
-    max-width: calc(100vw - 1rem) !important;
-    width: auto !important;
+/* Modals: Mobile-safe boundaries & proper desktop constraints */
+@media (max-width: 575.98px) {
+    .modal-dialog {
+        margin: 0.5rem auto !important;
+        max-width: calc(100vw - 1rem) !important;
+        width: auto !important;
+    }
+}
+
+@media (min-width: 576px) {
+    .modal-dialog {
+        max-width: 500px;
+        margin: 1.75rem auto;
+    }
+    .modal-dialog.modal-sm {
+        max-width: 320px;
+    }
+    .modal-dialog.modal-lg {
+        max-width: 800px;
+    }
+    .modal-dialog.modal-xl {
+        max-width: 1140px;
+    }
+}
+
+/* Compact modals (e.g. payment collection, confirmation dialogs) */
+.modal-dialog-compact,
+.modal-compact .modal-dialog {
+    max-width: 440px !important;
 }
 
 .modal-content {
     max-width: 100% !important;
-    overflow: hidden;
     border-radius: 18px !important;
 }
 
 .modal-body {
-    overflow-y: auto;
-    max-height: calc(85vh - 120px);
-    padding: clamp(12px, 3vw, 20px) !important;
+    max-height: 85vh;
+    padding: clamp(14px, 3vw, 22px) !important;
+}
+
+/* Hide scrollbar utility for sleek compact modals */
+.no-scrollbar,
+.modal-compact .modal-body {
+    overflow-y: visible !important;
+    max-height: none !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+.no-scrollbar::-webkit-scrollbar,
+.modal-compact .modal-body::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 /* ============================================================================
@@ -275,6 +312,38 @@ button,
 
 .btn-sm {
     min-height: 31px;
+}
+
+/* Reset button bloat on close buttons across alerts, modals, toasts */
+button.btn-close,
+.btn-close {
+    min-height: auto !important;
+    min-width: auto !important;
+    max-height: none !important;
+    max-width: none !important;
+    height: 0.85em !important;
+    width: 0.85em !important;
+    display: block !important;
+    box-sizing: content-box !important;
+    padding: 0.5rem !important;
+}
+
+/* Global Alert Vertical Alignment & Polish */
+.alert.alert-dismissible {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.75rem !important;
+    padding-top: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
+    padding-left: 1rem !important;
+    padding-right: 0.85rem !important;
+}
+
+.alert.alert-dismissible .btn-close {
+    position: static !important;
+    margin: 0 0 0 auto !important;
+    flex-shrink: 0 !important;
 }
 
 .btn-group,

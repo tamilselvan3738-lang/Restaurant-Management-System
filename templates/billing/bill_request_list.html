@@ -75,29 +75,29 @@
 {% block content %}
 <!-- Page Header -->
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-    <div>
-        <div class="d-flex align-items-center gap-2">
-            <h3 class="fw-bold mb-0 text-body">
-                <i class="bi bi-bell-fill text-warning me-2"></i>Customer Bill Requests
+    <div class="flex-grow-1 min-w-0">
+        <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+            <h3 class="fw-bold mb-0 text-body text-nowrap d-inline-flex align-items-center">
+                <i class="bi bi-bell-fill text-warning me-2"></i><span>Customer Bill Requests</span>
             </h3>
             {% if pending_count > 0 %}
-            <span class="badge bg-warning text-dark border border-warning-subtle px-2.5 py-1 rounded-pill fw-bold">
+            <span class="badge bg-warning text-dark border border-warning-subtle px-2.5 py-1 rounded-pill fw-bold text-nowrap flex-shrink-0">
                 {{ pending_count }} Pending Review
             </span>
             {% else %}
-            <span class="badge bg-secondary-subtle text-body rounded-pill px-2.5 py-1">
+            <span class="badge bg-secondary-subtle text-body rounded-pill px-2.5 py-1 text-nowrap flex-shrink-0">
                 All Settled
             </span>
             {% endif %}
         </div>
-        <p class="text-muted small mb-0 mt-1">
+        <p class="text-muted small mb-0">
             Real-time feed of customer-initiated bill settlement requests across tables.
         </p>
     </div>
 
-    <div class="d-flex gap-2 align-items-center flex-wrap w-100 w-md-auto">
+    <div class="d-flex gap-2 align-items-center flex-wrap flex-shrink-0 w-100 w-md-auto justify-content-md-end ms-md-auto">
         <!-- Manual Refresh Button -->
-        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0" onclick="window.location.reload()">
+        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs flex-fill flex-md-grow-0 text-nowrap" onclick="window.location.reload()">
             <i class="bi bi-arrow-clockwise"></i> Refresh
         </button>
     </div>
@@ -106,10 +106,12 @@
 <!-- Alert Messages -->
 {% if messages %}
     {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm mb-3 rounded-3" role="alert">
-            <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm mb-3 rounded-3 d-flex align-items-center justify-content-between py-2.5 px-3" role="alert">
+            <div class="d-flex align-items-center gap-2.5 min-w-0">
+                <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill text-success{% else %}bi-exclamation-triangle-fill text-danger{% endif %} me-1 fs-5 flex-shrink-0"></i>
+                <span>{{ message }}</span>
+            </div>
+            <button type="button" class="btn-close position-static p-2 m-0 ms-2 flex-shrink-0" data-bs-dismiss="alert" style="min-height: auto;"></button>
         </div>
     {% endfor %}
 {% endif %}

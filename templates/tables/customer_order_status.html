@@ -408,13 +408,7 @@
                 <div class="dish-item-row w-100 {% if item.is_cancelled %}cancelled-item{% endif %} py-2.5" id="item-row-{{ item.id }}">
                     <div class="d-flex align-items-stretch w-100 gap-2 overflow-hidden">
                         <!-- Left: Dish Thumbnail -->
-                        {% if item.menu_item.image %}
-                            <img src="{{ item.menu_item.image.url }}" alt="{{ item.menu_item.name }}" class="dish-thumbnail rounded-3 shadow-xs flex-shrink-0" style="width: 54px; height: 54px; object-fit: cover; align-self: center;" onerror="this.onerror=null; this.src='/static/images/default_dish.svg';">
-                        {% else %}
-                            <div class="dish-thumbnail rounded-3 bg-light text-muted d-flex align-items-center justify-content-center border flex-shrink-0" style="width: 54px; height: 54px; align-self: center;">
-                                <i class="bi bi-egg-fried fs-4 opacity-50"></i>
-                            </div>
-                        {% endif %}
+                        <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" class="dish-thumbnail rounded-3 shadow-xs flex-shrink-0" style="width: 54px; height: 54px; object-fit: cover; align-self: center;" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
 
                         <!-- Middle: Details, Unit Price & Status Badge (strictly constrained) -->
                         <div class="min-w-0 flex-grow-1 d-flex flex-column justify-content-between overflow-hidden pe-1">
