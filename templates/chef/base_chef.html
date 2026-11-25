@@ -458,7 +458,7 @@
                 <img src="{{ user.restaurant.logo_url }}" alt="{{ user.restaurant.name }} Logo" class="chef-brand-logo-img" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
             {% else %}
                 <div class="chef-brand-icon">
-                    <i class="bi bi-fire"></i>
+                    <i class="bi {{ RESTAURANT_LOGO_ICON|default:'bi-fire' }}"></i>
                 </div>
             {% endif %}
             <div class="min-w-0 flex-grow-1">
@@ -647,7 +647,7 @@
                         <img src="{{ user.restaurant.logo_url }}" alt="{{ user.restaurant.name }} Logo" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px;" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                     {% else %}
                         <div class="chef-brand-icon shadow-xs" style="width: 32px; height: 32px; font-size: 1.05rem; border-radius: 8px;">
-                            <i class="bi bi-fire"></i>
+                            <i class="bi {{ RESTAURANT_LOGO_ICON|default:'bi-fire' }}"></i>
                         </div>
                     {% endif %}
                     <div class="line-height-1">

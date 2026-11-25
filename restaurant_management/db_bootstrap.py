@@ -108,6 +108,49 @@ def ensure_database_ready():
         except Exception:
             pass
 
+        # 5b. Backfill persistent logo base64 and restore disk files across container restarts
+        try:
+            import base64
+            import mimetypes
+            from django.conf import settings
+            for r in Restaurant.objects.all():
+                if r.logo and not r.logo_base64:
+                    try:
+                        if r.logo.storage.exists(r.logo.name):
+                            with r.logo.storage.open(r.logo.name, 'rb') as f:
+                                content = f.read()
+                                mime = mimetypes.guess_type(r.logo.name)[0] or 'image/png'
+                                b64 = base64.b64encode(content).decode('utf-8')
+                                r.logo_base64 = f"data:{mime};base64,{b64}"
+                                r.save(update_fields=['logo_base64'])
+                    except Exception:
+                        pass
+                elif r.logo and r.logo_base64 and not r.logo.storage.exists(r.logo.name):
+                    try:
+                        parts = r.logo_base64.split(',', 1)
+                        if len(parts) == 2:
+                            raw = base64.b64decode(parts[1])
+                            target_file = os.path.join(str(settings.MEDIA_ROOT), r.logo.name)
+                            os.makedirs(os.path.dirname(target_file), exist_ok=True)
+                            with open(target_file, 'wb') as f:
+                                f.write(raw)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        # 5c. Link orphaned staff users to their creator's or default restaurant
+        try:
+            for orphan in User.objects.filter(restaurant__isnull=True, is_superuser=False):
+                if orphan.created_by and orphan.created_by.restaurant:
+                    orphan.restaurant = orphan.created_by.restaurant
+                    orphan.save(update_fields=['restaurant'])
+                elif restaurant:
+                    orphan.restaurant = restaurant
+                    orphan.save(update_fields=['restaurant'])
+        except Exception:
+            pass
+
         # 6. Ensure media directory exists and seed default dishes
         try:
             from django.conf import settings

@@ -97,6 +97,32 @@ def serve_media_with_fallback(request, path):
     search_str = f"{unquoted_path} {basename} {query_name} {query_cat}".lower().replace('-', ' ').replace('_', ' ')
 
     if 'logo' in search_str or 'restaurant' in search_str:
+        # Check if any Restaurant in the database has a persistent base64 logo
+        try:
+            from accounts.models import Restaurant
+            matched_resto = Restaurant.objects.filter(logo__endswith=basename).first()
+            if not matched_resto:
+                matched_resto = Restaurant.objects.exclude(logo_base64='').first()
+            if matched_resto and matched_resto.logo_base64:
+                import base64
+                from django.http import HttpResponse
+                parts = matched_resto.logo_base64.split(',', 1)
+                if len(parts) == 2:
+                    header, b64_data = parts
+                    c_type = header.split(';')[0].replace('data:', '') or 'image/png'
+                    raw_bytes = base64.b64decode(b64_data)
+                    try:
+                        dest_dir = os.path.dirname(full_path)
+                        os.makedirs(dest_dir, exist_ok=True)
+                        with open(full_path, 'wb') as f:
+                            f.write(raw_bytes)
+                    except Exception:
+                        pass
+                    resp = HttpResponse(raw_bytes, content_type=c_type)
+                    resp['Cache-Control'] = 'public, max-age=300, must-revalidate'
+                    return resp
+        except Exception:
+            pass
         fallback_file = os.path.join(static_images_dir, 'default_restaurant_logo.svg')
     elif 'profile' in search_str or 'avatar' in search_str:
         fallback_file = os.path.join(static_images_dir, 'default_avatar.svg')

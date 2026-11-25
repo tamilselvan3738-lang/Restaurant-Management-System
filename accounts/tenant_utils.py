@@ -34,6 +34,14 @@ def get_current_restaurant(request):
                 restaurant = getattr(user, 'restaurant', None)
                 if not restaurant and hasattr(user, 'kitchen_profile') and user.kitchen_profile:
                     restaurant = user.kitchen_profile.restaurant
+                if not restaurant and getattr(user, 'created_by', None) and getattr(user.created_by, 'restaurant', None):
+                    restaurant = user.created_by.restaurant
+                    # Auto-heal user record
+                    try:
+                        user.restaurant = restaurant
+                        user.save(update_fields=['restaurant'])
+                    except Exception:
+                        pass
 
         request._cached_restaurant = restaurant
         request._is_impersonating = is_impersonating

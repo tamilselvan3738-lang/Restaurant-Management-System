@@ -69,13 +69,54 @@
 
                     <div class="col-12">
                         <label class="form-label small fw-bold">Company Brand Logo</label>
-                        {% if restaurant.logo %}
+                        {% if restaurant.logo_url %}
                             <div class="mb-2" style="cursor: pointer;" onclick="document.querySelector('input[name=logo]').click();" title="Single-click to open file browser and replace logo">
-                                <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name }}" class="rounded-3 shadow-xs border p-1 bg-white" style="max-height: 60px;" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
+                                <img src="{{ restaurant.logo_url }}" alt="{{ restaurant.name }}" class="rounded-3 shadow-xs border p-1 bg-white" style="max-height: 60px;" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                                 <span class="badge bg-secondary-subtle text-secondary small ms-2"><i class="bi bi-folder2-open me-1"></i>Click to change</span>
                             </div>
                         {% endif %}
-                        <input type="file" name="logo" class="form-control" accept="image/png, image/jpeg, image/webp">
+                        <input type="file" name="logo" class="form-control" accept="image/png, image/jpeg, image/webp, image/svg+xml">
+
+                        <!-- Brand Icon Selector -->
+                        <div class="mt-3 pt-2.5 border-top">
+                            <label class="form-label small fw-bold d-flex justify-content-between align-items-center mb-1">
+                                <span><i class="bi bi-palette me-1 text-primary"></i> Brand Emblem Icon</span>
+                                <span class="text-muted" style="font-size: 0.72rem;">Fallback navigation icon when no image logo is uploaded</span>
+                            </label>
+                            <input type="hidden" name="logo_icon" id="logoIconInput" value="{{ restaurant.logo_icon|default:'bi-fire' }}">
+                            <div class="d-flex flex-wrap gap-1.5 pt-1">
+                                <button type="button" class="btn btn-sm btn-outline-secondary logo-icon-btn p-1.5 rounded-2 {% if restaurant.logo_icon == 'bi-fire' or not restaurant.logo_icon %}active border-primary bg-primary-subtle{% endif %}" data-icon="bi-fire" title="Flame" onclick="selectBrandIcon('bi-fire')">
+                                    <i class="bi bi-fire fs-5 text-warning"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary logo-icon-btn p-1.5 rounded-2 {% if restaurant.logo_icon == 'bi-cup-hot' %}active border-primary bg-primary-subtle{% endif %}" data-icon="bi-cup-hot" title="Hot Cup" onclick="selectBrandIcon('bi-cup-hot')">
+                                    <i class="bi bi-cup-hot fs-5 text-danger"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary logo-icon-btn p-1.5 rounded-2 {% if restaurant.logo_icon == 'bi-shop' %}active border-primary bg-primary-subtle{% endif %}" data-icon="bi-shop" title="Bistro / Store" onclick="selectBrandIcon('bi-shop')">
+                                    <i class="bi bi-shop fs-5 text-primary"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary logo-icon-btn p-1.5 rounded-2 {% if restaurant.logo_icon == 'bi-egg-fried' %}active border-primary bg-primary-subtle{% endif %}" data-icon="bi-egg-fried" title="Diner / Breakfast" onclick="selectBrandIcon('bi-egg-fried')">
+                                    <i class="bi bi-egg-fried fs-5 text-warning"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary logo-icon-btn p-1.5 rounded-2 {% if restaurant.logo_icon == 'bi-cake2' %}active border-primary bg-primary-subtle{% endif %}" data-icon="bi-cake2" title="Bakery / Sweets" onclick="selectBrandIcon('bi-cake2')">
+                                    <i class="bi bi-cake2 fs-5 text-info"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary logo-icon-btn p-1.5 rounded-2 {% if restaurant.logo_icon == 'bi-star-fill' %}active border-primary bg-primary-subtle{% endif %}" data-icon="bi-star-fill" title="Fine Dining / Star" onclick="selectBrandIcon('bi-star-fill')">
+                                    <i class="bi bi-star-fill fs-5 text-warning"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary logo-icon-btn p-1.5 rounded-2 {% if restaurant.logo_icon == 'bi-award' %}active border-primary bg-primary-subtle{% endif %}" data-icon="bi-award" title="Gourmet / Award" onclick="selectBrandIcon('bi-award')">
+                                    <i class="bi bi-award fs-5 text-success"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary logo-icon-btn p-1.5 rounded-2 {% if restaurant.logo_icon == 'bi-gem' %}active border-primary bg-primary-subtle{% endif %}" data-icon="bi-gem" title="Premium Lounge" onclick="selectBrandIcon('bi-gem')">
+                                    <i class="bi bi-gem fs-5 text-primary"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary logo-icon-btn p-1.5 rounded-2 {% if restaurant.logo_icon == 'bi-heart-fill' %}active border-primary bg-primary-subtle{% endif %}" data-icon="bi-heart-fill" title="Hospitality / Love" onclick="selectBrandIcon('bi-heart-fill')">
+                                    <i class="bi bi-heart-fill fs-5 text-danger"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary logo-icon-btn p-1.5 rounded-2 {% if restaurant.logo_icon == 'bi-lightning-charge-fill' %}active border-primary bg-primary-subtle{% endif %}" data-icon="bi-lightning-charge-fill" title="Express / Fast" onclick="selectBrandIcon('bi-lightning-charge-fill')">
+                                    <i class="bi bi-lightning-charge-fill fs-5 text-warning"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -87,4 +128,20 @@
         </div>
     </div>
 </div>
+
+<script>
+function selectBrandIcon(iconClass) {
+    const iconInput = document.getElementById('logoIconInput');
+    if (iconInput) {
+        iconInput.value = iconClass;
+    }
+    document.querySelectorAll('.logo-icon-btn').forEach(function(btn) {
+        if (btn.getAttribute('data-icon') === iconClass) {
+            btn.classList.add('active', 'border-primary', 'bg-primary-subtle');
+        } else {
+            btn.classList.remove('active', 'border-primary', 'bg-primary-subtle');
+        }
+    });
+}
+</script>
 {% endblock %}

@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include, re_path
+from django.views.generic.base import RedirectView
 from django.views.static import serve
 from accounts.views import user_login, user_logout
 from accounts import views_forgot_password
@@ -9,6 +10,7 @@ from tables import views_queue
 from restaurant_management.views_media import serve_media_with_fallback
 
 urlpatterns = [
+    path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'favicon.ico', permanent=True)),
     path('queue/', views_queue.public_queue_view, name='queue_root'),
     path('login/', user_login, name='login'),
     path('logout/', user_logout, name='logout'),

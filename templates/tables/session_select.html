@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% if "table" in table.table_number|lower %}{{ table.table_number }}{% else %}Table {{ table.table_number }}{% endif %} | Dining Setup</title>
+    <!-- Favicon & Touch Icons -->
+    {% include 'includes/favicons.html' %}
     
     <script>
         (function() {

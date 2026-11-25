@@ -473,7 +473,23 @@ def restaurant_edit(request, restaurant_id):
             restaurant.suspension_reason = ''
 
         if 'logo' in request.FILES:
-            restaurant.logo = request.FILES['logo']
+            logo_file = request.FILES['logo']
+            restaurant.logo = logo_file
+            try:
+                import base64
+                import mimetypes
+                logo_file.seek(0)
+                content = logo_file.read()
+                logo_file.seek(0)
+                mime = getattr(logo_file, 'content_type', None) or mimetypes.guess_type(logo_file.name)[0] or 'image/png'
+                b64 = base64.b64encode(content).decode('utf-8')
+                restaurant.logo_base64 = f"data:{mime};base64,{b64}"
+            except Exception:
+                pass
+
+        logo_icon = request.POST.get('logo_icon', '').strip()
+        if logo_icon:
+            restaurant.logo_icon = logo_icon
 
         restaurant.save()
         messages.success(request, f"Restaurant '{restaurant.name}' details updated.")

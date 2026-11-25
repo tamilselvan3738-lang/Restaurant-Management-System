@@ -242,11 +242,15 @@ class StaffCreationForm(UserCreationForm):
         user.username = username
         user.normalized_username = username.lower()
 
-        # Enforce organization relationship from authenticated admin
+        # Enforce organization relationship and creator lineage from authenticated admin
         if self.user and not self.user.is_superuser and getattr(self.user, 'restaurant', None):
             user.restaurant = self.user.restaurant
+            user.created_by = self.user
         elif not user.restaurant_id and self.user and getattr(self.user, 'restaurant', None):
             user.restaurant = self.user.restaurant
+            user.created_by = self.user
+        elif self.user and not user.created_by_id:
+            user.created_by = self.user
 
         role = self.cleaned_data.get('role')
         if role in [User.Role.CHEF, User.Role.KITCHEN]:

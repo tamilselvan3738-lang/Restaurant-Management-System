@@ -28,6 +28,8 @@ class Restaurant(models.Model):
         help_text="Unique organization code (e.g. REST-0001 or restaurant identifier)"
     )
     logo = models.ImageField(upload_to='restaurant_logos/', blank=True, null=True, help_text="Company logo image (PNG, JPG, WEBP)")
+    logo_base64 = models.TextField(blank=True, default='', help_text="Persistent Base64 data URI for zero-latency, fail-safe rendering across server restarts")
+    logo_icon = models.CharField(max_length=50, blank=True, default='bi-fire', help_text="Bootstrap icon class for brand placeholder (e.g. bi-fire, bi-cup-hot, bi-shop)")
     address = models.TextField(blank=True, default='')
     email = models.EmailField(blank=True, default='')
     phone = models.CharField(max_length=50, blank=True, default='')
@@ -78,24 +80,50 @@ class Restaurant(models.Model):
     def save(self, *args, **kwargs):
         if not self.code:
             self.code = self.generate_next_code()
+        # Automatically cache base64 for persistent rendering across container restarts
+        if self.logo and not self.logo_base64:
+            try:
+                import base64
+                import mimetypes
+                if hasattr(self.logo, 'file'):
+                    self.logo.file.seek(0)
+                    content = self.logo.file.read()
+                    self.logo.file.seek(0)
+                    mime = getattr(self.logo, 'content_type', None) or mimetypes.guess_type(self.logo.name)[0] or 'image/png'
+                    b64 = base64.b64encode(content).decode('utf-8')
+                    self.logo_base64 = f"data:{mime};base64,{b64}"
+                elif self.logo.name and self.logo.storage.exists(self.logo.name):
+                    with self.logo.storage.open(self.logo.name, 'rb') as f:
+                        content = f.read()
+                        mime = mimetypes.guess_type(self.logo.name)[0] or 'image/png'
+                        b64 = base64.b64encode(content).decode('utf-8')
+                        self.logo_base64 = f"data:{mime};base64,{b64}"
+            except Exception:
+                pass
         super().save(*args, **kwargs)
 
     @property
     def has_logo(self):
-        if not self.logo:
+        if bool(self.logo_base64):
+            return True
+        if not self.logo or not self.logo.name:
             return False
         try:
-            return bool(self.logo.name and self.logo.storage.exists(self.logo.name))
+            return bool(self.logo.storage.exists(self.logo.name))
         except Exception:
             return False
 
     @property
     def logo_url(self):
-        if self.has_logo:
+        if not self.has_logo:
+            return None
+        if self.logo and bool(self.logo.name):
             try:
                 return self.logo.url
             except Exception:
-                return None
+                pass
+        if self.logo_base64:
+            return self.logo_base64
         return None
 
     @property
@@ -138,6 +166,14 @@ class User(AbstractUser):
         blank=True,
         related_name='users',
         help_text="The company/restaurant this Admin or Employee belongs to."
+    )
+    created_by = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_staff',
+        help_text="The administrator or manager who created this account."
     )
     role = models.CharField(
         max_length=20,

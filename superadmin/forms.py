@@ -16,10 +16,17 @@ class AdminCreationForm(UserCreationForm):
         label="Company / Restaurant Name",
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Bella Italia Bistro, Ocean Grill'})
     )
-    restaurant_logo = forms.ImageField(
+    restaurant_logo = forms.FileField(
         required=False,
         label="Company Logo",
         widget=forms.FileInput(attrs={'class': 'form-control', 'id': 'logoInput', 'accept': 'image/png, image/jpeg, image/webp, image/svg+xml'})
+    )
+    restaurant_logo_icon = forms.CharField(
+        max_length=50,
+        required=False,
+        initial='bi-fire',
+        label="Brand Icon",
+        widget=forms.HiddenInput(attrs={'id': 'logoIconInput'})
     )
     restaurant_address = forms.CharField(
         required=False,
@@ -236,6 +243,7 @@ class AdminCreationForm(UserCreationForm):
 
             rest_name = self.cleaned_data.get('restaurant_name')
             rest_logo = self.cleaned_data.get('restaurant_logo')
+            rest_logo_icon = self.cleaned_data.get('restaurant_logo_icon') or 'bi-fire'
             rest_address = self.cleaned_data.get('restaurant_address', '')
             rest_phone = self.cleaned_data.get('restaurant_phone', '')
             rest_email = self.cleaned_data.get('restaurant_email', '')
@@ -251,10 +259,24 @@ class AdminCreationForm(UserCreationForm):
                         'email': rest_email,
                         'status': rest_status,
                         'plan': rest_plan,
+                        'logo_icon': rest_logo_icon,
                     }
                 )
                 if rest_logo:
                     restaurant.logo = rest_logo
+                    try:
+                        import base64
+                        import mimetypes
+                        rest_logo.seek(0)
+                        content = rest_logo.read()
+                        rest_logo.seek(0)
+                        mime = getattr(rest_logo, 'content_type', None) or mimetypes.guess_type(rest_logo.name)[0] or 'image/png'
+                        b64 = base64.b64encode(content).decode('utf-8')
+                        restaurant.logo_base64 = f"data:{mime};base64,{b64}"
+                    except Exception:
+                        pass
+                if rest_logo_icon:
+                    restaurant.logo_icon = rest_logo_icon
                 if rest_address:
                     restaurant.address = rest_address
                 if rest_phone:
@@ -279,10 +301,17 @@ class AdminEditForm(forms.ModelForm):
         label="Company / Restaurant Name",
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
-    restaurant_logo = forms.ImageField(
+    restaurant_logo = forms.FileField(
         required=False,
         label="Replace Company Logo",
         widget=forms.FileInput(attrs={'class': 'form-control', 'id': 'logoInput', 'accept': 'image/png, image/jpeg, image/webp, image/svg+xml'})
+    )
+    restaurant_logo_icon = forms.CharField(
+        max_length=50,
+        required=False,
+        initial='bi-fire',
+        label="Brand Icon",
+        widget=forms.HiddenInput(attrs={'id': 'logoIconInput'})
     )
     restaurant_address = forms.CharField(
         required=False,
@@ -345,6 +374,7 @@ class AdminEditForm(forms.ModelForm):
             self.fields['restaurant_email'].initial = rest.email
             self.fields['restaurant_status'].initial = rest.status
             self.fields['restaurant_plan'].initial = rest.plan
+            self.fields['restaurant_logo_icon'].initial = rest.logo_icon or 'bi-fire'
 
     def clean_restaurant_logo(self):
         logo = self.cleaned_data.get('restaurant_logo')
@@ -360,6 +390,7 @@ class AdminEditForm(forms.ModelForm):
         user = super().save(commit=False)
         rest_name = self.cleaned_data.get('restaurant_name')
         rest_logo = self.cleaned_data.get('restaurant_logo')
+        rest_logo_icon = self.cleaned_data.get('restaurant_logo_icon') or 'bi-fire'
         rest_address = self.cleaned_data.get('restaurant_address', '')
         rest_phone = self.cleaned_data.get('restaurant_phone', '')
         rest_email = self.cleaned_data.get('restaurant_email', '')
@@ -371,11 +402,34 @@ class AdminEditForm(forms.ModelForm):
                 restaurant = user.restaurant
                 restaurant.name = rest_name
             else:
-                restaurant, _ = Restaurant.objects.get_or_create(name=rest_name)
+                restaurant, _ = Restaurant.objects.get_or_create(
+                    name=rest_name,
+                    defaults={
+                        'address': rest_address,
+                        'phone': rest_phone,
+                        'email': rest_email,
+                        'status': rest_status,
+                        'plan': rest_plan,
+                        'logo_icon': rest_logo_icon,
+                    }
+                )
                 user.restaurant = restaurant
 
             if rest_logo:
                 restaurant.logo = rest_logo
+                try:
+                    import base64
+                    import mimetypes
+                    rest_logo.seek(0)
+                    content = rest_logo.read()
+                    rest_logo.seek(0)
+                    mime = getattr(rest_logo, 'content_type', None) or mimetypes.guess_type(rest_logo.name)[0] or 'image/png'
+                    b64 = base64.b64encode(content).decode('utf-8')
+                    restaurant.logo_base64 = f"data:{mime};base64,{b64}"
+                except Exception:
+                    pass
+            if rest_logo_icon:
+                restaurant.logo_icon = rest_logo_icon
             if rest_address:
                 restaurant.address = rest_address
             if rest_phone:
@@ -385,6 +439,7 @@ class AdminEditForm(forms.ModelForm):
             restaurant.status = rest_status
             restaurant.plan = rest_plan
             restaurant.save()
+            RestaurantConfig.get_config(restaurant=restaurant)
 
         if commit:
             user.save()

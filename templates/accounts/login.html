@@ -59,9 +59,15 @@
         <div class="card-body p-4 p-md-5">
             <!-- Restaurant Brand Header -->
             <div class="text-center mb-4">
-                <div class="d-inline-flex align-items-center justify-content-center brand-flame-icon rounded-circle mb-3" style="width: 64px; height: 64px;">
-                    <i class="bi bi-fire fs-1"></i>
-                </div>
+                {% if RESTAURANT_LOGO_URL %}
+                    <div class="mb-3">
+                        <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }} Logo" style="max-height: 64px; max-width: 140px; object-fit: contain; border-radius: 12px; background: #fff; padding: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.12);" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
+                    </div>
+                {% else %}
+                    <div class="d-inline-flex align-items-center justify-content-center brand-flame-icon rounded-circle mb-3" style="width: 64px; height: 64px;">
+                        <i class="bi {{ RESTAURANT_LOGO_ICON|default:'bi-fire' }} fs-1"></i>
+                    </div>
+                {% endif %}
                 <h3 class="fw-bold mb-1">{{ RESTAURANT_NAME }}</h3>
                 <p class="text-muted small mb-3">Hospitality & POS Operations Portal</p>
                 

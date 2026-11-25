@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% if bill_requested %}Bill Requested • {% if "table" in table.table_number|lower %}{{ table.table_number }}{% else %}Table {{ table.table_number }}{% endif %}{% else %}Thank You! • {% if "table" in table.table_number|lower %}{{ table.table_number }}{% else %}Table {{ table.table_number }}{% endif %}{% endif %} | {{ restaurant_name|default:RESTAURANT_NAME }}</title>
+    <!-- Favicon & Touch Icons -->
+    {% include 'includes/favicons.html' %}
     
     <script>
         (function() {

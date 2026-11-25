@@ -827,7 +827,7 @@
                 <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }} Logo" class="brand-logo-img" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
             {% else %}
                 <div class="brand-logo-placeholder">
-                    <i class="bi bi-fire"></i>
+                    <i class="bi {{ RESTAURANT_LOGO_ICON|default:'bi-fire' }}"></i>
                 </div>
             {% endif %}
             <span class="brand-text">{{ RESTAURANT_NAME }}</span>
@@ -840,7 +840,7 @@
                     <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }} Logo" class="brand-logo-img" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                 {% else %}
                     <div class="brand-logo-placeholder">
-                        <i class="bi bi-fire"></i>
+                        <i class="bi {{ RESTAURANT_LOGO_ICON|default:'bi-fire' }}"></i>
                     </div>
                 {% endif %}
                 <span class="brand-text">{{ RESTAURANT_NAME }}</span>
@@ -1515,7 +1515,7 @@
                         <img src="{{ RESTAURANT_LOGO_URL }}" alt="{{ RESTAURANT_NAME }}" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #fff; padding: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
                     {% else %}
                         <div class="bg-primary text-white rounded-2 d-flex align-items-center justify-content-center shadow-xs" style="width: 32px; height: 32px;">
-                            <i class="bi bi-fire fs-5"></i>
+                            <i class="bi {{ RESTAURANT_LOGO_ICON|default:'bi-fire' }} fs-5"></i>
                         </div>
                     {% endif %}
                     <span class="fw-bold fs-6 text-body text-truncate" style="max-width: clamp(90px, 30vw, 220px);">{{ RESTAURANT_NAME }}</span>
