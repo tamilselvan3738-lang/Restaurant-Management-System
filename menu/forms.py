@@ -30,16 +30,33 @@ class MenuItemForm(forms.ModelForm):
     def __init__(self, *args, restaurant=None, **kwargs):
         self.restaurant = restaurant or (kwargs.get('instance') and getattr(kwargs['instance'], 'restaurant', None))
         super().__init__(*args, **kwargs)
+
+        # Ensure optional fields don't block form submission when left empty
+        if 'cost_price' in self.fields:
+            self.fields['cost_price'].required = False
+        if 'preparation_time' in self.fields:
+            self.fields['preparation_time'].required = False
+        if 'description' in self.fields:
+            self.fields['description'].required = False
+
+        cat_q = Q(is_active=True)
         if self.restaurant:
-            qs = Category.objects.filter(restaurant=self.restaurant)
-            if self.instance and self.instance.pk and self.instance.category_id:
-                self.fields['category'].queryset = qs.filter(Q(is_active=True) | Q(id=self.instance.category_id))
-            else:
-                self.fields['category'].queryset = qs.filter(is_active=True)
-        elif self.instance and self.instance.pk and self.instance.category_id:
-            self.fields['category'].queryset = Category.objects.filter(Q(is_active=True) | Q(id=self.instance.category_id))
-        else:
-            self.fields['category'].queryset = Category.objects.filter(is_active=True)
+            cat_q = cat_q & (Q(restaurant=self.restaurant) | Q(restaurant__isnull=True))
+        if self.instance and self.instance.pk and self.instance.category_id:
+            cat_q = cat_q | Q(id=self.instance.category_id)
+        self.fields['category'].queryset = Category.objects.filter(cat_q).distinct().order_by('display_order', 'name')
+
+    def clean_cost_price(self):
+        val = self.cleaned_data.get('cost_price')
+        if val is None or val == '':
+            return 0.00
+        return val
+
+    def clean_preparation_time(self):
+        val = self.cleaned_data.get('preparation_time')
+        if val is None or val == '':
+            return 15
+        return val
 
     def save(self, commit=True):
         item = super().save(commit=False)

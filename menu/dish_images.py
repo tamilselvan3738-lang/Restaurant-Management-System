@@ -14,33 +14,33 @@ FOOD_KEYWORD_MAP = [
     # Biryani / Rice specialties
     (('biryani', 'beriyani', 'briyani', 'pulao', 'dum biryani'), 'biryani.jpg'),
     # Watermelon / Coolers / Fresh beverages
-    (('water millan', 'watermelon', 'millan', 'melon', 'cooler', 'mojito'), 'watermelon.jpg'),
+    (('water millan', 'watermelon', 'water melon', 'millan', 'melon', 'cooler', 'mojito'), 'watermelon.jpg'),
     # Juices & Smoothies
-    (('orange', 'juice', 'smoothie', 'shake', 'beverage', 'mocktail'), 'juice.jpg'),
+    (('orange', 'juice', 'juices', 'smoothie', 'smoothies', 'shake', 'shakes', 'beverage', 'beverages', 'mocktail', 'mocktails'), 'juice.jpg'),
     # Lassi & Traditional drinks
-    (('mango', 'lassi', 'badam'), 'lassi.jpg'),
+    (('mango', 'lassi', 'lassis', 'badam'), 'lassi.jpg'),
     # Coffee & Tea
     (('coffee', 'espresso', 'tea', 'latte', 'cappuccino', 'mocha', 'brew'), 'coffee.jpg'),
     # Cocktails & Bar drinks
-    (('cocktail', 'drink', 'negroni', 'bar', 'wine', 'beer', 'whiskey', 'gin'), 'cocktail.jpg'),
+    (('cocktail', 'cocktails', 'drink', 'drinks', 'negroni', 'bar', 'wine', 'beer', 'whiskey', 'gin'), 'cocktail.jpg'),
     # Full meals / Thali / Indian lunch
-    (('meal', 'measl', 'thali', 'south', 'lunch', 'dinner', 'combo meal'), 'meals.jpg'),
+    (('meal', 'meals', 'measl', 'measls', 'thali', 'thalis', 'south', 'lunch', 'dinner', 'combo meal'), 'meals.jpg'),
     # Chicken / Poultry
     (('chicken', 'murgh', 'koli', 'poultry', 'tikka', 'tandoori'), 'chicken.jpg'),
     # Paneer / Vegetarian curry
     (('paneer', 'cottage', 'butter masala', 'shahi paneer'), 'paneer.jpg'),
     # Pizza
-    (('pizza', 'margherita', 'pepperoni', 'crust', 'calzone'), 'pizza.jpg'),
+    (('pizza', 'pizzas', 'margherita', 'pepperoni', 'crust', 'calzone'), 'pizza.jpg'),
     # Pasta
-    (('pasta', 'spaghetti', 'tagliolini', 'carbonara', 'penne', 'macaroni', 'noodle'), 'pasta.jpg'),
+    (('pasta', 'pastas', 'spaghetti', 'tagliolini', 'carbonara', 'penne', 'macaroni', 'noodle', 'noodles'), 'pasta.jpg'),
     # Steaks & Red Meats
-    (('steak', 'ribeye', 'beef', 'mutton', 'lamb', 'tenderloin', 'meat'), 'steak.jpg'),
+    (('steak', 'steaks', 'ribeye', 'beef', 'mutton', 'lamb', 'tenderloin', 'meat'), 'steak.jpg'),
     # Seafood
-    (('salmon', 'fish', 'calamari', 'seafood', 'prawn', 'shrimp', 'crab'), 'salmon.jpg'),
+    (('salmon', 'fish', 'calamari', 'seafood', 'prawn', 'prawns', 'shrimp', 'shrimps', 'crab', 'crabs'), 'salmon.jpg'),
     # Starters & Appetizers
-    (('starter', 'bruschetta', 'arancini', 'appetizer', 'finger', 'crispy', 'fry', 'snack', 'roll'), 'starter.jpg'),
+    (('starter', 'starters', 'bruschetta', 'arancini', 'appetizer', 'appetizers', 'finger', 'crispy', 'fry', 'snack', 'snacks', 'roll', 'rolls'), 'starter.jpg'),
     # Desserts & Sweets
-    (('dessert', 'destert', 'sweet', 'cake', 'tiramisu', 'pudding', 'ice cream', 'chocolate', 'lava', 'pastry', 'halwa', 'gulab', 'kulfi'), 'dessert.jpg'),
+    (('dessert', 'desserts', 'destert', 'desterts', 'sweet', 'sweets', 'cake', 'cakes', 'tiramisu', 'pudding', 'ice cream', 'chocolate', 'lava', 'pastry', 'pastries', 'halwa', 'gulab', 'kulfi'), 'dessert.jpg'),
 ]
 
 # Category slug / name mapping fallback
@@ -62,7 +62,7 @@ DEFAULT_DISH_IMAGE = '/static/images/dishes/default_dish.jpg'
 def _matches_keyword(kw, text):
     if ' ' in kw or '-' in kw:
         return kw in text
-    return bool(re.search(r'\b' + re.escape(kw) + r'\b', text))
+    return bool(re.search(r'\b' + re.escape(kw), text))
 
 
 def get_dish_static_image(name='', category_name='', category_slug=''):

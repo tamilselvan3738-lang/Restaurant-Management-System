@@ -91,9 +91,15 @@ class MenuItem(models.Model):
 
     @property
     def image_url(self):
-        cat_name = self.category.name if self.category else ''
-        cat_slug = self.category.slug if self.category else ''
-        return get_dish_image_url(self.name, cat_name, cat_slug, self.image)
+        cat = getattr(self, 'category', None)
+        cat_name = cat.name if cat else ''
+        cat_slug = cat.slug if cat else ''
+        url = get_dish_image_url(self.name, cat_name, cat_slug, self.image)
+        if self.updated_at:
+            version = int(self.updated_at.timestamp())
+            sep = '&' if '?' in url else '?'
+            return f"{url}{sep}v={version}"
+        return url
 
 
 class Ingredient(models.Model):
@@ -222,9 +228,15 @@ class FoodCombo(models.Model):
 
     @property
     def image_url(self):
-        cat_name = self.category.name if self.category else ''
-        cat_slug = self.category.slug if self.category else ''
-        return get_dish_image_url(self.name, cat_name, cat_slug, self.image)
+        cat = getattr(self, 'category', None)
+        cat_name = cat.name if cat else ''
+        cat_slug = cat.slug if cat else ''
+        url = get_dish_image_url(self.name, cat_name, cat_slug, self.image)
+        if self.updated_at:
+            version = int(self.updated_at.timestamp())
+            sep = '&' if '?' in url else '?'
+            return f"{url}{sep}v={version}"
+        return url
 
     @property
     def collage_preview(self):

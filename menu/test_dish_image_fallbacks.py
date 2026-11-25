@@ -65,7 +65,7 @@ class DishImageFallbacksTest(TestCase):
         self.assertEqual(len(components), 3)
         for comp in components:
             self.assertTrue(comp['image_url'].startswith('/static/images/dishes/'))
-            self.assertTrue(comp['image_url'].endswith('.jpg'))
+            self.assertIn('.jpg', comp['image_url'])
 
         # Check collage preview structure
         preview = combo.collage_preview

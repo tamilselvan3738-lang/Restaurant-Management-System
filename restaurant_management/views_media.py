@@ -9,27 +9,27 @@ from django.views.static import serve
 # Food keyword mapping for intelligent image resolution
 FOOD_KEYWORD_MAP = [
     (('biryani', 'beriyani', 'briyani', 'pulao', 'dum biryani'), 'biryani.jpg'),
-    (('water millan', 'watermelon', 'millan', 'melon', 'cooler', 'mojito'), 'watermelon.jpg'),
-    (('orange', 'juice', 'smoothie', 'shake', 'beverage', 'mocktail'), 'juice.jpg'),
-    (('mango', 'lassi', 'badam'), 'lassi.jpg'),
+    (('water millan', 'watermelon', 'water melon', 'millan', 'melon', 'cooler', 'mojito'), 'watermelon.jpg'),
+    (('orange', 'juice', 'juices', 'smoothie', 'smoothies', 'shake', 'shakes', 'beverage', 'beverages', 'mocktail', 'mocktails'), 'juice.jpg'),
+    (('mango', 'lassi', 'lassis', 'badam'), 'lassi.jpg'),
     (('coffee', 'espresso', 'tea', 'latte', 'cappuccino', 'mocha', 'brew'), 'coffee.jpg'),
-    (('cocktail', 'drink', 'negroni', 'bar', 'wine', 'beer', 'whiskey', 'gin'), 'cocktail.jpg'),
-    (('meal', 'measl', 'thali', 'south', 'lunch', 'dinner', 'combo meal'), 'meals.jpg'),
+    (('cocktail', 'cocktails', 'drink', 'drinks', 'negroni', 'bar', 'wine', 'beer', 'whiskey', 'gin'), 'cocktail.jpg'),
+    (('meal', 'meals', 'measl', 'measls', 'thali', 'thalis', 'south', 'lunch', 'dinner', 'combo meal'), 'meals.jpg'),
     (('chicken', 'murgh', 'koli', 'poultry', 'tikka', 'tandoori'), 'chicken.jpg'),
     (('paneer', 'cottage', 'butter masala', 'shahi paneer'), 'paneer.jpg'),
-    (('pizza', 'margherita', 'pepperoni', 'crust', 'calzone'), 'pizza.jpg'),
-    (('pasta', 'spaghetti', 'tagliolini', 'carbonara', 'penne', 'macaroni', 'noodle'), 'pasta.jpg'),
-    (('steak', 'ribeye', 'beef', 'mutton', 'lamb', 'tenderloin', 'meat'), 'steak.jpg'),
-    (('salmon', 'fish', 'calamari', 'seafood', 'prawn', 'shrimp', 'crab'), 'salmon.jpg'),
-    (('starter', 'bruschetta', 'arancini', 'appetizer', 'finger', 'crispy', 'fry', 'snack', 'roll'), 'starter.jpg'),
-    (('dessert', 'destert', 'sweet', 'cake', 'tiramisu', 'pudding', 'ice cream', 'chocolate', 'lava', 'pastry', 'halwa', 'gulab', 'kulfi'), 'dessert.jpg'),
+    (('pizza', 'pizzas', 'margherita', 'pepperoni', 'crust', 'calzone'), 'pizza.jpg'),
+    (('pasta', 'pastas', 'spaghetti', 'tagliolini', 'carbonara', 'penne', 'macaroni', 'noodle', 'noodles'), 'pasta.jpg'),
+    (('steak', 'steaks', 'ribeye', 'beef', 'mutton', 'lamb', 'tenderloin', 'meat'), 'steak.jpg'),
+    (('salmon', 'fish', 'calamari', 'seafood', 'prawn', 'prawns', 'shrimp', 'shrimps', 'crab', 'crabs'), 'salmon.jpg'),
+    (('starter', 'starters', 'bruschetta', 'arancini', 'appetizer', 'appetizers', 'finger', 'crispy', 'fry', 'snack', 'snacks', 'roll', 'rolls'), 'starter.jpg'),
+    (('dessert', 'desserts', 'destert', 'desterts', 'sweet', 'sweets', 'cake', 'cakes', 'tiramisu', 'pudding', 'ice cream', 'chocolate', 'lava', 'pastry', 'pastries', 'halwa', 'gulab', 'kulfi'), 'dessert.jpg'),
 ]
 
 
 def _matches_keyword(kw, text):
     if ' ' in kw or '-' in kw:
         return kw in text
-    return bool(re.search(r'\b' + re.escape(kw) + r'\b', text))
+    return bool(re.search(r'\b' + re.escape(kw), text))
 
 
 def serve_media_with_fallback(request, path):
@@ -64,19 +64,36 @@ def serve_media_with_fallback(request, path):
     if os.path.isfile(exact_dish_file):
         content_type, _ = mimetypes.guess_type(exact_dish_file)
         response = FileResponse(open(exact_dish_file, 'rb'), content_type=content_type or 'image/jpeg')
-        response['Cache-Control'] = 'public, max-age=86400'
+        response['Cache-Control'] = 'public, max-age=300, must-revalidate'
         return response
 
     exact_static_file = os.path.join(static_images_dir, basename)
     if os.path.isfile(exact_static_file):
         content_type, _ = mimetypes.guess_type(exact_static_file)
         response = FileResponse(open(exact_static_file, 'rb'), content_type=content_type or 'image/jpeg')
-        response['Cache-Control'] = 'public, max-age=86400'
+        response['Cache-Control'] = 'public, max-age=300, must-revalidate'
         return response
 
     # 4. Contextual analysis based on requested path and query parameters
     query_name = request.GET.get('name', '')
     query_cat = request.GET.get('category', '')
+
+    # If query parameters are not supplied, attempt database lookup by image filename
+    if not query_name:
+        try:
+            from menu.models import MenuItem, FoodCombo
+            matched_item = MenuItem.objects.filter(image__endswith=basename).first()
+            if matched_item:
+                query_name = matched_item.name
+                if matched_item.category:
+                    query_cat = matched_item.category.name
+            else:
+                matched_combo = FoodCombo.objects.filter(image__endswith=basename).first()
+                if matched_combo:
+                    query_name = matched_combo.name
+        except Exception:
+            pass
+
     search_str = f"{unquoted_path} {basename} {query_name} {query_cat}".lower().replace('-', ' ').replace('_', ' ')
 
     if 'logo' in search_str or 'restaurant' in search_str:
@@ -113,7 +130,7 @@ def serve_media_with_fallback(request, path):
             content_type = 'image/png'
 
         response = FileResponse(open(fallback_file, 'rb'), content_type=content_type or 'image/jpeg')
-        response['Cache-Control'] = 'public, max-age=86400'
+        response['Cache-Control'] = 'public, max-age=300, must-revalidate'
         return response
 
     # Fall back to standard serve if fallback itself cannot be read
