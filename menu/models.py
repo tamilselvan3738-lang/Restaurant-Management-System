@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.text import slugify
+from menu.dish_images import get_dish_image_url
 
 class Category(models.Model):
     restaurant = models.ForeignKey(
@@ -90,13 +91,9 @@ class MenuItem(models.Model):
 
     @property
     def image_url(self):
-        default_svg = '/static/images/default_dish.svg'
-        if self.image:
-            try:
-                return self.image.url
-            except Exception:
-                return default_svg
-        return default_svg
+        cat_name = self.category.name if self.category else ''
+        cat_slug = self.category.slug if self.category else ''
+        return get_dish_image_url(self.name, cat_name, cat_slug, self.image)
 
 
 class Ingredient(models.Model):
@@ -232,13 +229,9 @@ class FoodCombo(models.Model):
 
     @property
     def image_url(self):
-        default_svg = '/static/images/default_dish.svg'
-        if self.image:
-            try:
-                return self.image.url
-            except Exception:
-                return default_svg
-        return default_svg
+        cat_name = self.category.name if self.category else ''
+        cat_slug = self.category.slug if self.category else ''
+        return get_dish_image_url(self.name, cat_name, cat_slug, self.image)
 
     @property
     def collage_preview(self):
