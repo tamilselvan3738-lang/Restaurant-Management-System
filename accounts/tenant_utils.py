@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.http import Http404, HttpResponseForbidden
 from django.core.exceptions import PermissionDenied
 from django.contrib import messages
+from django.db.models import Q
 from accounts.models import Restaurant, User
 
 
@@ -69,6 +70,45 @@ def get_tenant_object_or_404(model_class, request, **kwargs):
     fields = [f.name for f in model._meta.fields]
     if 'restaurant' in fields:
         filter_kwargs = {'restaurant': restaurant, **kwargs}
+        try:
+            return get_object_or_404(model_class, **filter_kwargs)
+        except Http404:
+            # Fallback for legacy/unlinked records where restaurant was NULL but related entities belong to this tenant
+            qs = getattr(model_class, 'all', None)
+            if callable(qs):
+                qs = model_class.all()
+            elif hasattr(model_class, 'filter'):
+                qs = model_class
+            else:
+                qs = model.objects
+
+            q_entities = Q()
+            rel_found = False
+            if 'table' in fields:
+                q_entities |= Q(table__restaurant=restaurant)
+                rel_found = True
+            if 'session' in fields:
+                q_entities |= Q(session__restaurant=restaurant)
+                rel_found = True
+            if 'order' in fields:
+                q_entities |= Q(order__restaurant=restaurant)
+                rel_found = True
+            if 'invoice' in fields:
+                q_entities |= Q(invoice__restaurant=restaurant)
+                rel_found = True
+
+            if rel_found:
+                q_rel = Q(**kwargs) & (q_entities | Q(restaurant__isnull=True))
+                candidate = qs.filter(q_rel).first()
+                if candidate:
+                    if hasattr(candidate, 'restaurant') and candidate.restaurant is None:
+                        try:
+                            candidate.restaurant = restaurant
+                            candidate.save(update_fields=['restaurant'])
+                        except Exception:
+                            pass
+                    return candidate
+            raise
     elif 'table' in fields:
         filter_kwargs = {'table__restaurant': restaurant, **kwargs}
     elif 'order' in fields:

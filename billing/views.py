@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -761,6 +761,58 @@ def bill_request_list(request):
     return render(request, 'billing/bill_request_list.html', context)
 
 
+def get_tenant_bill_request(request, pk, for_update=False):
+    """
+    Safely resolves a BillRequest by pk respecting multi-tenancy, orphan backfilling,
+    and concurrent access, without ever crashing with an unhandled 404.
+    """
+    restaurant = get_current_restaurant(request)
+    user = getattr(request, 'user', None)
+
+    qs = BillRequest.objects.select_related('table', 'session', 'invoice', 'accepted_by', 'restaurant')
+    if for_update:
+        qs = qs.select_for_update()
+
+    # 1. Super Admin global mode (not impersonating)
+    if user and user.is_authenticated and user.is_superuser and not is_impersonating_restaurant(request):
+        bill_req = qs.filter(pk=pk).first()
+    elif restaurant:
+        # Check direct restaurant OR linked table/session/invoice restaurant OR orphan record
+        bill_req = qs.filter(
+            Q(pk=pk) & (
+                Q(restaurant=restaurant) |
+                Q(table__restaurant=restaurant) |
+                Q(session__restaurant=restaurant) |
+                Q(invoice__restaurant=restaurant) |
+                Q(restaurant__isnull=True)
+            )
+        ).first()
+    else:
+        bill_req = qs.filter(pk=pk).first()
+
+    # Fallback: if not matched via tenant filters, check if record exists and is an unlinked orphan (restaurant is None)
+    if not bill_req:
+        candidate = qs.filter(pk=pk).first()
+        if candidate:
+            if candidate.restaurant is None:
+                bill_req = candidate
+            elif user and user.is_authenticated and user.is_superuser and not is_impersonating_restaurant(request):
+                bill_req = candidate
+
+    # 2. Auto-heal orphaned record if restaurant is known
+    if bill_req:
+        target_restaurant = restaurant or getattr(bill_req.table, 'restaurant', None) or getattr(bill_req.session, 'restaurant', None)
+        if not bill_req.restaurant and target_restaurant:
+            try:
+                bill_req.restaurant = target_restaurant
+                bill_req.save(update_fields=['restaurant'])
+            except Exception:
+                pass
+        return bill_req
+
+    return None
+
+
 @login_required
 @role_required([User.Role.ADMIN, User.Role.MANAGER, User.Role.CASHIER])
 def bill_request_detail(request, pk):
@@ -769,11 +821,10 @@ def bill_request_detail(request, pk):
     Displays customer info, table number, order breakdown, item cancellations,
     billing breakdown, and staff action buttons.
     """
-    bill_req = get_tenant_object_or_404(
-        BillRequest.objects.select_related('table', 'session', 'invoice', 'accepted_by', 'restaurant'),
-        request,
-        pk=pk
-    )
+    bill_req = get_tenant_bill_request(request, pk)
+    if not bill_req:
+        messages.warning(request, f"Customer Bill Request #{pk} was not found or has already been resolved.")
+        return redirect('billing:bill_request_list')
 
     session = bill_req.session
     orders = session.orders.prefetch_related('items__menu_item').order_by('created_at') if session else []
@@ -819,7 +870,10 @@ def bill_request_accept(request, pk):
     'This bill request has already been accepted by [Staff Name].'
     """
     with transaction.atomic():
-        bill_req = get_tenant_object_or_404(BillRequest.objects.select_for_update(), request, pk=pk)
+        bill_req = get_tenant_bill_request(request, pk, for_update=True)
+        if not bill_req:
+            messages.warning(request, f"Customer Bill Request #{pk} was not found or has already been resolved.")
+            return redirect('billing:bill_request_list')
 
         if bill_req.status != BillRequest.Status.PENDING:
             staff_name = bill_req.accepted_by.get_full_name() or bill_req.accepted_by.username if bill_req.accepted_by else "another staff member"
@@ -843,28 +897,54 @@ def bill_request_generate_bill(request, pk):
     """
     Step 8: Generate or finalize bill for this bill request.
     Links the invoice, updates the bill request status to BILL_GENERATED.
+    Guaranteed not to raise an unhandled 404 error even with legacy or orphaned records.
     """
-    bill_req = get_tenant_object_or_404(BillRequest, request, pk=pk)
+    bill_req = get_tenant_bill_request(request, pk)
+    if not bill_req:
+        messages.warning(request, f"Customer Bill Request #{pk} was not found or has already been resolved.")
+        return redirect('billing:bill_request_list')
+
     restaurant = get_current_restaurant(request) or bill_req.restaurant
 
-    invoice, _ = Invoice.objects.get_or_create(
-        session=bill_req.session,
-        defaults={'table': bill_req.table, 'invoice_type': Invoice.InvoiceType.SESSION_BILL, 'restaurant': restaurant}
-    )
-    if not invoice.restaurant:
-        invoice.restaurant = restaurant
-        invoice.save(update_fields=['restaurant'])
-    invoice.recalculate(save=True)
+    try:
+        if bill_req.session:
+            invoice, _ = Invoice.objects.get_or_create(
+                session=bill_req.session,
+                defaults={'table': bill_req.table, 'invoice_type': Invoice.InvoiceType.SESSION_BILL, 'restaurant': restaurant}
+            )
+        elif bill_req.table:
+            invoice, _ = Invoice.objects.get_or_create(
+                table=bill_req.table,
+                session=None,
+                defaults={'invoice_type': Invoice.InvoiceType.SESSION_BILL, 'restaurant': restaurant}
+            )
+        else:
+            invoice = bill_req.invoice or Invoice.objects.create(
+                invoice_type=Invoice.InvoiceType.SESSION_BILL,
+                restaurant=restaurant
+            )
 
-    bill_req.invoice = invoice
-    bill_req.total_amount = invoice.total_amount
-    bill_req.paid_amount = invoice.total_paid
-    bill_req.balance_due = invoice.balance_due
-    bill_req.status = BillRequest.Status.BILL_GENERATED
-    bill_req.save(update_fields=['invoice', 'total_amount', 'paid_amount', 'balance_due', 'status'])
+        if not invoice.restaurant and restaurant:
+            invoice.restaurant = restaurant
+            invoice.save(update_fields=['restaurant'])
+        invoice.recalculate(save=True)
 
-    messages.success(request, f"Invoice {invoice.invoice_number} generated for {bill_req.session.session_name}!")
-    return redirect('billing:invoice_detail', invoice_id=invoice.id)
+        bill_req.invoice = invoice
+        bill_req.total_amount = invoice.total_amount
+        bill_req.paid_amount = invoice.total_paid
+        bill_req.balance_due = invoice.balance_due
+        bill_req.status = BillRequest.Status.BILL_GENERATED
+        bill_req.save(update_fields=['invoice', 'total_amount', 'paid_amount', 'balance_due', 'status'])
+
+        target_title = (
+            bill_req.session.session_name if bill_req.session
+            else (f"Table {bill_req.table.table_number}" if bill_req.table else "Customer")
+        )
+        messages.success(request, f"Invoice {invoice.invoice_number} generated for {target_title}!")
+        return redirect('billing:invoice_detail', invoice_id=invoice.id)
+    except Exception as exc:
+        messages.error(request, f"Unable to generate bill for request #{pk}: {exc}")
+        return redirect('billing:bill_request_list')
 
 
 @login_required
@@ -874,7 +954,10 @@ def bill_request_cancel(request, pk):
     """
     Cancels a bill request with an optional cancellation reason.
     """
-    bill_req = get_tenant_object_or_404(BillRequest, request, pk=pk)
+    bill_req = get_tenant_bill_request(request, pk)
+    if not bill_req:
+        messages.warning(request, f"Customer Bill Request #{pk} was not found or has already been resolved.")
+        return redirect('billing:bill_request_list')
 
     reason = request.POST.get('cancellation_reason', 'Cancelled by staff.')
     bill_req.status = BillRequest.Status.CANCELLED

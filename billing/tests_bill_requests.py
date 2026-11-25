@@ -377,3 +377,45 @@ class BillRequestManagementTests(TestCase):
         order_page_2 = client_2.get(reverse('tables:customer_order', args=[self.table_1.table_number]) + '?switch=1')
         self.assertEqual(order_page_2.status_code, 200)
         self.assertContains(order_page_2, "How many guests?")
+
+    def test_09_bill_request_detail_auto_heals_null_restaurant_record(self):
+        """
+        Verify that a BillRequest created with restaurant=None (e.g. legacy record)
+        whose table belongs to Restaurant A is resolved and auto-healed without a 404 error.
+        """
+        table_with_rest = DiningTable.objects.create(
+            table_number='T99',
+            capacity=4,
+            restaurant=self.restaurant_a
+        )
+        session_unlinked = CustomerSession.objects.create(
+            table=table_with_rest,
+            session_name="Group Unlinked",
+            customer_name="Test Customer",
+            guest_count=2
+        )
+        req_unlinked = BillRequest.objects.create(
+            restaurant=None,
+            table=table_with_rest,
+            session=session_unlinked,
+            total_amount=Decimal('500.00'),
+            paid_amount=Decimal('0.00'),
+            balance_due=Decimal('500.00'),
+            status=BillRequest.Status.PENDING,
+        )
+        self.client.force_login(self.admin_a)
+        resp = self.client.get(reverse('billing:bill_request_detail', args=[req_unlinked.pk]))
+        self.assertEqual(resp.status_code, 200)
+        req_unlinked.refresh_from_db()
+        self.assertEqual(req_unlinked.restaurant, self.restaurant_a)
+
+    def test_10_bill_request_detail_non_existent_id_redirects_gracefully(self):
+        """
+        Verify that navigating to a non-existent or deleted BillRequest ID redirects
+        to bill_request_list with a friendly warning message instead of crashing with a 404 page.
+        """
+        self.client.force_login(self.admin_a)
+        resp = self.client.get(reverse('billing:bill_request_detail', args=[999999]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertRedirects(resp, reverse('billing:bill_request_list'))
+

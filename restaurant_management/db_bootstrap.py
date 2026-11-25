@@ -89,6 +89,25 @@ def ensure_database_ready():
         t_user.is_active = True
         t_user.save()
 
+        # 5. Backfill any unlinked/orphaned BillRequest, DiningTable, CustomerSession, or Invoice records
+        try:
+            from billing.models import BillRequest, Invoice
+            from tables.models import DiningTable, CustomerSession
+            DiningTable.objects.filter(restaurant__isnull=True).update(restaurant=restaurant)
+            CustomerSession.objects.filter(restaurant__isnull=True).update(restaurant=restaurant)
+            Invoice.objects.filter(restaurant__isnull=True).update(restaurant=restaurant)
+            for br in BillRequest.objects.filter(restaurant__isnull=True):
+                r = (
+                    getattr(br.table, 'restaurant', None)
+                    or getattr(br.session, 'restaurant', None)
+                    or getattr(br.invoice, 'restaurant', None)
+                    or restaurant
+                )
+                br.restaurant = r
+                br.save(update_fields=['restaurant'])
+        except Exception:
+            pass
+
         _INITIALIZED = True
         print(f"[BOOTSTRAP] Database initialized: Superadmin '{username}' and Admin 'tamil' ready.")
     except Exception as exc:

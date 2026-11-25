@@ -2432,12 +2432,21 @@ def customer_request_bill(request, table_number, session_token):
         return redirect('tables:customer_order', table_number=table.table_number)
 
     # Determine restaurant tenant from table, session, or server
+    from accounts.models import Restaurant
     first_ord = session.orders.exclude(status=Order.Status.CANCELLED).first()
     restaurant = (
         getattr(table, 'restaurant', None)
         or getattr(session, 'restaurant', None)
         or (first_ord.server.restaurant if (first_ord and first_ord.server and first_ord.server.restaurant) else None)
+        or Restaurant.objects.filter(status=Restaurant.RestaurantStatus.ACTIVE).first()
     )
+    if restaurant:
+        if getattr(table, 'restaurant', None) is None:
+            table.restaurant = restaurant
+            table.save(update_fields=['restaurant'])
+        if getattr(session, 'restaurant', None) is None:
+            session.restaurant = restaurant
+            session.save(update_fields=['restaurant'])
 
     # Ensure invoice is up to date and linked to restaurant
     invoice, _ = Invoice.objects.get_or_create(

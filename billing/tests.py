@@ -2,8 +2,8 @@ from decimal import Decimal
 from django.test import TestCase, Client
 from django.urls import reverse
 from accounts.models import User, Restaurant
-from billing.models import Invoice, Payment
-from tables.models import DiningTable
+from billing.models import Invoice, Payment, BillRequest
+from tables.models import DiningTable, CustomerSession
 
 class BillingPaymentMethodTests(TestCase):
     def setUp(self):
@@ -116,3 +116,140 @@ class BillingPaymentMethodTests(TestCase):
         # JavaScript timers: 2000ms for pop notice, 5000ms for redirect
         self.assertIn("2000", content)
         self.assertIn("secondsRemaining", content)
+
+
+class BillRequestAcceptAndLookupTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.restaurant = Restaurant.objects.create(name='Grand Bistro', code='GB01')
+        self.admin = User.objects.create_user(
+            username='bistro_admin',
+            email='admin@grandbistro.com',
+            password='testpassword123',
+            role=User.Role.ADMIN,
+            restaurant=self.restaurant
+        )
+        self.client.force_login(self.admin)
+
+        self.table = DiningTable.objects.create(table_number='Table 1', capacity=4, restaurant=self.restaurant)
+        self.session = CustomerSession.objects.create(
+            table=self.table,
+            session_name='Family Dinner',
+            customer_name='Dhanusha',
+            restaurant=self.restaurant,
+            status=CustomerSession.Status.BILL_REQUESTED
+        )
+        self.invoice = Invoice.objects.create(
+            restaurant=self.restaurant,
+            table=self.table,
+            session=self.session,
+            subtotal=Decimal('250.00'),
+            tax_amount=Decimal('12.50'),
+            total_amount=Decimal('262.50')
+        )
+
+    def test_bill_request_accept_with_orphan_null_restaurant(self):
+        """
+        Verify that accepting a BillRequest with restaurant=None (orphan) does NOT crash with 404,
+        auto-heals the restaurant foreign key, and marks status as ACCEPTED.
+        """
+        orphan_req = BillRequest.objects.create(
+            restaurant=None,  # Exact bug scenario from Render
+            table=self.table,
+            session=self.session,
+            invoice=self.invoice,
+            total_amount=Decimal('262.50'),
+            paid_amount=Decimal('0.00'),
+            balance_due=Decimal('262.50'),
+            status=BillRequest.Status.PENDING
+        )
+
+        resp = self.client.post(
+            reverse('billing:bill_request_accept', args=[orphan_req.pk]),
+            follow=False
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn(reverse('billing:bill_request_detail', args=[orphan_req.pk]), resp.url)
+
+        orphan_req.refresh_from_db()
+        self.assertEqual(orphan_req.status, BillRequest.Status.ACCEPTED)
+        self.assertEqual(orphan_req.accepted_by, self.admin)
+        self.assertEqual(orphan_req.restaurant, self.restaurant)  # Auto-healed
+
+    def test_bill_request_accept_nonexistent_pk_graceful_redirect(self):
+        """
+        Verify that POSTing to accept a non-existent BillRequest pk does NOT raise an unhandled 404,
+        and redirects to the bill request list with a warning message.
+        """
+        resp = self.client.post(
+            reverse('billing:bill_request_accept', args=[99999]),
+            follow=True
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'billing/bill_request_list.html')
+        messages = list(resp.context['messages'])
+        self.assertTrue(any("was not found" in str(m) for m in messages))
+
+    def test_bill_request_detail_with_orphan_null_restaurant(self):
+        """
+        Verify that viewing detail of an orphan BillRequest auto-heals and renders successfully.
+        """
+        orphan_req = BillRequest.objects.create(
+            restaurant=None,
+            table=self.table,
+            session=self.session,
+            invoice=self.invoice,
+            total_amount=Decimal('262.50'),
+            paid_amount=Decimal('0.00'),
+            balance_due=Decimal('262.50'),
+            status=BillRequest.Status.PENDING
+        )
+
+        resp = self.client.get(reverse('billing:bill_request_detail', args=[orphan_req.pk]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'billing/bill_request_detail.html')
+
+        orphan_req.refresh_from_db()
+        self.assertEqual(orphan_req.restaurant, self.restaurant)  # Auto-healed
+
+    def test_bill_request_generate_bill_with_orphan_null_restaurant(self):
+        """
+        Verify that POSTing to generate bill on an orphan BillRequest (restaurant=None)
+        does NOT crash with 404, auto-heals, updates status to BILL_GENERATED, and redirects to invoice detail.
+        """
+        orphan_req = BillRequest.objects.create(
+            restaurant=None,
+            table=self.table,
+            session=self.session,
+            invoice=None,
+            total_amount=Decimal('262.50'),
+            paid_amount=Decimal('0.00'),
+            balance_due=Decimal('262.50'),
+            status=BillRequest.Status.ACCEPTED
+        )
+
+        resp = self.client.post(
+            reverse('billing:bill_request_generate_bill', args=[orphan_req.pk]),
+            follow=False
+        )
+        self.assertEqual(resp.status_code, 302)
+        orphan_req.refresh_from_db()
+        self.assertEqual(orphan_req.status, BillRequest.Status.BILL_GENERATED)
+        self.assertIsNotNone(orphan_req.invoice)
+        self.assertEqual(orphan_req.restaurant, self.restaurant)
+        self.assertIn(reverse('billing:invoice_detail', args=[orphan_req.invoice.id]), resp.url)
+
+    def test_bill_request_generate_bill_nonexistent_pk_graceful_redirect(self):
+        """
+        Verify that POSTing to generate bill for non-existent pk does NOT raise an unhandled 404,
+        and gracefully redirects to bill request list with a warning.
+        """
+        resp = self.client.post(
+            reverse('billing:bill_request_generate_bill', args=[99999]),
+            follow=True
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'billing/bill_request_list.html')
+        messages = list(resp.context['messages'])
+        self.assertTrue(any("was not found" in str(m) for m in messages))
+
