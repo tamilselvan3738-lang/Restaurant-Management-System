@@ -36,39 +36,39 @@ class MergeBillsTests(TestCase):
         self.icecream = MenuItem.objects.create(category=self.category, name="Ice Cream", price=Decimal('80.00'))
 
         # Tables
-        self.table_1 = DiningTable.objects.create(table_number='T01', capacity=4)
-        self.table_2 = DiningTable.objects.create(table_number='T02', capacity=4)
-        self.table_3 = DiningTable.objects.create(table_number='T03', capacity=4)
+        self.table_1 = DiningTable.objects.create(table_number='T01', capacity=4, restaurant=self.restaurant_a)
+        self.table_2 = DiningTable.objects.create(table_number='T02', capacity=4, restaurant=self.restaurant_a)
+        self.table_3 = DiningTable.objects.create(table_number='T03', capacity=4, restaurant=self.restaurant_a)
 
         # Customer Sessions & Seats
-        self.session_a = CustomerSession.objects.create(table=self.table_1, session_name="Group A", customer_name="Alice", guest_count=2)
-        self.session_b = CustomerSession.objects.create(table=self.table_2, session_name="Group B", customer_name="Bob", guest_count=2)
-        self.session_c = CustomerSession.objects.create(table=self.table_3, session_name="Group C", customer_name="Charlie", guest_count=2)
+        self.session_a = CustomerSession.objects.create(table=self.table_1, restaurant=self.restaurant_a, session_name="Group A", customer_name="Alice", guest_count=2)
+        self.session_b = CustomerSession.objects.create(table=self.table_2, restaurant=self.restaurant_a, session_name="Group B", customer_name="Bob", guest_count=2)
+        self.session_c = CustomerSession.objects.create(table=self.table_3, restaurant=self.restaurant_a, session_name="Group C", customer_name="Charlie", guest_count=2)
 
         # Orders for each group
-        self.order_a = Order.objects.create(table=self.table_1, session=self.session_a, order_type=Order.OrderType.DINE_IN)
+        self.order_a = Order.objects.create(table=self.table_1, session=self.session_a, restaurant=self.restaurant_a, order_type=Order.OrderType.DINE_IN)
         OrderItem.objects.create(order=self.order_a, menu_item=self.biryani, quantity=1, unit_price=Decimal('240.00'))
         OrderItem.objects.create(order=self.order_a, menu_item=self.juice, quantity=1, unit_price=Decimal('60.00'))
         self.order_a.calculate_totals(save=True)
 
-        self.order_b = Order.objects.create(table=self.table_2, session=self.session_b, order_type=Order.OrderType.DINE_IN)
+        self.order_b = Order.objects.create(table=self.table_2, session=self.session_b, restaurant=self.restaurant_a, order_type=Order.OrderType.DINE_IN)
         OrderItem.objects.create(order=self.order_b, menu_item=self.paneer, quantity=1, unit_price=Decimal('220.00'))
         OrderItem.objects.create(order=self.order_b, menu_item=self.naan, quantity=1, unit_price=Decimal('50.00'))
         self.order_b.calculate_totals(save=True)
 
-        self.order_c = Order.objects.create(table=self.table_3, session=self.session_c, order_type=Order.OrderType.DINE_IN)
+        self.order_c = Order.objects.create(table=self.table_3, session=self.session_c, restaurant=self.restaurant_a, order_type=Order.OrderType.DINE_IN)
         OrderItem.objects.create(order=self.order_c, menu_item=self.rice, quantity=1, unit_price=Decimal('180.00'))
         OrderItem.objects.create(order=self.order_c, menu_item=self.icecream, quantity=1, unit_price=Decimal('80.00'))
         self.order_c.calculate_totals(save=True)
 
         # Invoices
-        self.invoice_a = Invoice.objects.create(table=self.table_1, session=self.session_a, order=self.order_a, invoice_type=Invoice.InvoiceType.SESSION_BILL)
+        self.invoice_a = Invoice.objects.create(table=self.table_1, session=self.session_a, order=self.order_a, restaurant=self.restaurant_a, invoice_type=Invoice.InvoiceType.SESSION_BILL)
         self.invoice_a.recalculate(save=True)
 
-        self.invoice_b = Invoice.objects.create(table=self.table_2, session=self.session_b, order=self.order_b, invoice_type=Invoice.InvoiceType.SESSION_BILL)
+        self.invoice_b = Invoice.objects.create(table=self.table_2, session=self.session_b, order=self.order_b, restaurant=self.restaurant_a, invoice_type=Invoice.InvoiceType.SESSION_BILL)
         self.invoice_b.recalculate(save=True)
 
-        self.invoice_c = Invoice.objects.create(table=self.table_3, session=self.session_c, order=self.order_c, invoice_type=Invoice.InvoiceType.SESSION_BILL)
+        self.invoice_c = Invoice.objects.create(table=self.table_3, session=self.session_c, order=self.order_c, restaurant=self.restaurant_a, invoice_type=Invoice.InvoiceType.SESSION_BILL)
         self.invoice_c.recalculate(save=True)
 
     def test_merge_two_bills_preview_and_confirm(self):

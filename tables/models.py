@@ -118,7 +118,18 @@ class DiningTable(models.Model):
         ]
 
     def __str__(self):
-        return f"Table {self.table_number} ({self.capacity} seats - {self.get_location_display()})"
+        return f"{self.display_name} ({self.capacity} seats - {self.get_location_display()})"
+
+    @property
+    def display_name(self):
+        """
+        Returns clean table display name without doubling 'Table' prefix.
+        e.g. 'Table 1' if table_number is '1' or 'Table 1'.
+        """
+        num = str(self.table_number).strip()
+        if num.lower().startswith('table'):
+            return num
+        return f"Table {num}"
 
     @property
     def badge_class(self):
@@ -1152,6 +1163,8 @@ class ServiceRequest(models.Model):
 
     @property
     def waiting_duration_seconds(self):
+        if not self.requested_at:
+            return 0
         end_time = self.completed_at or self.cancelled_at or timezone.now()
         return max(0, int((end_time - self.requested_at).total_seconds()))
 
@@ -1203,6 +1216,8 @@ class ServiceRequest(models.Model):
         """
         if self.status in [self.Status.COMPLETED, self.Status.CANCELLED, self.Status.UNABLE_TO_FULFIL]:
             return bool(self.is_delayed)
+        if not self.requested_at:
+            return False
         elapsed_mins = (timezone.now() - self.requested_at).total_seconds() / 60.0
         return elapsed_mins >= self.escalation_sla_minutes
 
@@ -1247,6 +1262,17 @@ class ServiceRequest(models.Model):
             return "-"
         m, s = divmod(sec, 60)
         return f"{m}m {s}s" if m > 0 else f"{s}s"
+
+    @property
+    def assigned_waiter_name(self):
+        """
+        Safely returns the assigned waiter's full name, username, or an empty string if unassigned.
+        Prevents VariableDoesNotExist or AttributeError when assigned_waiter is None.
+        """
+        if self.assigned_waiter:
+            full = self.assigned_waiter.get_full_name()
+            return full if full else (self.assigned_waiter.username or '')
+        return ''
 
 
 class ServiceRequestAuditLog(models.Model):

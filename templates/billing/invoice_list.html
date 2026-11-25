@@ -50,7 +50,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+<div class="d-flex flex-column flex-xl-row justify-content-between align-items-start align-items-xl-center gap-3 mb-4">
     <div>
         <h3 class="fw-bold mb-1">
             <i class="bi bi-receipt-cutoff text-warning me-2"></i>Invoices & Billing History
@@ -58,23 +58,30 @@
         <p class="text-muted small mb-0">Payment settlements, transaction receipts, and sales audit</p>
     </div>
     
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
-            <i class="bi bi-arrow-left"></i> Back
-        </a>
-        <a href="{% url 'billing:consolidated_list' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
-            <i class="bi bi-collection-fill"></i> Consolidated Bills
-        </a>
-        <a href="{% url 'billing:merge_bills_select' %}" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs fw-semibold text-dark">
-            <i class="bi bi-intersect"></i> Merge Customer Bills
-        </a>
-        <div class="card p-2 px-3 bg-success-subtle border-success shadow-xs mb-0 rounded-3">
-            <span class="text-success small fw-semibold text-uppercase" style="font-size: 0.68rem;">Total Settled</span>
-            <h5 class="fw-bold text-success mb-0">₹{{ total_revenue|floatformat:2 }}</h5>
+    <div class="d-flex flex-wrap align-items-center justify-content-start justify-content-xl-end gap-2.5">
+        <!-- Action Buttons Group -->
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs text-nowrap">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            <a href="{% url 'billing:consolidated_list' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs text-nowrap">
+                <i class="bi bi-collection-fill"></i> Consolidated Bills
+            </a>
+            <a href="{% url 'billing:merge_bills_select' %}" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs fw-semibold text-dark text-nowrap">
+                <i class="bi bi-intersect"></i> Merge Customer Bills
+            </a>
         </div>
-        <div class="card p-2 px-3 bg-danger-subtle border-danger shadow-xs mb-0 rounded-3">
-            <span class="text-danger small fw-semibold text-uppercase" style="font-size: 0.68rem;">Outstanding</span>
-            <h5 class="fw-bold text-danger mb-0">₹{{ total_unpaid|floatformat:2 }}</h5>
+
+        <!-- Financial Summary Stat Badges (Tightly paired, never separated) -->
+        <div class="d-flex align-items-center gap-2 flex-nowrap flex-shrink-0">
+            <div class="card p-2 px-3 bg-success-subtle border-success shadow-xs mb-0 rounded-3 text-nowrap" style="min-width: 110px;">
+                <span class="text-success small fw-semibold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.04em; display: block; line-height: 1.2;">Total Settled</span>
+                <h5 class="fw-bold text-success mb-0 font-monospace" style="font-size: 1.15rem; line-height: 1.2;">₹{{ total_revenue|floatformat:2 }}</h5>
+            </div>
+            <div class="card p-2 px-3 bg-danger-subtle border-danger shadow-xs mb-0 rounded-3 text-nowrap" style="min-width: 110px;">
+                <span class="text-danger small fw-semibold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.04em; display: block; line-height: 1.2;">Outstanding</span>
+                <h5 class="fw-bold text-danger mb-0 font-monospace" style="font-size: 1.15rem; line-height: 1.2;">₹{{ total_unpaid|floatformat:2 }}</h5>
+            </div>
         </div>
     </div>
 </div>

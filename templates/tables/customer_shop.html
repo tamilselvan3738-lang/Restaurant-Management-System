@@ -587,7 +587,7 @@
                         </div>
                         <div class="text-muted small" style="font-size: 0.76rem;" id="billReqStatusMsg">
                             {% if bill_request.status == 'ACCEPTED' %}
-                                Accepted by <strong>{{ bill_request.accepted_by.get_full_name|default:bill_request.accepted_by.username }}</strong>. Staff is on the way to your table with the bill.
+                                Accepted by <strong>{% if bill_request.accepted_by %}{{ bill_request.accepted_by.get_full_name|default:bill_request.accepted_by.username }}{% else %}Staff{% endif %}</strong>. Staff is on the way to your table with the bill.
                             {% elif bill_request.status == 'BILL_GENERATED' %}
                                 Your final invoice is ready. Staff will bring your receipt to table {{ table.table_number }}.
                             {% else %}

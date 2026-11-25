@@ -73,7 +73,7 @@
                             {{ b.bill_number }}
                         </a>
                         <div class="small text-muted" style="font-size: 0.72rem;">
-                            By: {{ b.merged_by.get_full_name|default:b.merged_by.username|default:"Staff" }}
+                            By: {% if b.merged_by %}{{ b.merged_by.get_full_name|default:b.merged_by.username }}{% else %}Staff{% endif %}
                         </div>
                     </td>
                     <td class="small text-muted">

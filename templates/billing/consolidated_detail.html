@@ -45,7 +45,7 @@
             {% endif %}
         </div>
         <p class="text-muted small mb-0 mt-1">
-            Merged on {{ bill.created_at|date:"l, F d, Y • H:i" }} by <strong>{{ bill.merged_by.get_full_name|default:bill.merged_by.username|default:"Staff" }}</strong>
+            Merged on {{ bill.created_at|date:"l, F d, Y • H:i" }} by <strong>{% if bill.merged_by %}{{ bill.merged_by.get_full_name|default:bill.merged_by.username }}{% else %}Staff{% endif %}</strong>
         </p>
     </div>
 
@@ -108,15 +108,15 @@
                                         {{ inv.invoice_number }}
                                     </a>
                                     <div class="small text-muted" style="font-size: 0.72rem;">
-                                        Order #{{ inv.order.order_number|default:inv.session.orders.first.order_number|default:"N/A" }}
+                                        Order #{% if inv.order %}{{ inv.order.order_number }}{% elif inv.session and inv.session.orders.first %}{{ inv.session.orders.first.order_number }}{% else %}N/A{% endif %}
                                     </div>
                                 </td>
                                 <td>
                                     <div class="fw-semibold text-dark">
-                                        <i class="bi bi-grid-3x3-gap text-muted"></i> Table {{ inv.table.table_number|default:"N/A" }}
+                                        <i class="bi bi-grid-3x3-gap text-muted"></i> Table {% if inv.table %}{{ inv.table.table_number }}{% else %}N/A{% endif %}
                                     </div>
                                     <div class="small text-primary">
-                                        <i class="bi bi-people"></i> {{ inv.session.session_name|default:inv.customer_name|default:"Guest Group" }}
+                                        <i class="bi bi-people"></i> {% if inv.session and inv.session.session_name %}{{ inv.session.session_name }}{% else %}{{ inv.customer_name|default:"Guest Group" }}{% endif %}
                                     </div>
                                 </td>
                                 <td class="text-end font-monospace fw-bold text-dark">
@@ -234,7 +234,7 @@
                                     </span>
                                 </td>
                                 <td class="small text-muted">
-                                    {{ p.cashier.get_full_name|default:p.cashier.username|default:"Staff" }}
+                                    {% if p.cashier %}{{ p.cashier.get_full_name|default:p.cashier.username }}{% else %}Staff{% endif %}
                                 </td>
                                 <td class="text-end font-monospace fw-bold text-success fs-6">
                                     ₹{{ p.amount|floatformat:2 }}

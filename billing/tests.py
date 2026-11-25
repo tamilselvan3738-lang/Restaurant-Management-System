@@ -1,23 +1,26 @@
 from decimal import Decimal
 from django.test import TestCase, Client
 from django.urls import reverse
-from accounts.models import User
+from accounts.models import User, Restaurant
 from billing.models import Invoice, Payment
 from tables.models import DiningTable
 
 class BillingPaymentMethodTests(TestCase):
     def setUp(self):
         self.client = Client()
+        self.restaurant = Restaurant.objects.create(name='Test Resto', code='TR01')
         self.admin = User.objects.create_user(
             username='cashier_admin',
             email='cashier@restaurant.com',
             password='testpassword123',
-            role=User.Role.ADMIN
+            role=User.Role.ADMIN,
+            restaurant=self.restaurant
         )
         self.client.force_login(self.admin)
 
-        self.table = DiningTable.objects.create(table_number='T-10', capacity=4)
+        self.table = DiningTable.objects.create(table_number='T-10', capacity=4, restaurant=self.restaurant)
         self.invoice = Invoice.objects.create(
+            restaurant=self.restaurant,
             table=self.table,
             subtotal=Decimal('100.00'),
             tax_amount=Decimal('8.25'),

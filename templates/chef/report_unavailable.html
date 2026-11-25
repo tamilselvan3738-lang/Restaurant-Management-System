@@ -104,7 +104,7 @@
                                         </div>
                                     </td>
                                     <td class="small text-muted">
-                                        {{ r.reported_by.get_full_name|default:r.reported_by.username|default:"Kitchen" }}
+                                        {% if r.reported_by %}{{ r.reported_by.get_full_name|default:r.reported_by.username }}{% else %}Kitchen{% endif %}
                                     </td>
                                     <td>
                                         <span class="badge {% if r.status == 'APPROVED' %}bg-success{% elif r.status == 'PENDING' %}bg-warning text-dark{% else %}bg-secondary{% endif %} px-2 py-1" style="font-size: 0.7rem;">

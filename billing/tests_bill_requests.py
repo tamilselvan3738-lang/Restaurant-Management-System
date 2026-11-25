@@ -278,13 +278,13 @@ class BillRequestManagementTests(TestCase):
         list_resp = self.client.get(reverse('billing:bill_request_list'))
         self.assertNotContains(list_resp, req.request_number)
 
-        # Detail view should be forbidden
+        # Detail view should be forbidden or not found (multi-tenant isolation)
         detail_resp = self.client.get(reverse('billing:bill_request_detail', args=[req.pk]))
-        self.assertEqual(detail_resp.status_code, 302)
+        self.assertIn(detail_resp.status_code, [302, 404])
 
-        # Accept action should be blocked
+        # Accept action should be blocked (forbidden or not found)
         accept_resp = self.client.post(reverse('billing:bill_request_accept', args=[req.pk]))
-        self.assertEqual(accept_resp.status_code, 302)
+        self.assertIn(accept_resp.status_code, [302, 404])
         req.refresh_from_db()
         self.assertEqual(req.status, BillRequest.Status.PENDING)
 

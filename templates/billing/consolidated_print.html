@@ -177,7 +177,7 @@
         </div>
         <div class="meta-row">
             <span>Merged By Staff:</span>
-            <span>{{ bill.merged_by.get_full_name|default:bill.merged_by.username|default:"Staff" }}</span>
+            <span>{% if bill.merged_by %}{{ bill.merged_by.get_full_name|default:bill.merged_by.username }}{% else %}Staff{% endif %}</span>
         </div>
 
         <div class="divider"></div>

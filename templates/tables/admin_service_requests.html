@@ -543,7 +543,7 @@
                 </button>
 
                 {% if req.status != 'COMPLETED' and req.status != 'CANCELLED' and req.status != 'UNABLE_TO_FULFIL' %}
-                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1.5 fw-semibold text-nowrap flex-grow-1" onclick="openReassignModal('{{ req.id }}', '{{ req.request_number }}', '{{ req.assigned_waiter_id|default:'' }}', '{{ req.assigned_waiter.get_full_name|default:req.assigned_waiter.username|escapejs }}')">
+                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1.5 fw-semibold text-nowrap flex-grow-1" onclick="openReassignModal('{{ req.id }}', '{{ req.request_number }}', '{{ req.assigned_waiter_id|default:'' }}', '{{ req.assigned_waiter_name|escapejs }}')">
                     <i class="bi bi-arrow-left-right me-1"></i> Reassign Waiter
                 </button>
                 <form method="POST" action="{% url 'tables:waiter_request_cancel' req.id %}" class="d-inline m-0 flex-shrink-0" onsubmit="return confirm('Cancel request #{{ req.request_number }}?');">
@@ -562,7 +562,7 @@
                 <div class="w-100 py-2 px-3 text-warning small bg-warning bg-opacity-10 rounded-3 border border-warning-subtle">
                     <div class="fw-bold d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-slash-circle me-1"></i> Unable to Fulfil</span>
-                        <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2" onclick="openReassignModal('{{ req.id }}', '{{ req.request_number }}', '{{ req.assigned_waiter_id|default:'' }}', '{{ req.assigned_waiter.get_full_name|default:req.assigned_waiter.username|escapejs }}')">
+                        <button type="button" class="btn btn-xs btn-outline-warning rounded-pill px-2" onclick="openReassignModal('{{ req.id }}', '{{ req.request_number }}', '{{ req.assigned_waiter_id|default:'' }}', '{{ req.assigned_waiter_name|escapejs }}')">
                             Reassign
                         </button>
                     </div>
@@ -1021,7 +1021,7 @@
                             <span class="text-muted font-monospace" style="font-size: 0.72rem;">Table {{ fb.table.table_number }} &bull; {{ fb.feedback_at|date:"M d, g:i A" }}</span>
                         </div>
                         <div class="fst-italic text-break">"{{ fb.feedback_notes }}"</div>
-                        <div class="text-muted mt-1" style="font-size: 0.7rem;">Attended by: {{ fb.completed_by.get_full_name|default:fb.assigned_waiter.get_full_name|default:"Staff" }}</div>
+                        <div class="text-muted mt-1" style="font-size: 0.7rem;">Attended by: {% if fb.completed_by %}{{ fb.completed_by.get_full_name|default:fb.completed_by.username }}{% elif fb.assigned_waiter %}{{ fb.assigned_waiter.get_full_name|default:fb.assigned_waiter.username }}{% else %}Staff{% endif %}</div>
                     </div>
                     {% empty %}
                     <div class="text-center py-3 text-muted small">No written feedback notes submitted yet.</div>

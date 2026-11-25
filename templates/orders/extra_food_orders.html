@@ -211,7 +211,7 @@
             <div class="card-header bg-transparent border-0 pt-3 px-3 pb-0 d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-1.5 flex-wrap">
                     <span class="badge bg-primary rounded-pill px-3 py-1.5 fw-bold badge-table-pill d-inline-flex align-items-center gap-1 shadow-xs">
-                        <i class="bi bi-geo-alt-fill"></i> Table {{ log.table_name|default:log.table.table_number|default:"N/A" }}
+                        <i class="bi bi-geo-alt-fill"></i> Table {% if log.table %}{{ log.table.table_number }}{% else %}{{ log.table_name|default:"N/A" }}{% endif %}
                     </span>
                     {% if log.session_name %}
                     <span class="badge bg-light text-muted border rounded-pill px-2 py-1 font-monospace small" style="font-size: 0.72rem;">
