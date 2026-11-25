@@ -923,11 +923,6 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'billing:list' %}" class="{% if request.resolver_match.app_name == 'billing' and 'bill_request' not in request.resolver_match.url_name and 'merge' not in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-cash-stack"></i> Billing & Invoices
-                    </a>
-                </li>
-                <li>
                     <a href="{% url 'billing:merge_bills_select' %}" class="{% if 'merge' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-intersect"></i> Merge Customer Bills
                     </a>
@@ -1085,11 +1080,6 @@
                         {% else %}
                             <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 sidebar-extra-food-badge d-none" style="font-size: 0.72rem; display: none !important;"></span>
                         {% endif %}
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'billing:list' %}" class="{% if request.resolver_match.app_name == 'billing' and 'bill_request' not in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-cash-stack"></i> Billing & Invoices
                     </a>
                 </li>
                 <li>
@@ -1354,11 +1344,6 @@
                         {% else %}
                             <span class="bill-count-badge pending-bill-requests-badge d-none" style="display: none !important;"></span>
                         {% endif %}
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'billing:list' %}" class="{% if request.resolver_match.app_name == 'billing' and 'bill_request' not in request.resolver_match.url_name and 'merge' not in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-cash-stack"></i> Billing & Invoices
                     </a>
                 </li>
                 <li>

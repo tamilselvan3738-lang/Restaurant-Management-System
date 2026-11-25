@@ -290,19 +290,17 @@ class MultiTenantIsolationTestSuite(TestCase):
     # -------------------------------------------------------------------------
     def test_07_billing_isolation(self):
         """Verify bills/invoices generated in Restaurant A are invisible to Restaurant B."""
-        # Invoice list for Admin A
-        res_a = self.client_a.get(reverse('billing:list'))
+        # Invoice detail for Admin A
+        res_a = self.client_a.get(reverse('billing:invoice_detail', args=[self.invoice_a.id]))
         self.assertContains(res_a, self.invoice_a.invoice_number)
-        self.assertNotContains(res_a, self.invoice_b.invoice_number)
-
-        # Invoice list for Admin B
-        res_b = self.client_b.get(reverse('billing:list'))
-        self.assertContains(res_b, self.invoice_b.invoice_number)
-        self.assertNotContains(res_b, self.invoice_a.invoice_number)
 
         # Admin B URL ID tampering on Admin A's invoice -> 404
         res_detail = self.client_b.get(reverse('billing:invoice_detail', args=[self.invoice_a.id]))
         self.assertEqual(res_detail.status_code, 404)
+
+        # Retired billing:list redirects to bill_request_list
+        res_list = self.client_a.get(reverse('billing:list'))
+        self.assertEqual(res_list.status_code, 302)
 
     # -------------------------------------------------------------------------
     # TEST 8: Service Request Isolation Test

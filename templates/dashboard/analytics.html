@@ -12,8 +12,8 @@
         <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs">
             <i class="bi bi-arrow-left"></i> <span>Back</span>
         </a>
-        <a href="{% url 'billing:list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 text-center">
-            <i class="bi bi-cash-stack me-1"></i> Invoices
+        <a href="{% url 'billing:bill_request_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 text-center">
+            <i class="bi bi-bell-fill me-1 text-warning"></i> Bill Requests
         </a>
         <a href="{% url 'orders:list' %}" class="btn btn-primary btn-sm rounded-pill px-3 py-1.5 text-center">
             <i class="bi bi-receipt me-1"></i> Orders

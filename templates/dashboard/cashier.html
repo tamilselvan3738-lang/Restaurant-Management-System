@@ -42,8 +42,8 @@
         <a href="#billSearchSection" class="btn btn-primary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm">
             <i class="bi bi-search"></i> <span>Find & Settle Bill</span>
         </a>
-        <a href="{% url 'billing:list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
-            <i class="bi bi-receipt"></i> <span>All Invoices</span>
+        <a href="{% url 'billing:bill_request_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+            <i class="bi bi-bell-fill text-warning"></i> <span>Bill Requests</span>
         </a>
         <a href="{% url 'tables:floor_plan' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
             <i class="bi bi-grid-3x3-gap"></i> <span>Floor Plan</span>
@@ -168,7 +168,7 @@
                     <h6 class="fw-bold mb-0 text-body">Unpaid & Pending Bills</h6>
                     <span class="badge bg-warning text-dark font-monospace fw-bold">{{ pending_bills|length }}</span>
                 </div>
-                <a href="{% url 'billing:list' %}" class="small text-decoration-none fw-semibold">View Billing Records &rarr;</a>
+                <a href="{% url 'billing:bill_request_list' %}" class="small text-decoration-none fw-semibold">View Bill Requests &rarr;</a>
             </div>
 
             <div class="card-body p-0">
@@ -396,9 +396,9 @@
                         </span>
                         <i class="bi bi-chevron-right text-muted small"></i>
                     </a>
-                    <a href="{% url 'billing:list' %}" class="btn btn-light d-flex align-items-center justify-content-between p-2.5 rounded-2 text-decoration-none">
+                    <a href="{% url 'billing:bill_request_list' %}" class="btn btn-light d-flex align-items-center justify-content-between p-2.5 rounded-2 text-decoration-none">
                         <span class="d-flex align-items-center gap-2 text-body small fw-semibold">
-                            <i class="bi bi-cash-stack text-success"></i> Billing & Invoices
+                            <i class="bi bi-bell-fill text-warning"></i> Bill Requests
                         </span>
                         <i class="bi bi-chevron-right text-muted small"></i>
                     </a>

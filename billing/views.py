@@ -19,25 +19,10 @@ from .forms import PaymentForm, DiscountApplyForm, ConsolidatedPaymentForm
 
 @login_required
 def invoice_list(request):
-    status_filter = request.GET.get('status')
-    invoices = Invoice.objects.select_related('table', 'session', 'order').prefetch_related('payments')
-    invoices = filter_by_tenant(invoices, request)
-
-    if status_filter:
-        invoices = invoices.filter(status=status_filter)
-
-    invoices = invoices.order_by('-created_at')
-
-    total_revenue = sum(inv.total_amount for inv in invoices.filter(status=Invoice.Status.PAID))
-    total_unpaid = sum(inv.balance_due for inv in invoices.exclude(status=Invoice.Status.PAID))
-
-    return render(request, 'billing/invoice_list.html', {
-        'invoices': invoices,
-        'status_filter': status_filter,
-        'total_revenue': total_revenue,
-        'total_unpaid': total_unpaid,
-        'statuses': Invoice.Status.choices,
-    })
+    """
+    Retired page redirected to the active Bill Requests command center.
+    """
+    return redirect('billing:bill_request_list')
 
 
 @login_required
@@ -635,7 +620,7 @@ def consolidated_void(request, bill_id):
             f"Consolidated Bill {consolidated_bill.bill_number} has been voided. All original customer bills have been restored to independent status."
         )
 
-    return redirect('billing:list')
+    return redirect('billing:bill_request_list')
 
 
 @login_required
