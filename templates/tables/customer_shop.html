@@ -503,7 +503,7 @@
                             {% for it in ord.items.all %}
                             <div class="order-item-row {% if it.status == 'CANCELLED' %}bg-danger-subtle bg-opacity-25 opacity-75{% endif %}" id="itemRow-{{ it.id }}">
                                 <div class="order-item-main">
-                                    <img src="{{ it.menu_item.image_url }}" alt="{{ it.menu_item.name }}" class="dish-thumb" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                    <img src="{{ it.menu_item.image_url }}" alt="{{ it.menu_item.name }}" class="dish-thumb" onerror="this.onerror=null; this.src='/media/fallback?name={{ it.menu_item.name|urlencode }}&category={{ it.menu_item.category.slug|default:'' }}';">
                                     <div class="order-item-info">
                                         <!-- Line 1: Quantity badge, Dish Name, +EXTRA Badge & Total Price -->
                                         <div class="d-flex align-items-start justify-content-between gap-2 min-w-0">

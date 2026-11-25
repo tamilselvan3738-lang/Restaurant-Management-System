@@ -638,39 +638,39 @@
                     <!-- Picture / Graphic -->
                     <div class="position-relative" style="height: 165px; background: linear-gradient(135deg, #1e293b, #0f172a); overflow: hidden;">
                         {% if c.image %}
-                            <img src="{{ c.image_url }}" alt="{{ c.name }}" class="w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                            <img src="{{ c.image_url }}" alt="{{ c.name }}" class="w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null; this.src='/media/fallback?name={{ c.name|urlencode }}&category={{ c.category.slug|default:'' }}';">
                         {% elif c.collage_preview.has_images %}
                             {% with cp=c.collage_preview %}
                                 <div class="combo-collage-container">
                                     {% if cp.count == 1 %}
                                         <div class="collage-cell w-100 h-100">
-                                            <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                            <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}" onerror="this.onerror=null; this.src='/media/fallback?name={{ cp.first.name|urlencode }}';">
                                             <span class="collage-dish-label">{{ cp.first.name }}</span>
                                         </div>
                                     {% elif cp.count == 2 %}
                                         <div class="combo-collage-grid-2">
                                             <div class="collage-cell combo-cell-border-r">
-                                                <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                                <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}" onerror="this.onerror=null; this.src='/media/fallback?name={{ cp.first.name|urlencode }}';">
                                                 <span class="collage-dish-label">{{ cp.first.name }}</span>
                                             </div>
                                             <div class="collage-cell">
-                                                <img src="{{ cp.second.image_url }}" alt="{{ cp.second.name }}" title="{{ cp.second.name }}" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                                <img src="{{ cp.second.image_url }}" alt="{{ cp.second.name }}" title="{{ cp.second.name }}" onerror="this.onerror=null; this.src='/media/fallback?name={{ cp.second.name|urlencode }}';">
                                                 <span class="collage-dish-label">{{ cp.second.name }}</span>
                                             </div>
                                         </div>
                                     {% elif cp.count == 3 %}
                                         <div class="combo-collage-grid-3">
                                             <div class="collage-cell combo-cell-border-r">
-                                                <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                                <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}" onerror="this.onerror=null; this.src='/media/fallback?name={{ cp.first.name|urlencode }}';">
                                                 <span class="collage-dish-label">{{ cp.first.name }}</span>
                                             </div>
                                             <div class="d-flex flex-column h-100">
                                                 <div class="collage-cell combo-cell-border-b h-50">
-                                                    <img src="{{ cp.second.image_url }}" alt="{{ cp.second.name }}" title="{{ cp.second.name }}" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                                    <img src="{{ cp.second.image_url }}" alt="{{ cp.second.name }}" title="{{ cp.second.name }}" onerror="this.onerror=null; this.src='/media/fallback?name={{ cp.second.name|urlencode }}';">
                                                     <span class="collage-dish-label">{{ cp.second.name }}</span>
                                                 </div>
                                                 <div class="collage-cell h-50">
-                                                    <img src="{{ cp.third.image_url }}" alt="{{ cp.third.name }}" title="{{ cp.third.name }}" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                                    <img src="{{ cp.third.image_url }}" alt="{{ cp.third.name }}" title="{{ cp.third.name }}" onerror="this.onerror=null; this.src='/media/fallback?name={{ cp.third.name|urlencode }}';">
                                                     <span class="collage-dish-label">{{ cp.third.name }}</span>
                                                 </div>
                                             </div>
@@ -678,19 +678,19 @@
                                     {% else %}
                                         <div class="combo-collage-grid-4">
                                             <div class="collage-cell combo-cell-border-r combo-cell-border-b">
-                                                <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                                <img src="{{ cp.first.image_url }}" alt="{{ cp.first.name }}" title="{{ cp.first.name }}" onerror="this.onerror=null; this.src='/media/fallback?name={{ cp.first.name|urlencode }}';">
                                                 <span class="collage-dish-label">{{ cp.first.name }}</span>
                                             </div>
                                             <div class="collage-cell combo-cell-border-b">
-                                                <img src="{{ cp.second.image_url }}" alt="{{ cp.second.name }}" title="{{ cp.second.name }}" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                                <img src="{{ cp.second.image_url }}" alt="{{ cp.second.name }}" title="{{ cp.second.name }}" onerror="this.onerror=null; this.src='/media/fallback?name={{ cp.second.name|urlencode }}';">
                                                 <span class="collage-dish-label">{{ cp.second.name }}</span>
                                             </div>
                                             <div class="collage-cell combo-cell-border-r">
-                                                <img src="{{ cp.third.image_url }}" alt="{{ cp.third.name }}" title="{{ cp.third.name }}" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                                <img src="{{ cp.third.image_url }}" alt="{{ cp.third.name }}" title="{{ cp.third.name }}" onerror="this.onerror=null; this.src='/media/fallback?name={{ cp.third.name|urlencode }}';">
                                                 <span class="collage-dish-label">{{ cp.third.name }}</span>
                                             </div>
                                             <div class="collage-cell position-relative">
-                                                <img src="{{ cp.fourth.image_url }}" alt="{{ cp.fourth.name }}" title="{{ cp.fourth.name }}" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                                <img src="{{ cp.fourth.image_url }}" alt="{{ cp.fourth.name }}" title="{{ cp.fourth.name }}" onerror="this.onerror=null; this.src='/media/fallback?name={{ cp.fourth.name|urlencode }}';">
                                                 {% if cp.extra_count > 0 %}
                                                     <div class="collage-more-overlay">
                                                         +{{ cp.extra_count }} more
@@ -740,7 +740,7 @@
                             <div class="d-flex flex-wrap gap-1">
                                 {% for item in c.items.all %}
                                 <span class="badge bg-white text-dark border small d-inline-flex align-items-center gap-1 py-1 px-1.5 shadow-2xs">
-                                    <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" class="combo-dish-thumb" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                    <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" class="combo-dish-thumb" onerror="this.onerror=null; this.src='/media/fallback?name={{ item.menu_item.name|urlencode }}&category={{ item.menu_item.category.slug|default:'' }}';">
                                     <span class="fw-bold">{{ item.quantity }}×</span>
                                     <span>{{ item.menu_item.name }}</span>
                                 </span>
@@ -777,7 +777,7 @@
                 <div class="dish-card overflow-hidden shadow-sm h-100 d-flex flex-column">
                     <!-- Food Picture with Overlaid Badges -->
                     <div class="position-relative" style="height: 165px; background: #f1f5f9; overflow: hidden;">
-                        <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                        <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-100 h-100" style="object-fit: cover;" onerror="this.onerror=null; this.src='/media/fallback?name={{ item.name|urlencode }}&category={{ item.category.slug|default:'' }}';">
 
                         <!-- Badges -->
                         <div class="position-absolute top-0 start-0 end-0 p-2 d-flex justify-content-between align-items-start pointer-events-none" style="z-index: 2;">

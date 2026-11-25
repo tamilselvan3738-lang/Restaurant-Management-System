@@ -39,18 +39,27 @@ def serve_media_with_fallback(request, path):
     restart or missing asset on Render), gracefully returns a matching high-resolution
     real food photograph or brand asset with HTTP 200 instead of a broken 404 or generic cloche.
     """
-    full_path = os.path.normpath(os.path.join(str(settings.MEDIA_ROOT), path))
+    from urllib.parse import unquote
+    unquoted_path = unquote(path).strip()
+    full_path = os.path.normpath(os.path.join(str(settings.MEDIA_ROOT), unquoted_path))
     media_root_str = os.path.normpath(str(settings.MEDIA_ROOT))
 
-    # Security check: ensure path does not traverse outside MEDIA_ROOT
-    if full_path.startswith(media_root_str) and os.path.isfile(full_path):
-        return serve(request, path, document_root=settings.MEDIA_ROOT)
+    # 1. Direct file in MEDIA_ROOT
+    if full_path.lower().startswith(media_root_str.lower()) and os.path.isfile(full_path):
+        return serve(request, unquoted_path, document_root=settings.MEDIA_ROOT)
+
+    basename = os.path.basename(unquoted_path)
+
+    # 2. Check under media/menu_items/ or media/combos/
+    for sub in ['menu_items', 'combos']:
+        sub_path = os.path.normpath(os.path.join(str(settings.MEDIA_ROOT), sub, basename))
+        if sub_path.lower().startswith(media_root_str.lower()) and os.path.isfile(sub_path):
+            return serve(request, f"{sub}/{basename}", document_root=settings.MEDIA_ROOT)
 
     static_images_dir = os.path.join(str(settings.BASE_DIR), 'static', 'images')
     dishes_dir = os.path.join(static_images_dir, 'dishes')
-    basename = os.path.basename(path)
 
-    # 1. Check if the exact filename exists in static/images/dishes or static/images
+    # 3. Check if the exact filename exists in static/images/dishes or static/images
     exact_dish_file = os.path.join(dishes_dir, basename)
     if os.path.isfile(exact_dish_file):
         content_type, _ = mimetypes.guess_type(exact_dish_file)
@@ -65,10 +74,10 @@ def serve_media_with_fallback(request, path):
         response['Cache-Control'] = 'public, max-age=86400'
         return response
 
-    # 2. Contextual analysis based on requested path and query parameters
+    # 4. Contextual analysis based on requested path and query parameters
     query_name = request.GET.get('name', '')
     query_cat = request.GET.get('category', '')
-    search_str = f"{path} {query_name} {query_cat}".lower().replace('-', ' ').replace('_', ' ')
+    search_str = f"{unquoted_path} {basename} {query_name} {query_cat}".lower().replace('-', ' ').replace('_', ' ')
 
     if 'logo' in search_str or 'restaurant' in search_str:
         fallback_file = os.path.join(static_images_dir, 'default_restaurant_logo.svg')

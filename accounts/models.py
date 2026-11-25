@@ -82,24 +82,28 @@ class Restaurant(models.Model):
 
     @property
     def has_logo(self):
-        return bool(self.logo and getattr(self.logo, 'name', None))
+        if not self.logo:
+            return False
+        try:
+            return bool(self.logo.name and self.logo.storage.exists(self.logo.name))
+        except Exception:
+            return False
 
     @property
     def logo_url(self):
-        if self.logo:
+        if self.has_logo:
             try:
-                if getattr(self.logo, 'name', None):
-                    return self.logo.url
+                return self.logo.url
             except Exception:
-                pass
-        return self.default_logo_url
+                return None
+        return None
 
     @property
     def default_logo_url(self):
         return '/static/images/default_restaurant_logo.svg'
 
     def get_logo_url(self):
-        return self.logo_url
+        return self.logo_url or self.default_logo_url
 
 
 class User(AbstractUser):
@@ -345,16 +349,20 @@ class User(AbstractUser):
 
     @property
     def has_profile_picture(self):
-        return bool(self.profile_picture and getattr(self.profile_picture, 'name', None))
+        if not self.profile_picture:
+            return False
+        try:
+            return bool(self.profile_picture.name and self.profile_picture.storage.exists(self.profile_picture.name))
+        except Exception:
+            return False
 
     @property
     def profile_picture_url(self):
-        if self.profile_picture:
+        if self.has_profile_picture:
             try:
-                if getattr(self.profile_picture, 'name', None):
-                    return self.profile_picture.url
+                return self.profile_picture.url
             except Exception:
-                pass
+                return None
         return '/static/images/default_avatar.svg'
 
     @property

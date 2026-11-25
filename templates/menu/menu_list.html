@@ -176,7 +176,7 @@
         <div class="card h-100 shadow-sm menu-item-card food-item overflow-hidden {% if not item.is_available %}opacity-75{% endif %}">
             <!-- Dish Image Header with Image / Fallback -->
             <div class="position-relative menu-item-img-container" style="height: 180px; overflow: hidden; background-color: #f8fafc;">
-                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-100 h-100 menu-dish-img" style="object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-100 h-100 menu-dish-img" style="object-fit: cover;" onerror="this.onerror=null; this.src='/media/fallback?name={{ item.name|urlencode }}&category={{ item.category.slug|default:'' }}';">
 
                 <!-- Overlaid Image Header Badges (Unified Flex Container to Prevent Overlap) -->
                 <div class="position-absolute top-0 start-0 end-0 p-2 d-flex justify-content-between align-items-start pointer-events-none" style="z-index: 2;">

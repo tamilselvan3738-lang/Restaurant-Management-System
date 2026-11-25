@@ -71,7 +71,7 @@
                             <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" 
                                  class="rounded shadow-xs flex-shrink-0" 
                                  style="width: 40px; height: 40px; object-fit: cover; border: 1px solid rgba(0,0,0,0.08);"
-                                 onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                 onerror="this.onerror=null; this.src='/media/fallback?name={{ item.menu_item.name|urlencode }}&category={{ item.menu_item.category.slug|default:'' }}';">
                             <div>
                                 <span class="fw-bold fs-6">{{ item.quantity }}x</span> {{ item.menu_item.name }}
                                 {% if item.added_by_name %}

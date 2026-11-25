@@ -96,6 +96,8 @@ def menu_item_create(request):
             item = form.save()
             messages.success(request, f"Menu item '{item.name}' added successfully.")
             return redirect('menu:list')
+        else:
+            messages.error(request, "Please check the form for errors and try again.")
     else:
         form = MenuItemForm(restaurant=restaurant)
 
@@ -105,15 +107,17 @@ def menu_item_create(request):
 @login_required
 @role_required([User.Role.ADMIN, User.Role.MANAGER, User.Role.CASHIER])
 def menu_item_edit(request, item_id):
-    restaurant = getattr(request, 'restaurant', None) or get_current_restaurant(request)
     item = get_tenant_object_or_404(MenuItem, request, id=item_id)
+    restaurant = getattr(request, 'restaurant', None) or get_current_restaurant(request) or item.restaurant
 
     if request.method == 'POST':
         form = MenuItemForm(request.POST, request.FILES, instance=item, restaurant=restaurant)
         if form.is_valid():
-            form.save()
+            item = form.save()
             messages.success(request, f"Menu item '{item.name}' updated successfully.")
             return redirect('menu:list')
+        else:
+            messages.error(request, "Please check the form for errors and try again.")
     else:
         form = MenuItemForm(instance=item, restaurant=restaurant)
 

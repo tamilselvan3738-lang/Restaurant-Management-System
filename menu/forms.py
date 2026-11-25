@@ -1,5 +1,9 @@
+import os
+import shutil
 from django import forms
-from .models import MenuItem, Category, Ingredient, MenuItemIngredient
+from django.conf import settings
+from django.db.models import Q
+from .models import MenuItem, Category, Ingredient, MenuItemIngredient, FoodCombo
 
 class MenuItemForm(forms.ModelForm):
     class Meta:
@@ -17,27 +21,45 @@ class MenuItemForm(forms.ModelForm):
             'cost_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'preparation_time': forms.NumberInput(attrs={'class': 'form-control'}),
             'calories': forms.NumberInput(attrs={'class': 'form-control'}),
-            'image': forms.FileInput(attrs={'class': 'form-control'}),
+            'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*', 'id': 'id_dish_image'}),
             'dietary_tags': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '4'}),
             'is_available': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_special': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def __init__(self, *args, restaurant=None, **kwargs):
-        self.restaurant = restaurant
+        self.restaurant = restaurant or (kwargs.get('instance') and getattr(kwargs['instance'], 'restaurant', None))
         super().__init__(*args, **kwargs)
         if self.restaurant:
-            self.fields['category'].queryset = Category.objects.filter(restaurant=self.restaurant, is_active=True)
+            qs = Category.objects.filter(restaurant=self.restaurant)
+            if self.instance and self.instance.pk and self.instance.category_id:
+                self.fields['category'].queryset = qs.filter(Q(is_active=True) | Q(id=self.instance.category_id))
+            else:
+                self.fields['category'].queryset = qs.filter(is_active=True)
+        elif self.instance and self.instance.pk and self.instance.category_id:
+            self.fields['category'].queryset = Category.objects.filter(Q(is_active=True) | Q(id=self.instance.category_id))
+        else:
+            self.fields['category'].queryset = Category.objects.filter(is_active=True)
 
     def save(self, commit=True):
         item = super().save(commit=False)
         if self.restaurant and not item.restaurant_id:
             item.restaurant = self.restaurant
-        elif item.category and hasattr(item.category, 'restaurant') and item.category.restaurant:
+        elif item.category and hasattr(item.category, 'restaurant') and item.category.restaurant and not item.restaurant_id:
             item.restaurant = item.category.restaurant
         if commit:
             item.save()
             self.save_m2m()
+            # Dual-persist uploaded dish image to static/images/dishes/ for bulletproof fallback
+            if item.image:
+                try:
+                    if hasattr(item.image, 'path') and os.path.isfile(item.image.path):
+                        static_dishes_dir = os.path.join(str(settings.BASE_DIR), 'static', 'images', 'dishes')
+                        os.makedirs(static_dishes_dir, exist_ok=True)
+                        dest_file = os.path.join(static_dishes_dir, os.path.basename(item.image.name))
+                        shutil.copy2(item.image.path, dest_file)
+                except Exception:
+                    pass
         return item
 
 
@@ -124,6 +146,15 @@ class FoodComboForm(forms.ModelForm):
             combo.restaurant = self.restaurant
         if commit:
             combo.save()
+            if combo.image:
+                try:
+                    if hasattr(combo.image, 'path') and os.path.isfile(combo.image.path):
+                        static_dishes_dir = os.path.join(str(settings.BASE_DIR), 'static', 'images', 'dishes')
+                        os.makedirs(static_dishes_dir, exist_ok=True)
+                        dest_file = os.path.join(static_dishes_dir, os.path.basename(combo.image.name))
+                        shutil.copy2(combo.image.path, dest_file)
+                except Exception:
+                    pass
         return combo
 
     def clean_price(self):

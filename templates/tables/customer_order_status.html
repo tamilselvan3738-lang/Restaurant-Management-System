@@ -408,7 +408,7 @@
                 <div class="dish-item-row w-100 {% if item.is_cancelled %}cancelled-item{% endif %} py-2.5" id="item-row-{{ item.id }}">
                     <div class="d-flex align-items-stretch w-100 gap-2 overflow-hidden">
                         <!-- Left: Dish Thumbnail -->
-                        <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" class="dish-thumbnail rounded-3 shadow-xs flex-shrink-0" style="width: 54px; height: 54px; object-fit: cover; align-self: center;" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                        <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" class="dish-thumbnail rounded-3 shadow-xs flex-shrink-0" style="width: 54px; height: 54px; object-fit: cover; align-self: center;" onerror="this.onerror=null; this.src='/media/fallback?name={{ item.menu_item.name|urlencode }}&category={{ item.menu_item.category.slug|default:'' }}';">
 
                         <!-- Middle: Details, Unit Price & Status Badge (strictly constrained) -->
                         <div class="min-w-0 flex-grow-1 d-flex flex-column justify-content-between overflow-hidden pe-1">

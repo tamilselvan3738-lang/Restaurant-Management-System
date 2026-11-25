@@ -48,7 +48,7 @@
                             <tr class="bg-white rounded-2 mb-1 shadow-2xs">
                                 <td class="ps-2 py-2">
                                     <div class="d-flex align-items-center gap-2">
-                                        <img src="{{ extra.menu_item.image_url }}" alt="{{ extra.menu_item.name }}" class="rounded" style="width: 32px; height: 32px; object-fit: cover;" onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                        <img src="{{ extra.menu_item.image_url }}" alt="{{ extra.menu_item.name }}" class="rounded" style="width: 32px; height: 32px; object-fit: cover;" onerror="this.onerror=null; this.src='/media/fallback?name={{ extra.menu_item.name|urlencode }}&category={{ extra.menu_item.category.slug|default:'' }}';">
                                         <div>
                                             <strong class="text-dark">{{ extra.menu_item.name }}</strong>
                                             {% if extra.initial_quantity > 0 %}
@@ -106,7 +106,7 @@
                             <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" 
                                  class="rounded-3 shadow-xs flex-shrink-0" 
                                  style="width: 56px; height: 56px; object-fit: cover; border: 1px solid rgba(255,255,255,0.08);"
-                                 onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                 onerror="this.onerror=null; this.src='/media/fallback?name={{ item.menu_item.name|urlencode }}&category={{ item.menu_item.category.slug|default:'' }}';">
                             
                             <div class="min-w-0">
                                 <div class="d-flex align-items-center gap-2 flex-wrap mb-1">

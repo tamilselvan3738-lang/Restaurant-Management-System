@@ -294,7 +294,7 @@
                                     <img src="{{ item.menu_item.image_url }}" alt="{{ item.menu_item.name }}" 
                                          class="rounded-2 shadow-xs flex-shrink-0" 
                                          style="width: 36px; height: 36px; object-fit: cover; border: 1px solid rgba(0,0,0,0.08);"
-                                         onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                         onerror="this.onerror=null; this.src='/media/fallback?name={{ item.menu_item.name|urlencode }}&category={{ item.menu_item.category.slug|default:'' }}';">
                                     <div class="d-flex align-items-center gap-1.5 flex-grow-1" style="min-width: 0;">
                                         <span class="badge {% if item.is_cancelled %}bg-danger{% else %}bg-primary-subtle text-primary{% endif %} fw-bold text-nowrap flex-shrink-0" style="font-size: 0.72rem;">{{ item.quantity }}x</span>
                                         <span class="text-body fw-medium text-truncate {% if item.is_cancelled %}text-decoration-line-through text-muted{% endif %}" title="{{ item.menu_item.name }}" style="font-size: 0.85rem;">{{ item.menu_item.name }}</span>
@@ -342,7 +342,7 @@
                                         <img src="{{ extra_item.menu_item.image_url }}" alt="{{ extra_item.menu_item.name }}" 
                                              class="rounded-2 shadow-xs flex-shrink-0" 
                                              style="width: 28px; height: 28px; object-fit: cover;"
-                                             onerror="this.onerror=null; this.src='/static/images/dishes/default_dish.jpg';">
+                                             onerror="this.onerror=null; this.src='/media/fallback?name={{ item.menu_item.name|urlencode }}&category={{ item.menu_item.category.slug|default:'' }}';">
                                         <div class="text-truncate">
                                             <div class="d-flex align-items-center gap-1">
                                                 <span class="badge bg-warning text-dark fw-bold font-monospace" style="font-size: 0.72rem;">+{{ extra_item.extra_quantity }}x</span>
