@@ -25,6 +25,26 @@
     border-color: #2d333b !important;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4) !important;
 }
+@media (max-width: 576px) {
+    .orders-header-actions {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .orders-header-actions .btn,
+    .orders-header-actions .badge {
+        width: 100%;
+        justify-content: center;
+    }
+    .sticky-filter-bar form {
+        width: 100%;
+    }
+    .sticky-filter-bar form .input-group {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+}
 </style>
 <div style="display:none;">{% csrf_token %}</div>
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
@@ -32,7 +52,7 @@
         <h3 class="fw-bold mb-1"><i class="bi bi-receipt-cutoff me-2 text-primary"></i> Orders Management</h3>
         <p class="text-muted small mb-0">Track live orders, kitchen readiness, customer bills, and checkout tickets</p>
     </div>
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap orders-header-actions">
         <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
             <i class="bi bi-arrow-left"></i> Back
         </a>
@@ -141,7 +161,7 @@
                 <!-- 1b. Extra Added Items Alert Notification Banner -->
                 {% if order.has_unseen_extra %}
                     <div class="alert alert-warning border border-warning py-2 px-3 mb-3 rounded-3 d-flex align-items-center justify-content-between shadow-xs extra-notification-box" id="extra-notice-{{ order.id }}" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);">
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap orders-header-actions">
                             <span class="spinner-grow spinner-grow-sm text-warning flex-shrink-0" role="status" style="width: 9px; height: 9px;"></span>
                             <div>
                                 <div class="fw-bold text-dark d-flex align-items-center gap-1" style="font-size: 0.8rem;">
@@ -203,7 +223,7 @@
 
                     <!-- Line C: Server Information (Dedicated Full Width) -->
                     <div class="d-flex align-items-center justify-content-between pt-2">
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap orders-header-actions">
                             <div class="bg-body text-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 border" style="width: 28px; height: 28px; font-size: 0.82rem;">
                                 <i class="bi bi-person-badge"></i>
                             </div>

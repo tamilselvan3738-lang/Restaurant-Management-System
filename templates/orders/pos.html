@@ -56,6 +56,16 @@
         background-color: rgba(var(--rms-primary-rgb), 0.3);
         border-radius: 4px;
     }
+    @media (max-width: 991px) {
+        .pos-cart-panel {
+            position: static !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+        .pos-cart-items {
+            max-height: 350px;
+        }
+    }
 </style>
 {% endblock %}
 

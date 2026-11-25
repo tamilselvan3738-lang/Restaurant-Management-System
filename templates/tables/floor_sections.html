@@ -64,6 +64,17 @@
     color: #60a5fa;
     border-color: rgba(59, 130, 246, 0.4);
 }
+@media (max-width: 576px) {
+    .floor-section-actions {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .floor-section-actions .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
 </style>
 {% endblock %}
 
@@ -83,7 +94,7 @@
             </h2>
             <p class="text-muted small mb-0">Group dining tables into floor sections and assign designated waiters for automatic service request dispatch.</p>
         </div>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex flex-wrap align-items-stretch align-items-sm-center gap-2 w-100 w-md-auto floor-section-actions">
             <a href="{% url 'tables:admin_service_requests' %}" class="btn btn-outline-secondary btn-sm px-3 rounded-pill">
                 <i class="bi bi-arrow-left me-1"></i>Back to Service Requests
             </a>

@@ -5,6 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Menu - Table {{ table.table_number }}{% if current_session %} • {{ current_session.session_name }}{% endif %} | {{ RESTAURANT_NAME }}</title>
+    
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('rms-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-bs-theme', savedTheme);
+                const savedCulinary = localStorage.getItem('rms-culinary-theme') || 'saffron';
+                document.documentElement.setAttribute('data-culinary-theme', savedCulinary);
+            } catch (e) {}
+        })();
+    </script>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -331,6 +342,97 @@
             padding: 0;
             font-size: 1rem;
             line-height: 1;
+        }
+
+        /* Dark Mode High-Contrast Rules */
+        [data-bs-theme="dark"] body {
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+        [data-bs-theme="dark"] .dish-card {
+            background: #131a26 !important;
+            border-color: #212c3d !important;
+            color: #f1f5f9 !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+        }
+        [data-bs-theme="dark"] .dish-card .dish-name,
+        [data-bs-theme="dark"] .dish-card h6 {
+            color: #f8fafc !important;
+        }
+        [data-bs-theme="dark"] .search-container {
+            background: #0b0f19 !important;
+            border-color: #212c3d !important;
+        }
+        [data-bs-theme="dark"] .search-box input {
+            background: #131a26 !important;
+            border-color: #263143 !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .search-box input:focus {
+            background: #131a26 !important;
+            border-color: var(--rms-primary) !important;
+            color: #ffffff !important;
+        }
+        [data-bs-theme="dark"] .category-pill {
+            background: #131a26 !important;
+            border-color: #263143 !important;
+            color: #cbd5e1 !important;
+        }
+        [data-bs-theme="dark"] .category-pill:hover {
+            background: #1c2536 !important;
+            color: #ffffff !important;
+        }
+        [data-bs-theme="dark"] .category-pill.active {
+            background: var(--rms-primary) !important;
+            border-color: var(--rms-primary) !important;
+            color: #ffffff !important;
+        }
+        [data-bs-theme="dark"] .qty-btn {
+            background: #1a2332 !important;
+            border-color: #263143 !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .qty-btn:active {
+            background: #253347 !important;
+        }
+        [data-bs-theme="dark"] .session-sub-bar {
+            background: #101723 !important;
+            border-color: #212c3d !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .bottom-bar {
+            background: #101723 !important;
+            border-color: #212c3d !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .modal-content {
+            background-color: #131a26 !important;
+            border-color: #212c3d !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .text-dark:not(.btn-warning):not(.bg-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+        [data-bs-theme="dark"] .text-black,
+        [data-bs-theme="dark"] .text-body {
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .text-muted,
+        [data-bs-theme="dark"] .text-secondary {
+            color: #94a3b8 !important;
+        }
+        [data-bs-theme="dark"] .bg-white:not(.badge):not(.btn) {
+            background-color: #131a26 !important;
+            color: #f1f5f9 !important;
+            border-color: #212c3d !important;
+        }
+        [data-bs-theme="dark"] .badge.bg-light,
+        [data-bs-theme="dark"] .badge.bg-white {
+            background-color: #16202f !important;
+            border-color: #212c3d !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .bg-light {
+            background-color: #16202f !important;
+            color: #f1f5f9 !important;
         }
     </style>
 </head>

@@ -5,6 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{{ page_title|default:"My Shop & Orders" }}</title>
+    
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('rms-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-bs-theme', savedTheme);
+                const savedCulinary = localStorage.getItem('rms-culinary-theme') || 'saffron';
+                document.documentElement.setAttribute('data-culinary-theme', savedCulinary);
+            } catch (e) {}
+        })();
+    </script>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -224,6 +235,80 @@
         }
         .shop-nav-tab i {
             font-size: 1.25rem;
+        }
+        @media (max-width: 480px) {
+            .step-circle {
+                width: 30px;
+                height: 30px;
+                font-size: 0.8rem;
+            }
+            .step-label {
+                font-size: 0.62rem;
+            }
+            .step-track::before {
+                top: 15px;
+            }
+        }
+        @media (max-width: 340px) {
+            .step-circle {
+                width: 26px;
+                height: 26px;
+                font-size: 0.75rem;
+            }
+            .step-label {
+                font-size: 0.55rem;
+            }
+            .step-track::before {
+                top: 13px;
+            }
+        }
+
+        /* Dark Mode High-Contrast Rules */
+        [data-bs-theme="dark"] body {
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+        [data-bs-theme="dark"] .shop-bottom-bar {
+            background: #101723 !important;
+            border-top-color: #212c3d !important;
+        }
+        [data-bs-theme="dark"] .shop-nav-tab {
+            color: #94a3b8 !important;
+        }
+        [data-bs-theme="dark"] .shop-nav-tab:hover,
+        [data-bs-theme="dark"] .shop-nav-tab:focus {
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .shop-nav-tab.active {
+            color: #f97316 !important;
+        }
+        [data-bs-theme="dark"] .card {
+            background-color: #131a26 !important;
+            border-color: #212c3d !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .bg-white:not(.badge):not(.header-btn) {
+            background-color: #131a26 !important;
+            color: #f1f5f9 !important;
+            border-color: #212c3d !important;
+        }
+        [data-bs-theme="dark"] .bg-light {
+            background-color: #16202f !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .text-dark:not(.btn-warning):not(.bg-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+        [data-bs-theme="dark"] .text-black,
+        [data-bs-theme="dark"] .text-body {
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .text-muted,
+        [data-bs-theme="dark"] .text-secondary {
+            color: #94a3b8 !important;
+        }
+        [data-bs-theme="dark"] .modal-content {
+            background-color: #131a26 !important;
+            border-color: #212c3d !important;
+            color: #f1f5f9 !important;
         }
     </style>
 </head>

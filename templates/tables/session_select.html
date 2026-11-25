@@ -5,9 +5,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% if "table" in table.table_number|lower %}{{ table.table_number }}{% else %}Table {{ table.table_number }}{% endif %} | Dining Setup</title>
+    
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('rms-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-bs-theme', savedTheme);
+                const savedCulinary = localStorage.getItem('rms-culinary-theme') || 'saffron';
+                document.documentElement.setAttribute('data-culinary-theme', savedCulinary);
+            } catch (e) {}
+        })();
+    </script>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Culinary Theme -->
+    <link rel="stylesheet" href="{% static 'css/culinary-theme.css' %}?v=20261124a">
     <!-- Master Mobile Responsive Engine Stylesheet -->
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=20261125a">
 
@@ -318,6 +332,79 @@
             font-weight: 800;
             color: var(--primary-dark);
             font-family: monospace;
+        }
+
+        /* Dark Mode High-Contrast Rules */
+        [data-bs-theme="dark"] body {
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+        [data-bs-theme="dark"] .setup-card {
+            background: #131a26 !important;
+            border-color: #212c3d !important;
+            color: #f1f5f9 !important;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4) !important;
+        }
+        [data-bs-theme="dark"] .section-title {
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .guest-btn {
+            background: #16202f !important;
+            border-color: #283548 !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .guest-btn .guest-num {
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .guest-btn .guest-label {
+            color: #94a3b8 !important;
+        }
+        [data-bs-theme="dark"] .guest-btn:hover:not(:disabled) {
+            background: #1f2a3c !important;
+            border-color: #f97316 !important;
+        }
+        [data-bs-theme="dark"] .split-join-card {
+            background: #16202f !important;
+            border-color: #212c3d !important;
+        }
+        [data-bs-theme="dark"] .split-join-title {
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .split-join-body {
+            background: #131a26 !important;
+            border-top-color: #212c3d !important;
+        }
+        [data-bs-theme="dark"] .split-join-btn {
+            background: #16202f !important;
+            border-color: #283548 !important;
+            color: #cbd5e1 !important;
+        }
+        [data-bs-theme="dark"] .premium-code-input,
+        [data-bs-theme="dark"] .premium-name-input {
+            background: #0e131d !important;
+            border-color: #283548 !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .code-display-box {
+            background: rgba(249, 115, 22, 0.12) !important;
+            border-color: rgba(249, 115, 22, 0.4) !important;
+        }
+        [data-bs-theme="dark"] .six-digit-code {
+            color: #fb923c !important;
+        }
+        [data-bs-theme="dark"] .text-dark:not(.btn-warning):not(.bg-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+        [data-bs-theme="dark"] .text-black,
+        [data-bs-theme="dark"] .text-body {
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .text-muted,
+        [data-bs-theme="dark"] .text-secondary {
+            color: #94a3b8 !important;
+        }
+        [data-bs-theme="dark"] .modal-content {
+            background-color: #131a26 !important;
+            border-color: #212c3d !important;
+            color: #f1f5f9 !important;
         }
     </style>
 </head>

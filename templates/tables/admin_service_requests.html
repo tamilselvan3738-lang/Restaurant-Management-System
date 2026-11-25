@@ -147,6 +147,17 @@
     background: #ea580c;
     border: 2px solid var(--bs-body-bg, #ffffff);
 }
+@media (max-width: 576px) {
+    .service-admin-actions {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .service-admin-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
 </style>
 {% endblock %}
 
@@ -164,7 +175,7 @@
         <p class="text-body-secondary small mb-0">Live customer requests, automatic floor routing, SLA breach tracking, and guest escalation resolution.</p>
     </div>
 
-    <div class="d-flex flex-wrap align-items-center gap-2">
+    <div class="d-flex flex-wrap align-items-center gap-2 service-admin-actions">
         <button type="button" class="btn btn-outline-warning btn-sm d-flex align-items-center gap-1.5 rounded-pill px-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#slaConfigModal">
             <i class="bi bi-clock-history"></i> SLA Config
         </button>

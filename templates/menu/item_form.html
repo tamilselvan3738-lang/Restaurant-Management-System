@@ -2,13 +2,45 @@
 
 {% block title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+@media (max-width: 576px) {
+    .item-form-header-actions {
+        width: 100%;
+        margin-top: 0.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .item-form-header-actions .btn,
+    .item-form-header-actions form,
+    .item-form-header-actions form .btn {
+        flex: 1 1 auto;
+        text-align: center;
+        justify-content: center;
+    }
+    .item-form-footer-actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.75rem !important;
+    }
+    .item-form-footer-actions > div,
+    .item-form-footer-actions .btn {
+        width: 100% !important;
+        text-align: center;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div class="card-header bg-white py-3 border-bottom d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
                 <h5 class="card-title mb-0 fw-bold">{{ title }}</h5>
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 item-form-header-actions">
                     {% if item %}
                     <form method="post" action="{% url 'menu:item_delete' item.id %}" onsubmit="return confirm('Are you sure you want to permanently delete \'{{ item.name|escapejs }}\'? This cannot be undone.');" class="d-inline m-0">
                         {% csrf_token %}
@@ -87,7 +119,7 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top item-form-footer-actions">
                         <div class="d-flex align-items-center gap-2">
                             <a href="{% url 'menu:list' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-1"></i> Back to Menu

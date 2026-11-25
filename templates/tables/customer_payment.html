@@ -5,9 +5,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Group Bill Splitting - Table {{ table.table_number }} • {{ session.session_name }}</title>
+    
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('rms-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-bs-theme', savedTheme);
+                const savedCulinary = localStorage.getItem('rms-culinary-theme') || 'saffron';
+                document.documentElement.setAttribute('data-culinary-theme', savedCulinary);
+            } catch (e) {}
+        })();
+    </script>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Culinary Theme -->
+    <link rel="stylesheet" href="{% static 'css/culinary-theme.css' %}?v=20261124a">
     <!-- Master Mobile Responsive Engine Stylesheet -->
     <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=20261125a">
     <style>
@@ -66,6 +80,55 @@
         .method-btn.active, .method-btn:hover {
             border-color: #ff5e14;
             background: rgba(255, 94, 20, 0.05);
+        }
+
+        /* Dark Mode High-Contrast Rules */
+        [data-bs-theme="dark"] body {
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+        [data-bs-theme="dark"] .pay-card {
+            background: #131a26 !important;
+            border-color: #212c3d !important;
+            color: #f1f5f9 !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+        }
+        [data-bs-theme="dark"] .split-tab {
+            background: #1a2230 !important;
+            border-color: #283548 !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .split-tab.active {
+            border-color: #ff5e14 !important;
+            background: rgba(255, 94, 20, 0.12) !important;
+        }
+        [data-bs-theme="dark"] .method-btn {
+            background: #1a2230 !important;
+            border-color: #283548 !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .method-btn.active,
+        [data-bs-theme="dark"] .method-btn:hover {
+            border-color: #ff5e14 !important;
+            background: rgba(255, 94, 20, 0.12) !important;
+        }
+        [data-bs-theme="dark"] .bg-light {
+            background-color: #16202f !important;
+            border-color: #212c3d !important;
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .text-dark:not(.btn-warning):not(.bg-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+        [data-bs-theme="dark"] .text-black,
+        [data-bs-theme="dark"] .text-body {
+            color: #f1f5f9 !important;
+        }
+        [data-bs-theme="dark"] .text-muted,
+        [data-bs-theme="dark"] .text-secondary {
+            color: #94a3b8 !important;
+        }
+        [data-bs-theme="dark"] .border,
+        [data-bs-theme="dark"] .border-top {
+            border-color: #212c3d !important;
         }
     </style>
 </head>

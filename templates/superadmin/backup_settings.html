@@ -29,7 +29,7 @@
                     </div>
 
                     <div class="pt-3 border-top text-end">
-                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold w-100 w-sm-auto text-center">
                             Save Backup Preferences
                         </button>
                     </div>
@@ -48,7 +48,7 @@
                 <form method="post">
                     {% csrf_token %}
                     <input type="hidden" name="trigger_backup" value="1">
-                    <button type="submit" class="btn btn-primary fw-bold px-4">
+                    <button type="submit" class="btn btn-primary fw-bold px-4 w-100 w-sm-auto text-center">
                         <i class="bi bi-camera me-1"></i> Trigger Backup Snapshot Now
                     </button>
                 </form>

@@ -2,6 +2,24 @@
 
 {% block title %}{% if user.is_superuser %}Super Admin Dashboard{% else %}Operations Dashboard{% endif %}{% endblock %}
 
+{% block extra_css %}
+<style>
+@media (max-width: 576px) {
+    .dashboard-header-actions {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .dashboard-header-actions .btn {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 {% if user.is_superuser %}
 <!-- ====================================================================== -->
@@ -15,7 +33,7 @@
         </div>
         <p class="text-muted small mb-0">Overview of administrators created by the super user, assigned restaurants, and multi-tenant performance.</p>
     </div>
-    <div class="d-flex flex-wrap gap-2">
+    <div class="d-flex flex-wrap gap-2 dashboard-header-actions">
         <a href="{% url 'superadmin:admin_create' %}" class="btn btn-primary fw-semibold rounded-pill px-3 py-1.5 shadow-sm d-inline-flex align-items-center gap-1.5">
             <i class="bi bi-person-plus-fill"></i> Add Admin
         </a>
@@ -353,7 +371,7 @@
         <h3 class="fw-bold mb-1">Good Day, {{ user.first_name|default:user.username }}!</h3>
         <p class="text-muted small mb-0">Overview of {{ RESTAURANT_NAME }} live performance for {{ today|date:"l, F d, Y" }}.</p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 dashboard-header-actions">
         <a href="{% url 'tables:floor_plan' %}" class="btn btn-primary fw-semibold">
             <i class="bi bi-grid-3x3-gap me-1"></i> Floor Plan
         </a>

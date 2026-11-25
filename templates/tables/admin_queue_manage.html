@@ -86,6 +86,12 @@
     gap: 0.4rem;
     border-radius: 9999px !important;
 }
+@media (max-width: 576px) {
+    .filter-pill-btn {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.78rem;
+    }
+}
 </style>
 {% endblock %}
 
@@ -103,11 +109,11 @@
         <p class="text-body-secondary small mb-0">Manage waiting parties, live table allocations, guest check-ins, and turnover.</p>
     </div>
 
-    <div class="d-flex flex-wrap align-items-center gap-2">
-        <a href="{% url 'tables:queue_public' %}" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-1.5">
+    <div class="d-flex flex-column flex-sm-row flex-wrap align-items-stretch align-items-sm-center gap-2 w-100 w-md-auto">
+        <a href="{% url 'tables:queue_public' %}" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill px-3 d-flex align-items-center justify-content-center gap-1.5">
             <i class="bi bi-box-arrow-up-right"></i> Customer Queue Page
         </a>
-        <a href="{% url 'tables:admin_queue_manage' %}" class="btn btn-secondary btn-sm rounded-pill px-3">
+        <a href="{% url 'tables:admin_queue_manage' %}" class="btn btn-secondary btn-sm rounded-pill px-3 text-center">
             <i class="bi bi-arrow-clockwise"></i> Refresh
         </a>
     </div>

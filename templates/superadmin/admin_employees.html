@@ -10,8 +10,8 @@
             Admin: <strong>{{ admin_user.get_full_name|default:admin_user.username }}</strong> (@{{ admin_user.username }}) &bull; Restaurant ID: <code>{{ restaurant.code }}</code>
         </p>
     </div>
-    <div class="d-flex align-items-center gap-2">
-        <a href="{% url 'superadmin:admin_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 shadow-xs">
+    <div class="d-flex align-items-center gap-2 w-100 w-md-auto">
+        <a href="{% url 'superadmin:admin_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 shadow-xs w-100 w-md-auto text-center">
             <i class="bi bi-arrow-left me-1"></i> Back to Admins
         </a>
     </div>
@@ -19,19 +19,19 @@
 
 <!-- Staff Summary KPI -->
 <div class="row g-3 mb-4">
-    <div class="col-4">
+    <div class="col-12 col-sm-4">
         <div class="card p-3 border-start border-4 border-primary shadow-xs">
             <div class="text-secondary small fw-bold text-uppercase">Total Employees</div>
             <h4 class="fw-bold mb-0 text-body fs-3">{{ total_count }}</h4>
         </div>
     </div>
-    <div class="col-4">
+    <div class="col-12 col-sm-4">
         <div class="card p-3 border-start border-4 border-success shadow-xs">
             <div class="text-secondary small fw-bold text-uppercase">Active Staff</div>
             <h4 class="fw-bold mb-0 text-success fs-3">{{ active_count }}</h4>
         </div>
     </div>
-    <div class="col-4">
+    <div class="col-12 col-sm-4">
         <div class="card p-3 border-start border-4 border-secondary shadow-xs">
             <div class="text-secondary small fw-bold text-uppercase">Inactive Staff</div>
             <h4 class="fw-bold mb-0 text-secondary fs-3">{{ inactive_count }}</h4>

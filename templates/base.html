@@ -171,10 +171,33 @@
             background-color: rgba(255, 255, 255, 0.04);
         }
 
-        [data-bs-theme="dark"] .text-dark,
-        [data-bs-theme="dark"] .text-black,
-        [data-bs-theme="dark"] .text-body {
+        [data-bs-theme="dark"] .text-dark:not(.btn-warning):not(.bg-warning):not(.badge-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+        [data-bs-theme="dark"] .text-black:not(.btn-warning):not(.bg-warning):not(.badge-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+        [data-bs-theme="dark"] .text-body:not(.btn-warning):not(.bg-warning):not(.badge-warning):not([class*="btn-warning"]):not([class*="bg-warning"]) {
             color: #f1f5f9 !important;
+        }
+
+        .btn-warning,
+        .btn-warning *,
+        .badge.bg-warning,
+        .badge.bg-warning *,
+        [data-bs-theme="dark"] .btn-warning,
+        [data-bs-theme="dark"] .btn-warning *,
+        [data-bs-theme="dark"] .badge.bg-warning,
+        [data-bs-theme="dark"] .badge.bg-warning *,
+        [data-bs-theme="dark"] .btn-warning.text-dark,
+        [data-bs-theme="dark"] .badge.bg-warning.text-dark {
+            color: #0f172a !important;
+        }
+
+        [data-bs-theme="dark"] .badge.bg-warning-subtle {
+            background-color: rgba(245, 158, 11, 0.16) !important;
+            color: #fbbf24 !important;
+            border-color: rgba(245, 158, 11, 0.35) !important;
+        }
+
+        [data-bs-theme="dark"] .text-secondary {
+            color: #94a3b8 !important;
         }
 
         [data-bs-theme="dark"] .text-muted {

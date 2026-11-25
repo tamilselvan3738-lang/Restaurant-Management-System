@@ -60,11 +60,11 @@
                         {{ form.special_requests }}
                     </div>
 
-                    <div class="d-flex justify-content-between pt-3 border-top">
-                        <a href="{% url 'tables:reservation_list' %}" class="btn btn-outline-secondary">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 pt-3 border-top">
+                        <a href="{% url 'tables:reservation_list' %}" class="btn btn-outline-secondary w-100 w-sm-auto text-center">
                             <i class="bi bi-arrow-left me-1"></i> Back to Reservations
                         </a>
-                        <button type="submit" class="btn btn-primary px-4">
+                        <button type="submit" class="btn btn-primary px-4 w-100 w-sm-auto text-center">
                             Confirm Reservation
                         </button>
                     </div>

@@ -1142,20 +1142,20 @@ a.cat-pill.active:focus {
    ============================================================================ */
 
 /* 6.1 Absolute Visibility for Dark Texts in Dark Mode */
-[data-bs-theme="dark"] .text-dark,
-[data-bs-theme="dark"] .text-black,
+[data-bs-theme="dark"] .text-dark:not(.btn-warning):not(.bg-warning):not(.badge-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+[data-bs-theme="dark"] .text-black:not(.btn-warning):not(.bg-warning):not(.badge-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
 [data-bs-theme="dark"] h1.text-dark,
 [data-bs-theme="dark"] h2.text-dark,
 [data-bs-theme="dark"] h3.text-dark,
 [data-bs-theme="dark"] h4.text-dark,
 [data-bs-theme="dark"] h5.text-dark,
 [data-bs-theme="dark"] h6.text-dark,
-[data-bs-theme="dark"] p.text-dark,
-[data-bs-theme="dark"] span.text-dark,
-[data-bs-theme="dark"] strong.text-dark,
-[data-bs-theme="dark"] div.text-dark,
-[data-bs-theme="dark"] a.text-dark,
-[data-bs-theme="dark"] .text-body {
+[data-bs-theme="dark"] p.text-dark:not(.btn-warning):not(.bg-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+[data-bs-theme="dark"] span.text-dark:not(.btn-warning):not(.bg-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+[data-bs-theme="dark"] strong.text-dark:not(.btn-warning):not(.bg-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+[data-bs-theme="dark"] div.text-dark:not(.btn-warning):not(.bg-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+[data-bs-theme="dark"] a.text-dark:not(.btn-warning):not(.bg-warning):not([class*="btn-warning"]):not([class*="bg-warning"]),
+[data-bs-theme="dark"] .text-body:not(.btn-warning):not(.bg-warning):not([class*="btn-warning"]):not([class*="bg-warning"]) {
     color: #f1f5f9 !important;
 }
 
@@ -1307,19 +1307,79 @@ a.cat-pill.active:focus {
 }
 
 /* Ensure Yellow / Warning Elements Always Maintain High Contrast Dark Text */
+.btn-warning,
+.btn-warning *,
+.badge.bg-warning,
+.badge.bg-warning *,
+[data-bs-theme="dark"] .badge.bg-warning,
+[data-bs-theme="dark"] .badge.bg-warning *,
+[data-bs-theme="dark"] .badge.bg-warning.text-dark,
+[data-bs-theme="dark"] .btn-warning,
+[data-bs-theme="dark"] .btn-warning *,
+[data-bs-theme="dark"] .btn-warning.text-dark {
+    color: #0f172a !important;
+}
+
 [data-bs-theme="dark"] .badge.bg-warning,
 [data-bs-theme="dark"] .badge.bg-warning.text-dark,
 [data-bs-theme="dark"] .btn-warning,
 [data-bs-theme="dark"] .btn-warning.text-dark {
     background-color: #f59e0b !important;
-    color: #0f172a !important;
     border-color: #f59e0b !important;
+}
+
+[data-bs-theme="dark"] .badge.bg-warning-subtle {
+    background-color: rgba(245, 158, 11, 0.16) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
 }
 
 [data-bs-theme="dark"] .btn-warning:hover,
 [data-bs-theme="dark"] .btn-warning:focus {
     background-color: #d97706 !important;
     color: #0f172a !important;
+}
+
+/* Customer Standalone Components (Order, Shop, Pay, Status, Queue, Session) */
+[data-bs-theme="dark"] .dish-card,
+[data-bs-theme="dark"] .pay-card,
+[data-bs-theme="dark"] .order-item-row,
+[data-bs-theme="dark"] .order-card,
+[data-bs-theme="dark"] .queue-card,
+[data-bs-theme="dark"] .thank-you-card,
+[data-bs-theme="dark"] .session-box {
+    background-color: #131a26 !important;
+    border-color: rgba(255, 255, 255, 0.09) !important;
+    color: #f1f5f9 !important;
+}
+
+[data-bs-theme="dark"] .split-tab,
+[data-bs-theme="dark"] .method-btn {
+    background-color: #1a2230 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #cbd5e1 !important;
+}
+
+[data-bs-theme="dark"] .split-tab.active,
+[data-bs-theme="dark"] .method-btn.active {
+    background-color: rgba(234, 88, 12, 0.15) !important;
+    border-color: var(--rms-primary, #ea580c) !important;
+    color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .session-sub-bar,
+[data-bs-theme="dark"] .bottom-bar,
+[data-bs-theme="dark"] .shop-bottom-bar {
+    background-color: #0f1520 !important;
+    border-color: rgba(255, 255, 255, 0.09) !important;
+    color: #f1f5f9 !important;
+}
+
+[data-bs-theme="dark"] .badge.bg-light,
+[data-bs-theme="dark"] .badge.bg-white {
+    background-color: #1a2230 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #f1f5f9 !important;
 }
 
 /* 6.6b Date Inputs & Form Elements */

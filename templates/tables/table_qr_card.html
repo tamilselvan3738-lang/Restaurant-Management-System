@@ -13,9 +13,20 @@
         padding: 32px 24px;
         text-align: center;
         max-width: 420px;
+        width: 100%;
         margin: 0 auto;
         box-shadow: 0 10px 30px rgba(0,0,0,0.06);
         transition: all 0.3s ease;
+    }
+
+    @media (max-width: 480px) {
+        .qr-stand-card {
+            padding: 20px 14px !important;
+            border-radius: 16px !important;
+        }
+        .qr-box-container {
+            padding: 10px !important;
+        }
     }
 
     .qr-stand-card .qr-stand-title,
@@ -144,6 +155,7 @@
             background: #ffffff !important;
             color: #000000 !important;
             width: 360px;
+            max-width: 95%;
         }
         .qr-stand-card * {
             color: #000000 !important;

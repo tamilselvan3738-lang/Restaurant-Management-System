@@ -8,11 +8,11 @@
         <h3 class="fw-bold mb-1"><i class="bi bi-buildings me-2 text-primary"></i> Restaurant Tenant Management</h3>
         <p class="text-muted small mb-0">Manage all registered multi-tenant restaurant environments, subscription tiers, and tenant isolation status</p>
     </div>
-    <div class="d-flex align-items-center gap-2">
-        <a href="{% url 'superadmin:admin_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 shadow-xs">
+    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2 w-100 w-md-auto">
+        <a href="{% url 'superadmin:admin_list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 shadow-xs text-center flex-grow-1 flex-md-grow-0">
             <i class="bi bi-shield-person me-1"></i> Admin Accounts
         </a>
-        <a href="{% url 'superadmin:admin_create' %}" class="btn btn-primary btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+        <a href="{% url 'superadmin:admin_create' %}" class="btn btn-primary btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-xs text-center flex-grow-1 flex-md-grow-0">
             <i class="bi bi-plus-circle me-1"></i> New Restaurant & Admin
         </a>
     </div>

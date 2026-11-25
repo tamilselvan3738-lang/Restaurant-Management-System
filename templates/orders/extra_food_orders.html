@@ -74,17 +74,17 @@
         <p class="text-muted small mb-0">Live log of extra dishes ordered by seated guests across all tables</p>
     </div>
 
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-xs">
+    <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 align-items-stretch align-items-sm-center w-100 w-md-auto">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5 shadow-xs">
             <i class="bi bi-arrow-left"></i> Back
         </a>
-        <a href="{% url 'orders:list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5">
+        <a href="{% url 'orders:list' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5">
             <i class="bi bi-receipt"></i> Active Orders
         </a>
-        <button class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold text-dark d-inline-flex align-items-center gap-1.5 shadow-sm" id="btnMarkAllSeen" onclick="markAllExtraFoodSeen()" style="{% if unseen_count == 0 %}display: none;{% endif %}">
+        <button class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold text-dark d-inline-flex align-items-center justify-content-center gap-1.5 shadow-sm" id="btnMarkAllSeen" onclick="markAllExtraFoodSeen()" style="{% if unseen_count == 0 %}display: none;{% endif %}">
             <i class="bi bi-check2-all"></i> Mark All as Seen
         </button>
-        <button class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5" onclick="location.reload()">
+        <button class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 d-inline-flex align-items-center justify-content-center gap-1.5" onclick="location.reload()">
             <i class="bi bi-arrow-clockwise"></i> Refresh Log
         </button>
     </div>
