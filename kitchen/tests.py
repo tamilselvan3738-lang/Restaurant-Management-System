@@ -56,14 +56,17 @@ class ChefPortalTests(TestCase):
 
         # Table & Menu
         self.table = DiningTable.objects.create(
+            restaurant=self.restaurant,
             table_number="T-99",
             capacity=4
         )
         self.category = Category.objects.create(
+            restaurant=self.restaurant,
             name="Main Course",
             display_order=1
         )
         self.item1 = MenuItem.objects.create(
+            restaurant=self.restaurant,
             name="Chicken Biryani",
             category=self.category,
             price=Decimal("15.00"),
@@ -71,6 +74,7 @@ class ChefPortalTests(TestCase):
             is_available=True
         )
         self.item2 = MenuItem.objects.create(
+            restaurant=self.restaurant,
             name="Paneer Tikka",
             category=self.category,
             price=Decimal("12.00"),
@@ -80,6 +84,7 @@ class ChefPortalTests(TestCase):
 
         # Create Order
         self.order = Order.objects.create(
+            restaurant=self.restaurant,
             order_type=Order.OrderType.DINE_IN,
             table=self.table,
             customer_name="John Doe",

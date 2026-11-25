@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
-from accounts.models import User
+from accounts.models import User, Restaurant
 from tables.models import DiningTable
 from menu.models import Category, MenuItem
 from orders.models import Order, OrderItem, ExtraFoodOrderLog
@@ -9,13 +9,15 @@ from orders.models import Order, OrderItem, ExtraFoodOrderLog
 class OrderFoodPicDisplayTests(TestCase):
     def setUp(self):
         self.client = Client()
+        self.restaurant = Restaurant.objects.create(name='Pizza Place', code='PP01')
         self.user = User.objects.create_user(
             username='staff_user',
             email='staff@test.com',
             password='testpassword123',
-            role=User.Role.WAITER
+            role=User.Role.WAITER,
+            restaurant=self.restaurant
         )
-        self.category = Category.objects.create(name='Pizzas', slug='pizzas', is_active=True)
+        self.category = Category.objects.create(name='Pizzas', slug='pizzas', is_active=True, restaurant=self.restaurant)
         small_gif = (
             b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff'
             b'\x00\x00\x00\x21\xf9\x04\x01\x00\x00\x00\x00\x2c\x00\x00\x00\x00'
@@ -27,16 +29,18 @@ class OrderFoodPicDisplayTests(TestCase):
             name='Classic Margherita D.O.P.',
             price=16.50,
             image=self.image,
-            is_available=True
+            is_available=True,
+            restaurant=self.restaurant
         )
-        self.table = DiningTable.objects.create(table_number='T-01', capacity=4)
+        self.table = DiningTable.objects.create(table_number='T-01', capacity=4, restaurant=self.restaurant)
         self.order = Order.objects.create(
             order_number='ORD-TEST-001',
             order_type=Order.OrderType.DINE_IN,
             table=self.table,
             customer_name='Sophia Loren',
             server=self.user,
-            status=Order.Status.ACTIVE
+            status=Order.Status.ACTIVE,
+            restaurant=self.restaurant
         )
         self.order_item = OrderItem.objects.create(
             order=self.order,
@@ -72,27 +76,38 @@ class OrderFoodPicDisplayTests(TestCase):
 class CustomerShopAndCancellationTests(TestCase):
     def setUp(self):
         self.client = Client()
+        self.restaurant = Restaurant.objects.create(name='Curry House', code='CH01')
+        self.admin = User.objects.create_user(
+            username='admin_boss',
+            email='admin@test.com',
+            password='testpassword123',
+            role=User.Role.ADMIN,
+            restaurant=self.restaurant
+        )
         self.staff = User.objects.create_user(
             username='kitchen_cook',
             email='cook@test.com',
             password='testpassword123',
-            role=User.Role.KITCHEN
+            role=User.Role.KITCHEN,
+            restaurant=self.restaurant
         )
-        self.category = Category.objects.create(name='Main Course', slug='main-course', is_active=True)
+        self.category = Category.objects.create(name='Main Course', slug='main-course', is_active=True, restaurant=self.restaurant)
         self.item1 = MenuItem.objects.create(
             category=self.category,
             name='Paneer Butter Masala',
             price=15.00,
-            is_available=True
+            is_available=True,
+            restaurant=self.restaurant
         )
         self.item2 = MenuItem.objects.create(
             category=self.category,
             name='Garlic Naan',
             price=5.00,
-            is_available=True
+            is_available=True,
+            restaurant=self.restaurant
         )
         # Create table with 4 seats
-        self.table = DiningTable.objects.create(table_number='T-10', capacity=4)
+        self.table = DiningTable.objects.create(table_number='T-10', capacity=4, restaurant=self.restaurant)
         self.table.sync_seats()
 
         # Group A
@@ -100,6 +115,7 @@ class CustomerShopAndCancellationTests(TestCase):
         from billing.models import Invoice
         self.session_a = CustomerSession.objects.create(
             table=self.table,
+            restaurant=self.restaurant,
             session_name='Group A',
             customer_name='Alice',
             guest_count=2,
@@ -119,7 +135,8 @@ class CustomerShopAndCancellationTests(TestCase):
             table=self.table,
             session=self.session_a,
             customer_name='Alice',
-            status=Order.Status.PENDING
+            status=Order.Status.PENDING,
+            restaurant=self.restaurant
         )
         self.order_item_a1 = OrderItem.objects.create(
             order=self.order_a,
@@ -139,6 +156,7 @@ class CustomerShopAndCancellationTests(TestCase):
         self.invoice_a = Invoice.objects.create(
             session=self.session_a,
             table=self.table,
+            restaurant=self.restaurant,
             invoice_type=Invoice.InvoiceType.SESSION_BILL,
             customer_name='Alice'
         )
@@ -232,6 +250,7 @@ class CustomerShopAndCancellationTests(TestCase):
         # Group B occupies remaining 2 seats
         session_b = CustomerSession.objects.create(
             table=self.table,
+            restaurant=self.restaurant,
             session_name='Group B',
             customer_name='Bob',
             guest_count=2,
@@ -270,6 +289,7 @@ class CustomerShopAndCancellationTests(TestCase):
         from tables.models import CustomerSession
         session_b = CustomerSession.objects.create(
             table=self.table,
+            restaurant=self.restaurant,
             session_name='Group B',
             customer_name='Bob',
             guest_count=1,
@@ -306,12 +326,7 @@ class CustomerShopAndCancellationTests(TestCase):
         self.assertFalse(log.is_seen)
 
         # Login as Admin
-        admin_user = User.objects.create_superuser(
-            username='admin_test',
-            email='admin@test.com',
-            password='adminpassword123'
-        )
-        self.client.force_login(admin_user)
+        self.client.force_login(self.admin)
 
         # Check that context processor reports unseen_cancellations_count >= 1
         resp_before = self.client.get(reverse('dashboard:index'))
@@ -379,12 +394,7 @@ class CustomerShopAndCancellationTests(TestCase):
         )
 
         # Login as Admin
-        admin_user = User.objects.create_superuser(
-            username='admin_ef',
-            email='admin_ef@test.com',
-            password='adminpassword123'
-        )
-        self.client.force_login(admin_user)
+        self.client.force_login(self.admin)
 
         # Step 1: Context processor reports unseen_extra_food_count >= 1
         resp_dashboard = self.client.get(reverse('dashboard:index'))

@@ -1,24 +1,27 @@
 from django.test import TestCase, Client
 from django.urls import reverse
-from accounts.models import User
+from accounts.models import User, Restaurant
 from menu.models import Category, MenuItem, DietaryTag
 
 class MenuActiveDeactiveTests(TestCase):
     def setUp(self):
         self.client = Client()
+        self.restaurant = Restaurant.objects.create(name='Test Resto', code='TR02')
         # Create Admin User
         self.admin = User.objects.create_user(
             username='admin_tester',
             email='admin@test.com',
             password='testpassword123',
-            role=User.Role.ADMIN
+            role=User.Role.ADMIN,
+            restaurant=self.restaurant
         )
         # Create Staff Waiter User
         self.waiter = User.objects.create_user(
             username='waiter_tester',
             email='waiter@test.com',
             password='testpassword123',
-            role=User.Role.WAITER
+            role=User.Role.WAITER,
+            restaurant=self.restaurant
         )
 
         # Create Categories
@@ -26,13 +29,15 @@ class MenuActiveDeactiveTests(TestCase):
             name='Italian Mains',
             slug='italian-mains',
             display_order=1,
-            is_active=True
+            is_active=True,
+            restaurant=self.restaurant
         )
         self.cat_disabled = Category.objects.create(
             name='Desserts Special',
             slug='desserts-special',
             display_order=2,
-            is_active=False
+            is_active=False,
+            restaurant=self.restaurant
         )
 
         # Create Items
@@ -40,19 +45,22 @@ class MenuActiveDeactiveTests(TestCase):
             category=self.cat_active,
             name='Risotto Milanese',
             price=22.00,
-            is_available=True
+            is_available=True,
+            restaurant=self.restaurant
         )
         self.item_deactivated = MenuItem.objects.create(
             category=self.cat_active,
             name='Lasagna Tradizionale',
             price=18.50,
-            is_available=False
+            is_available=False,
+            restaurant=self.restaurant
         )
         self.item_in_disabled_cat = MenuItem.objects.create(
             category=self.cat_disabled,
             name='Tiramisu Classico',
             price=9.00,
-            is_available=True
+            is_available=True,
+            restaurant=self.restaurant
         )
 
     def test_menu_list_shows_only_active_items_and_categories_by_default(self):
