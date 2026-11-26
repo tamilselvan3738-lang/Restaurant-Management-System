@@ -238,10 +238,11 @@ def chef_order_detail(request, order_id):
     profile = get_chef_profile(request.user)
     restaurant = get_user_restaurant(request.user)
 
-    order = get_object_or_404(
-        Order.objects.select_related('table', 'session', 'server').prefetch_related('items__menu_item'),
-        id=order_id
-    )
+    order_qs = Order.objects.select_related('table', 'session', 'server').prefetch_related('items__menu_item')
+    if restaurant and not request.user.is_superuser:
+        order = get_object_or_404(order_qs, id=order_id, restaurant=restaurant)
+    else:
+        order = get_object_or_404(order_qs, id=order_id)
 
     items = order.items.all().order_by('created_at')
     status_history = order.status_history.all().select_related('changed_by')[:15]
@@ -397,7 +398,11 @@ def chef_update_order_status(request, order_id):
         return redirect('chef:order_detail', order_id=order_id)
 
     with transaction.atomic():
-        order = get_object_or_404(Order.objects.select_for_update(), id=order_id)
+        restaurant = get_user_restaurant(request.user)
+        order_filter = {'id': order_id}
+        if restaurant and not request.user.is_superuser:
+            order_filter['restaurant'] = restaurant
+        order = get_object_or_404(Order.objects.select_for_update(), **order_filter)
         new_status = request.POST.get('status')
         now = timezone.now()
 
@@ -513,7 +518,11 @@ def chef_update_order_status(request, order_id):
 @require_POST
 def chef_update_item_status(request, item_id):
     profile = get_chef_profile(request.user)
-    item = get_object_or_404(OrderItem.objects.select_related('order', 'menu_item'), id=item_id)
+    restaurant = get_user_restaurant(request.user)
+    item_filter = {'id': item_id}
+    if restaurant and not request.user.is_superuser:
+        item_filter['order__restaurant'] = restaurant
+    item = get_object_or_404(OrderItem.objects.select_related('order', 'menu_item'), **item_filter)
     new_status = request.POST.get('status')
     now = timezone.now()
 
@@ -594,7 +603,11 @@ def chef_cancel_item(request, item_id):
         messages.error(request, "Permission denied to cancel food items.")
         return redirect('chef:dashboard')
 
-    item = get_object_or_404(OrderItem.objects.select_related('order', 'menu_item'), id=item_id)
+    restaurant = get_user_restaurant(request.user)
+    item_filter = {'id': item_id}
+    if restaurant and not request.user.is_superuser:
+        item_filter['order__restaurant'] = restaurant
+    item = get_object_or_404(OrderItem.objects.select_related('order', 'menu_item'), **item_filter)
     order = item.order
     reason_code = request.POST.get('reason_code', 'Other')
     custom_notes = request.POST.get('reason_notes', '').strip()
@@ -703,7 +716,11 @@ def chef_request_order_cancel(request, order_id):
         messages.error(request, "Permission denied to request order cancellation.")
         return redirect('chef:order_detail', order_id=order_id)
 
-    order = get_object_or_404(Order, id=order_id)
+    restaurant = get_user_restaurant(request.user)
+    order_filter = {'id': order_id}
+    if restaurant and not request.user.is_superuser:
+        order_filter['restaurant'] = restaurant
+    order = get_object_or_404(Order, **order_filter)
     reason = request.POST.get('reason', '').strip()
     if not reason:
         reason = "Kitchen unable to fulfill order."
@@ -825,7 +842,11 @@ def chef_notifications(request):
 @chef_required
 @require_POST
 def chef_mark_notification_read(request, notif_id):
-    notif = get_object_or_404(KitchenNotification, id=notif_id)
+    restaurant = get_user_restaurant(request.user)
+    notif_filter = {'id': notif_id}
+    if restaurant and not request.user.is_superuser:
+        notif_filter['restaurant'] = restaurant
+    notif = get_object_or_404(KitchenNotification, **notif_filter)
     notif.is_read = True
     notif.save(update_fields=['is_read'])
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -866,7 +887,10 @@ def chef_report_unavailable(request):
         if not item_id or not reason:
             messages.error(request, "Please select an item and provide a reason.")
         else:
-            menu_item = get_object_or_404(MenuItem, id=item_id)
+            item_filter = {'id': item_id}
+            if restaurant and not request.user.is_superuser:
+                item_filter['restaurant'] = restaurant
+            menu_item = get_object_or_404(MenuItem, **item_filter)
             report = ItemAvailabilityReport.objects.create(
                 restaurant=restaurant,
                 menu_item=menu_item,

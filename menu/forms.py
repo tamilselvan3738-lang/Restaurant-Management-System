@@ -4,6 +4,7 @@ from django import forms
 from django.conf import settings
 from django.db.models import Q
 from .models import MenuItem, Category, Ingredient, MenuItemIngredient, FoodCombo
+from restaurant_management.file_security import validate_image_file
 
 class MenuItemForm(forms.ModelForm):
     class Meta:
@@ -57,6 +58,12 @@ class MenuItemForm(forms.ModelForm):
         if val is None or val == '':
             return 15
         return val
+
+    def clean_image(self):
+        img = self.cleaned_data.get('image')
+        if img:
+            validate_image_file(img, max_size_mb=5)
+        return img
 
     def save(self, commit=True):
         item = super().save(commit=False)
@@ -179,6 +186,12 @@ class FoodComboForm(forms.ModelForm):
         if price is not None and price <= 0:
             raise forms.ValidationError("Combo selling price must be greater than zero.")
         return price
+
+    def clean_image(self):
+        img = self.cleaned_data.get('image')
+        if img:
+            validate_image_file(img, max_size_mb=5)
+        return img
 
     def clean(self):
         cleaned_data = super().clean()

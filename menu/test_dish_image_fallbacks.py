@@ -13,6 +13,14 @@ class DishImageFallbacksTest(TestCase):
         self.cat_non_veg, _ = Category.objects.get_or_create(name='Non-Veg', slug='non-veg')
         self.cat_juice, _ = Category.objects.get_or_create(name='Fresh Juices', slug='juices')
         self.cat_dessert, _ = Category.objects.get_or_create(name='Desserts', slug='desserts')
+        import os
+        from django.conf import settings
+        test_logo_path = os.path.join(str(settings.MEDIA_ROOT), 'restaurant_logos', 'test_logo.png')
+        if os.path.exists(test_logo_path):
+            try:
+                os.remove(test_logo_path)
+            except Exception:
+                pass
 
     def test_dish_image_url_keyword_matching(self):
         # 1. Chicken Beriyani -> biryani.jpg

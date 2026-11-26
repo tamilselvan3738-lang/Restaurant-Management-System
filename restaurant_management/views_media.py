@@ -38,14 +38,33 @@ def serve_media_with_fallback(request, path):
     If the requested file does not exist on disk (e.g. following an ephemeral container
     restart or missing asset on Render), gracefully returns a matching high-resolution
     real food photograph or brand asset with HTTP 200 instead of a broken 404 or generic cloche.
+    Strictly prevents path traversal and blocks access to sensitive system/database files.
     """
     from urllib.parse import unquote
-    unquoted_path = unquote(path).strip()
+    from django.http import Http404
+
+    unquoted_path = unquote(path).strip().replace('\\', '/')
+
+    # Protection against path traversal and sensitive system files
+    forbidden_segments = {'..', 'backups', '.git', '.vscode', '.env'}
+    path_parts = [p for p in unquoted_path.split('/') if p]
+    if any(part in forbidden_segments or part.startswith('.') for part in path_parts):
+        raise Http404("Media asset not found.")
+
+    ext = os.path.splitext(unquoted_path)[1].lower()
+    forbidden_exts = {'.sqlite3', '.db', '.env', '.py', '.pyc', '.sh', '.bash', '.exe', '.bat', '.json', '.bak'}
+    if ext in forbidden_exts:
+        raise Http404("Media asset not found.")
+
     full_path = os.path.normpath(os.path.join(str(settings.MEDIA_ROOT), unquoted_path))
     media_root_str = os.path.normpath(str(settings.MEDIA_ROOT))
 
+    # Strict containment check within MEDIA_ROOT
+    if not full_path.lower().startswith(media_root_str.lower()):
+        raise Http404("Media asset not found.")
+
     # 1. Direct file in MEDIA_ROOT
-    if full_path.lower().startswith(media_root_str.lower()) and os.path.isfile(full_path):
+    if os.path.isfile(full_path):
         return serve(request, unquoted_path, document_root=settings.MEDIA_ROOT)
 
     basename = os.path.basename(unquoted_path)
@@ -97,12 +116,10 @@ def serve_media_with_fallback(request, path):
     search_str = f"{unquoted_path} {basename} {query_name} {query_cat}".lower().replace('-', ' ').replace('_', ' ')
 
     if 'logo' in search_str or 'restaurant' in search_str:
-        # Check if any Restaurant in the database has a persistent base64 logo
+        # Check if any Restaurant in the database has a persistent base64 logo for this file
         try:
             from accounts.models import Restaurant
             matched_resto = Restaurant.objects.filter(logo__endswith=basename).first()
-            if not matched_resto:
-                matched_resto = Restaurant.objects.exclude(logo_base64='').first()
             if matched_resto and matched_resto.logo_base64:
                 import base64
                 from django.http import HttpResponse

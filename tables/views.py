@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Q, Sum
+from django.core.paginator import Paginator
 from accounts.models import User, Restaurant
 from accounts.decorators import role_required
 from menu.models import Category, MenuItem, FoodCombo, FoodComboItem
@@ -573,8 +574,12 @@ def session_list(request):
     ).count()
     tables = filter_by_tenant(DiningTable.objects.filter(is_active=True), request)
 
+    paginator = Paginator(sessions_qs, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     context = {
-        'sessions': sessions_qs,
+        'sessions': page_obj,
+        'page_obj': page_obj,
         'status_filter': status_filter,
         'table_id': table_id,
         'tables': tables,
@@ -633,8 +638,12 @@ def reservation_list(request):
     elif filter_type == 'upcoming':
         reservations = reservations.filter(reservation_date__gt=today)
 
+    paginator = Paginator(reservations, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     context = {
-        'reservations': reservations,
+        'reservations': page_obj,
+        'page_obj': page_obj,
         'filter_type': filter_type,
         'today': today,
     }
@@ -1756,7 +1765,10 @@ def api_group_cart_add(request, table_number):
     cart, _ = SessionCart.objects.get_or_create(session=current_session)
 
     if is_combo or combo_id:
-        combo = get_object_or_404(FoodCombo, id=combo_id, is_available=True)
+        combo_qs = FoodCombo.objects.filter(id=combo_id, is_available=True)
+        if table.restaurant:
+            combo_qs = combo_qs.filter(Q(restaurant=table.restaurant) | Q(restaurant__isnull=True))
+        combo = get_object_or_404(combo_qs)
         with transaction.atomic():
             cart_item = cart.items.select_for_update().filter(
                 combo=combo,
@@ -1795,7 +1807,10 @@ def api_group_cart_add(request, table_number):
             'item_id': cart_item.id
         })
 
-    menu_item = get_object_or_404(MenuItem, id=menu_item_id, is_available=True)
+    item_qs = MenuItem.objects.filter(id=menu_item_id, is_available=True)
+    if table.restaurant:
+        item_qs = item_qs.filter(Q(restaurant=table.restaurant) | Q(restaurant__isnull=True))
+    menu_item = get_object_or_404(item_qs)
 
     with transaction.atomic():
         cart_item = cart.items.select_for_update().filter(
@@ -3350,7 +3365,7 @@ def customer_thank_you(request, table_number):
 
 @login_required
 def table_qr_card(request, table_id):
-    table = get_object_or_404(DiningTable, id=table_id)
+    table = get_tenant_object_or_404(DiningTable, request, id=table_id)
     config = RestaurantConfig.get_config()
     persistent_domain = (config.qr_domain or '').strip()
     raw_host = request.get_host()

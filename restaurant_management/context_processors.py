@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db.models import Q
 from superadmin.models import RestaurantConfig
 from accounts.tenant_utils import get_current_restaurant, is_impersonating_restaurant
+from restaurant_management.cache_utils import get_cached_tenant_config
 
 
 def restaurant_context(request):
@@ -14,9 +15,9 @@ def restaurant_context(request):
     restaurant = getattr(request, 'restaurant', None) or get_current_restaurant(request)
     is_impersonating = getattr(request, 'is_impersonating', False) or is_impersonating_restaurant(request)
 
-    # Retrieve live configuration for this tenant from RestaurantConfig
+    # Retrieve live configuration for this tenant from RestaurantConfig (cached)
     try:
-        config = RestaurantConfig.get_config(restaurant=restaurant)
+        config = get_cached_tenant_config(restaurant)
         currency = config.currency if config and config.currency else getattr(settings, 'RESTAURANT_CURRENCY', '$')
         tax_rate = float(config.tax_rate) if config and config.tax_rate else getattr(settings, 'RESTAURANT_TAX_RATE', 0.0825)
         service_charge_rate = float(config.service_charge_rate) if config and config.service_charge_rate else getattr(settings, 'RESTAURANT_SERVICE_CHARGE_RATE', 0.05)

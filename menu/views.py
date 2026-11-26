@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Count
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.views.decorators.http import require_POST
 from django.http import Http404
@@ -73,9 +74,13 @@ def menu_list(request):
             Q(category__name__icontains=search_query)
         )
 
+    paginator = Paginator(items, 24)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     context = {
         'categories': categories,
-        'items': items,
+        'items': page_obj,
+        'page_obj': page_obj,
         'selected_category': category_slug,
         'search_query': search_query,
         'status_filter': status_filter,

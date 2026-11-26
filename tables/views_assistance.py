@@ -1436,7 +1436,7 @@ def admin_floor_section_delete(request, section_id):
     """
     Delete a Floor Section.
     """
-    sec = get_object_or_404(TableSection, id=section_id)
+    sec = get_tenant_object_or_404(TableSection, request, id=section_id)
     name = sec.name
     sec.delete()
     messages.success(request, f"Floor Section '{name}' deleted.")
@@ -1451,7 +1451,7 @@ def admin_waiter_duty_toggle(request, waiter_id):
     Toggle a waiter's on_duty status live.
     When set to Off Duty, safely hands over any unaccepted pending requests.
     """
-    waiter = get_object_or_404(User, id=waiter_id, role=User.Role.WAITER)
+    waiter = get_tenant_object_or_404(User.objects.filter(role=User.Role.WAITER), request, id=waiter_id)
     if waiter.is_on_duty:
         handle_waiter_shift_end_or_logout(waiter, restaurant=getattr(waiter, 'restaurant', None))
     else:
@@ -1478,7 +1478,7 @@ def waiter_toggle_availability(request):
 
     target_user = request.user
     if waiter_id and request.user.role in [User.Role.ADMIN, User.Role.MANAGER]:
-        target_user = get_object_or_404(User, id=waiter_id, role=User.Role.WAITER)
+        target_user = get_tenant_object_or_404(User.objects.filter(role=User.Role.WAITER), request, id=waiter_id)
 
     valid_statuses = [
         User.AvailabilityStatus.AVAILABLE,
@@ -1578,7 +1578,7 @@ def admin_waiter_assignment_delete(request, assignment_id):
     """
     Remove an existing Waiter <-> Table assignment.
     """
-    assignment = get_object_or_404(WaiterTableAssignment, id=assignment_id)
+    assignment = get_tenant_object_or_404(WaiterTableAssignment, request, id=assignment_id)
     table_num = assignment.table.table_number
     waiter_name = assignment.waiter.get_full_name() or assignment.waiter.username
     assignment.delete()

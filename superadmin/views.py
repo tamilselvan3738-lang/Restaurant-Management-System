@@ -10,6 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.http import FileResponse, Http404
 from django.db.models import Sum, Count, Q
+from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
 from django.contrib.sessions.models import Session
 import logging
@@ -74,8 +75,11 @@ def admin_list(request):
     elif status_filter == 'suspended':
         admins = admins.filter(is_suspended=True)
 
+    paginator = Paginator(admins, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     # Convert to list and compute per-admin staff statistics & cascade impact
-    admins_list = list(admins)
+    admins_list = list(page_obj)
     for a in admins_list:
         if a.restaurant:
             emp_qs = User.objects.filter(restaurant=a.restaurant).exclude(pk=a.pk).exclude(is_superuser=True)
@@ -122,6 +126,7 @@ def admin_list(request):
 
     context = {
         'admins': admins_list,
+        'page_obj': page_obj,
         'recent_audit_logs': recent_audit_logs,
         'status_filter': status_filter,
         'total_admins': total_admins,
@@ -419,9 +424,12 @@ def restaurant_list(request):
     elif status_filter == 'suspended':
         restaurants = restaurants.filter(status=Restaurant.RestaurantStatus.SUSPENDED)
 
+    paginator = Paginator(restaurants, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     # Enrich each restaurant with related metrics
     rest_data = []
-    for r in restaurants:
+    for r in page_obj:
         admin = User.objects.filter(restaurant=r, role=User.Role.ADMIN).first()
         emp_count = User.objects.filter(restaurant=r).exclude(role=User.Role.ADMIN).count()
         table_count = DiningTable.objects.filter(restaurant=r).count()
@@ -439,6 +447,7 @@ def restaurant_list(request):
 
     context = {
         'restaurants_data': rest_data,
+        'page_obj': page_obj,
         'status_filter': status_filter,
         'total_count': Restaurant.objects.count(),
         'active_count': Restaurant.objects.filter(status=Restaurant.RestaurantStatus.ACTIVE).count(),
@@ -614,10 +623,14 @@ def report_list(request):
     if priority_filter:
         reports = reports.filter(priority=priority_filter)
 
+    paginator = Paginator(reports, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     pending_count = AdminReport.objects.filter(status=AdminReport.Status.PENDING).count()
 
     context = {
-        'reports': reports,
+        'reports': page_obj,
+        'page_obj': page_obj,
         'status_filter': status_filter,
         'priority_filter': priority_filter,
         'pending_count': pending_count,
@@ -727,22 +740,34 @@ def security_settings(request):
 @super_admin_required
 def backup_settings(request):
     settings_obj = SystemSetting.get_settings()
+    backup_dir = getattr(settings, 'BACKUP_DIR', settings.BASE_DIR / 'backups')
+    backup_dir.mkdir(parents=True, exist_ok=True)
+
     if request.method == 'POST':
         if 'trigger_backup' in request.POST:
-            # Create timestamped snapshot in media/backups
-            backup_dir = settings.BASE_DIR / 'media' / 'backups'
-            backup_dir.mkdir(parents=True, exist_ok=True)
             timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
-            backup_file = backup_dir / f"db_backup_{timestamp}.sqlite3"
-            db_source = settings.DATABASES['default']['NAME']
+            db_engine = settings.DATABASES['default'].get('ENGINE', '')
+            db_source = settings.DATABASES['default'].get('NAME', '')
 
-            if os.path.exists(db_source):
-                shutil.copy2(db_source, backup_file)
+            try:
+                if 'sqlite' in db_engine and os.path.exists(db_source):
+                    backup_file = backup_dir / f"db_backup_{timestamp}.sqlite3"
+                    shutil.copy2(db_source, backup_file)
+                    created_name = backup_file.name
+                else:
+                    # Generic / PostgreSQL export using Django dumpdata
+                    from django.core.management import call_command
+                    backup_file = backup_dir / f"db_backup_{timestamp}.json"
+                    with open(backup_file, 'w', encoding='utf-8') as f:
+                        call_command('dumpdata', exclude=['contenttypes', 'auth.permission'], stdout=f)
+                    created_name = backup_file.name
+
                 settings_obj.last_backup_date = timezone.now()
                 settings_obj.save(update_fields=['last_backup_date'])
-                messages.success(request, f"New database backup created: db_backup_{timestamp}.sqlite3")
-            else:
-                messages.error(request, "Database source file not found.")
+                messages.success(request, f"New database snapshot created successfully: {created_name}")
+            except Exception as e:
+                logger.error("Database backup creation failed: %s", e)
+                messages.error(request, f"Backup creation failed: {e}")
 
             return redirect('superadmin:backup_settings')
 
@@ -754,11 +779,10 @@ def backup_settings(request):
     else:
         form = BackupSettingsForm(instance=settings_obj)
 
-    # List recent backup snapshots
-    backup_dir = settings.BASE_DIR / 'media' / 'backups'
+    # List recent backup snapshots (supporting both .sqlite3 and .json)
     recent_backups = []
     if backup_dir.exists():
-        for f in backup_dir.glob('*.sqlite3'):
+        for f in list(backup_dir.glob('*.sqlite3')) + list(backup_dir.glob('*.json')):
             recent_backups.append({
                 'name': f.name,
                 'size_kb': round(f.stat().st_size / 1024, 1),
@@ -775,10 +799,27 @@ def backup_settings(request):
 
 @super_admin_required
 def download_backup(request, filename):
-    backup_path = settings.BASE_DIR / 'media' / 'backups' / filename
-    if not backup_path.exists() or not filename.endswith('.sqlite3'):
+    clean_filename = os.path.basename(filename)
+    if clean_filename != filename:
+        raise Http404("Invalid backup filename.")
+
+    allowed_exts = ('.sqlite3', '.json', '.sql')
+    if not any(clean_filename.endswith(ext) for ext in allowed_exts) or not clean_filename.startswith('db_backup_'):
+        raise Http404("Invalid backup snapshot.")
+
+    backup_dir = getattr(settings, 'BACKUP_DIR', settings.BASE_DIR / 'backups')
+    backup_path = backup_dir / clean_filename
+
+    # Fallback to legacy path if existing snapshot was saved under media/backups
+    if not backup_path.exists():
+        legacy_path = settings.BASE_DIR / 'media' / 'backups' / clean_filename
+        if legacy_path.exists():
+            backup_path = legacy_path
+
+    if not backup_path.exists() or not backup_path.is_file():
         raise Http404("Backup snapshot not found.")
-    return FileResponse(open(backup_path, 'rb'), as_attachment=True, filename=filename)
+
+    return FileResponse(open(backup_path, 'rb'), as_attachment=True, filename=clean_filename)
 
 
 # ==========================================

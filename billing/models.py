@@ -488,16 +488,27 @@ class BillRequest(models.Model):
         ]
 
     def items_summary(self):
-        """Returns list of item summary strings for this customer session."""
+        """Returns list of item summary strings for this customer session without N+1 queries when prefetched."""
         items = []
         if self.session:
-            for ord_obj in self.session.orders.exclude(status='CANCELLED'):
-                for it in ord_obj.items.exclude(status='CANCELLED'):
-                    items.append(f"{it.quantity}x {it.menu_item.name}")
+            orders = getattr(self.session, 'prefetched_active_orders', None)
+            if orders is None:
+                orders = self.session.orders.exclude(status='CANCELLED')
+            for ord_obj in orders:
+                order_items = getattr(ord_obj, 'prefetched_active_items', None)
+                if order_items is None:
+                    order_items = ord_obj.items.exclude(status='CANCELLED')
+                for it in order_items:
+                    if getattr(it, 'status', None) != 'CANCELLED':
+                        name = it.menu_item.name if it.menu_item else "Unknown Item"
+                        items.append(f"{it.quantity}x {name}")
         return items
 
     def orders_list(self):
         if self.session:
+            orders = getattr(self.session, 'prefetched_active_orders', None)
+            if orders is not None:
+                return list(orders)
             return list(self.session.orders.exclude(status='CANCELLED'))
         return []
 

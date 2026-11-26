@@ -375,6 +375,9 @@
             {% endwith %}
             {% endfor %}
         </div>
+        {% if page_obj %}
+            {% include 'includes/pagination.html' %}
+        {% endif %}
     {% else %}
         <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-body mb-4">
             <div class="py-4">

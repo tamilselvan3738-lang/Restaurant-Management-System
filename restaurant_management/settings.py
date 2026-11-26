@@ -108,26 +108,39 @@ TEMPLATES = [
 WSGI_APPLICATION = 'restaurant_management.wsgi.application'
 
 
+# Backup Directory (Strictly outside public MEDIA_ROOT to prevent unauthorized downloads)
+BACKUP_DIR = BASE_DIR / 'backups'
+BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+
 # Database
 # Supports PostgreSQL in cloud deployments via DATABASE_URL or POSTGRES_* environment variables, with SQLite fallback
 DATABASE_URL = os.getenv('DATABASE_URL')
 if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
+    db_config = dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=int(os.getenv('DB_CONN_MAX_AGE', '600')),
+        conn_health_checks=True,
+    )
+    db_config.setdefault('OPTIONS', {})
+    if 'postgresql' in db_config.get('ENGINE', ''):
+        db_config['OPTIONS'].setdefault('connect_timeout', int(os.getenv('DB_CONNECT_TIMEOUT', '10')))
+        if os.getenv('DB_SSL_REQUIRE', 'True').lower() in ('true', '1') and 'sslmode' not in db_config['OPTIONS']:
+            db_config['OPTIONS']['sslmode'] = 'require'
+    DATABASES = {'default': db_config}
 elif os.getenv('POSTGRES_DB'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.getenv('POSTGRES_DB', 'rms_db'),
             'USER': os.getenv('POSTGRES_USER', 'rms_user'),
-            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'rms_secure_pass123'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
             'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
             'PORT': os.getenv('POSTGRES_PORT', '5432'),
+            'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '600')),
+            'CONN_HEALTH_CHECKS': True,
+            'OPTIONS': {
+                'connect_timeout': int(os.getenv('DB_CONNECT_TIMEOUT', '10')),
+            }
         }
     }
 else:
@@ -135,6 +148,33 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
+            'CONN_MAX_AGE': 0,
+        }
+    }
+
+
+# Caching Configuration
+# Supports Redis in production/cloud if REDIS_URL or CACHE_URL is set, otherwise high-performance LocMemCache
+REDIS_URL = os.getenv('REDIS_URL') or os.getenv('CACHE_URL')
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'KEY_PREFIX': 'growwpark',
+            'TIMEOUT': 300,
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'growwpark-locmem',
+            'TIMEOUT': 300,
+            'OPTIONS': {
+                'MAX_ENTRIES': 2000,
+                'CULL_FREQUENCY': 3,
+            }
         }
     }
 
@@ -299,6 +339,14 @@ if csrf_origins_env:
 else:
     CSRF_TRUSTED_ORIGINS.append("https://*.onrender.com")
 
+# Security Headers & Cookie Policies
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
 if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
@@ -307,10 +355,18 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
-# Logging Configuration
+# Structured Logging & Rotating File Handlers with Sensitive Data Masking
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'mask_sensitive_data': {
+            '()': 'restaurant_management.logging_utils.SensitiveDataMaskingFilter',
+        },
+    },
     'formatters': {
         'verbose': {
             'format': '[{asctime}] {levelname} [{name}:{lineno}] {message}',
@@ -326,16 +382,87 @@ LOGGING = {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+            'filters': ['mask_sensitive_data'],
+        },
+        'app_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(LOGS_DIR / 'app.log'),
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+            'filters': ['mask_sensitive_data'],
+        },
+        'security_file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(LOGS_DIR / 'security.log'),
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+            'filters': ['mask_sensitive_data'],
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
+            'handlers': ['console', 'app_file'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': True,
         },
+        'django.request': {
+            'handlers': ['console', 'security_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['console', 'security_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'security': {
+            'handlers': ['console', 'security_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'restaurant_management': {
-            'handlers': ['console'],
+            'handlers': ['console', 'app_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'accounts': {
+            'handlers': ['console', 'app_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'billing': {
+            'handlers': ['console', 'app_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'orders': {
+            'handlers': ['console', 'app_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'tables': {
+            'handlers': ['console', 'app_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'menu': {
+            'handlers': ['console', 'app_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'kitchen': {
+            'handlers': ['console', 'app_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'superadmin': {
+            'handlers': ['console', 'app_file'],
             'level': 'INFO',
             'propagate': False,
         },

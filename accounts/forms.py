@@ -9,6 +9,7 @@ from django.contrib.auth.password_validation import validate_password
 from .models import Restaurant, PasswordResetOTP
 from .services.delivery import normalize_email, normalize_phone_number, is_valid_e164
 from kitchen.models import KitchenStation, KitchenStaffProfile
+from restaurant_management.file_security import validate_image_file
 
 User = get_user_model()
 
@@ -238,6 +239,12 @@ class StaffCreationForm(UserCreationForm):
             raise forms.ValidationError(f"Employee ID '{emp_id}' is already registered to another staff member.")
         return emp_id
 
+    def clean_profile_picture(self):
+        pic = self.cleaned_data.get('profile_picture')
+        if pic:
+            validate_image_file(pic, max_size_mb=5)
+        return pic
+
     def save(self, commit=True):
         user = super().save(commit=False)
         username = (self.cleaned_data.get('username') or getattr(user, 'username', '') or '').strip()
@@ -424,6 +431,12 @@ class StaffUpdateForm(forms.ModelForm):
             raise forms.ValidationError(f"Employee ID '{emp_id}' is already registered to another staff member.")
         return emp_id
 
+    def clean_profile_picture(self):
+        pic = self.cleaned_data.get('profile_picture')
+        if pic:
+            validate_image_file(pic, max_size_mb=5)
+        return pic
+
     def save(self, commit=True):
         user = super().save(commit=False)
         if 'username' in self.cleaned_data:
@@ -535,12 +548,14 @@ class UserProfileForm(forms.ModelForm):
     def clean_restaurant_logo(self):
         logo = self.cleaned_data.get('restaurant_logo')
         if logo:
-            if logo.size > 5 * 1024 * 1024:
-                raise forms.ValidationError("Logo image file size must not exceed 5MB.")
-            ext = os.path.splitext(logo.name)[1].lower()
-            if ext not in ['.png', '.jpg', '.jpeg', '.webp', '.svg']:
-                raise forms.ValidationError("Unsupported file format. Please upload PNG, JPG, JPEG, WEBP or SVG.")
+            validate_image_file(logo, max_size_mb=5)
         return logo
+
+    def clean_profile_picture(self):
+        pic = self.cleaned_data.get('profile_picture')
+        if pic:
+            validate_image_file(pic, max_size_mb=5)
+        return pic
 
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').strip().lower()

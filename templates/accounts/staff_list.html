@@ -305,4 +305,9 @@
     </div>
     {% endfor %}
 </div>
+
+{% if page_obj %}
+    {% include 'includes/pagination.html' %}
+{% endif %}
+
 {% endblock %}

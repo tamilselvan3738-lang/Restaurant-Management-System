@@ -7,6 +7,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.core.paginator import Paginator
 from .models import Restaurant
 from .tenant_utils import get_current_restaurant
 from .forms import CustomLoginForm, StaffCreationForm, StaffUpdateForm, UserProfileForm
@@ -208,8 +209,12 @@ def staff_list(request):
     total_staff = staff_members.count()
     on_duty_count = staff_members.filter(is_on_duty=True).count()
 
+    paginator = Paginator(staff_members, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'accounts/staff_list.html', {
-        'staff_members': staff_members,
+        'staff_members': page_obj,
+        'page_obj': page_obj,
         'search_q': q,
         'role_filter': role_filter,
         'duty_filter': duty_filter,

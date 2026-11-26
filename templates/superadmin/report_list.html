@@ -99,5 +99,10 @@
             </tbody>
         </table>
     </div>
+    {% if page_obj %}
+    <div class="px-3">
+        {% include 'includes/pagination.html' %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

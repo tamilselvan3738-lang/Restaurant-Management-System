@@ -8,6 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.timesince import timesince
 from django.db.models import Sum, Q
+from django.core.paginator import Paginator
 
 from accounts.models import User
 from accounts.decorators import role_required
@@ -69,8 +70,12 @@ def order_list(request):
     if restaurant:
         kitchen_staff = kitchen_staff.filter(restaurant=restaurant)
 
+    paginator = Paginator(orders, 24)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'orders/order_list.html', {
-        'orders': orders,
+        'orders': page_obj,
+        'page_obj': page_obj,
         'status_filter': status_filter,
         'type_filter': type_filter,
         'chef_filter': chef_filter,
@@ -170,8 +175,12 @@ def cancelled_orders(request):
         total_amount_deducted = logs_qs.aggregate(total=Sum('amount_deducted'))['total'] or Decimal('0.00')
         pending_review_count = logs_qs.filter(status=OrderCancellationLog.LogStatus.REQUESTED).count()
 
+    paginator = Paginator(logs_qs, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     context = {
-        'cancellations': logs_qs,
+        'cancellations': page_obj,
+        'page_obj': page_obj,
         'filter_type': filter_type,
         'search_q': search_q,
         'total_logs': total_logs,
@@ -260,8 +269,12 @@ def extra_food_orders(request):
             order__status__in=[Order.Status.PENDING, Order.Status.ACCEPTED, Order.Status.PREPARING, Order.Status.READY]
         ).values('table_name').distinct().count()
 
+    paginator = Paginator(logs_qs, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     context = {
-        'extra_food_logs': logs_qs,
+        'extra_food_logs': page_obj,
+        'page_obj': page_obj,
         'filter_type': filter_type,
         'search_q': search_q,
         'unseen_count': unseen_count,

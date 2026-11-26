@@ -8,11 +8,12 @@ from django.contrib import messages
 from django.conf import settings
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Prefetch
+from django.core.paginator import Paginator
 from accounts.models import User
 from accounts.decorators import role_required
 from accounts.tenant_utils import get_current_restaurant, get_tenant_object_or_404, filter_by_tenant, is_impersonating_restaurant
-from orders.models import Order
+from orders.models import Order, OrderItem
 from tables.models import DiningTable, CustomerSession
 from .models import Invoice, Payment, ConsolidatedBill, ConsolidatedBillItem, ConsolidatedPayment, BillRequest
 from .forms import PaymentForm, DiscountApplyForm, ConsolidatedPaymentForm
@@ -83,44 +84,57 @@ def invoice_detail(request, invoice_id):
 
 
 @login_required
-@transaction.atomic
 def process_payment(request, invoice_id):
-    invoice = get_tenant_object_or_404(Invoice, request, id=invoice_id)
     if request.method == 'POST':
-        form = PaymentForm(request.POST)
-        if form.is_valid():
-            payment = form.save(commit=False)
-            payment.invoice = invoice
-            payment.restaurant = invoice.restaurant
-            payment.cashier = request.user
+        with transaction.atomic():
+            invoice = Invoice.objects.select_for_update().filter(id=invoice_id).first()
+            if not invoice:
+                raise Http404("Invoice not found")
 
-            # Handle cash tendered & change calculation
-            if payment.payment_method == Payment.PaymentMethod.CASH and payment.tendered_amount > payment.amount:
-                payment.change_returned = payment.tendered_amount - payment.amount
-            else:
-                payment.change_returned = Decimal('0.00')
-
-            payment.status = Payment.Status.COMPLETED
-            payment.save()
-
-            # Recalculate invoice status
-            invoice.recalculate(save=True)
+            # Tenant isolation validation
+            if not (request.user.is_superuser and not is_impersonating_restaurant(request)):
+                rest = get_current_restaurant(request)
+                if rest and invoice.restaurant_id and invoice.restaurant_id != rest.id:
+                    raise Http404("Invoice not found")
 
             if invoice.status == Invoice.Status.PAID:
-                # If tied to a session, close session
-                if invoice.session:
-                    invoice.session.close_session()
-                elif invoice.order:
-                    invoice.order.status = Order.Status.COMPLETED
-                    invoice.order.save(update_fields=['status'])
-
-                messages.success(request, f"Full payment of ₹{payment.amount} received! Change to return: ₹{payment.change_returned}.")
-                return redirect(f"{reverse('billing:invoice_detail', args=[invoice.id])}?paid_success=1")
-            else:
-                messages.warning(request, f"Partial payment of ₹{payment.amount} recorded. Remaining balance: ₹{invoice.balance_due}.")
+                messages.info(request, "This invoice is already fully settled and paid.")
                 return redirect('billing:invoice_detail', invoice_id=invoice.id)
 
-    return redirect('billing:invoice_detail', invoice_id=invoice.id)
+            form = PaymentForm(request.POST)
+            if form.is_valid():
+                payment = form.save(commit=False)
+                payment.invoice = invoice
+                payment.restaurant = invoice.restaurant
+                payment.cashier = request.user
+
+                # Handle cash tendered & change calculation
+                if payment.payment_method == Payment.PaymentMethod.CASH and payment.tendered_amount > payment.amount:
+                    payment.change_returned = payment.tendered_amount - payment.amount
+                else:
+                    payment.change_returned = Decimal('0.00')
+
+                payment.status = Payment.Status.COMPLETED
+                payment.save()
+
+                # Recalculate invoice status
+                invoice.recalculate(save=True)
+
+                if invoice.status == Invoice.Status.PAID:
+                    # If tied to a session, close session
+                    if invoice.session:
+                        invoice.session.close_session()
+                    elif invoice.order:
+                        invoice.order.status = Order.Status.COMPLETED
+                        invoice.order.save(update_fields=['status'])
+
+                    messages.success(request, f"Full payment of ₹{payment.amount} received! Change to return: ₹{payment.change_returned}.")
+                    return redirect(f"{reverse('billing:invoice_detail', args=[invoice.id])}?paid_success=1")
+                else:
+                    messages.warning(request, f"Partial payment of ₹{payment.amount} recorded. Remaining balance: ₹{invoice.balance_due}.")
+                    return redirect('billing:invoice_detail', invoice_id=invoice.id)
+
+    return redirect('billing:invoice_detail', invoice_id=invoice_id)
 
 
 @login_required
@@ -430,8 +444,13 @@ def consolidated_bill_list(request):
     if status_filter:
         bills = bills.filter(status=status_filter)
 
+    paginator = Paginator(bills, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'billing/consolidated_list.html', {
-        'bills': bills,
+        'bills': page_obj,
+        'page_obj': page_obj,
         'status_filter': status_filter,
         'statuses': ConsolidatedBill.Status.choices,
     })
@@ -691,7 +710,17 @@ def bill_request_list(request):
     requests_qs = BillRequest.objects.select_related(
         'table', 'session', 'invoice', 'accepted_by', 'restaurant'
     ).prefetch_related(
-        'session__orders__items__menu_item'
+        Prefetch(
+            'session__orders',
+            queryset=Order.objects.exclude(status='CANCELLED').prefetch_related(
+                Prefetch(
+                    'items',
+                    queryset=OrderItem.objects.exclude(status='CANCELLED').select_related('menu_item'),
+                    to_attr='prefetched_active_items'
+                )
+            ),
+            to_attr='prefetched_active_orders'
+        )
     )
     restaurant = get_current_restaurant(request)
     user = getattr(request, 'user', None)
@@ -738,8 +767,12 @@ def bill_request_list(request):
             Q(session__join_code__icontains=query)
         )
 
+    paginator = Paginator(requests_qs, 24)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     decorated_requests = []
-    for req_obj in requests_qs:
+    for req_obj in page_obj:
         decorated_requests.append({
             'req': req_obj,
             'items': req_obj.items_summary(),
@@ -748,6 +781,7 @@ def bill_request_list(request):
 
     context = {
         'decorated_requests': decorated_requests,
+        'page_obj': page_obj,
         'status_filter': status_filter or 'ALL',
         'query': query,
         'total_count': total_count,
@@ -926,56 +960,57 @@ def bill_request_accept(request, pk):
 @role_required([User.Role.ADMIN, User.Role.MANAGER, User.Role.CASHIER])
 def bill_request_generate_bill(request, pk):
     """
-    Step 8: Generate or finalize bill for this bill request.
+    Step 8: Generate or finalize bill for this bill request with atomic transaction safety.
     Links the invoice, updates the bill request status to BILL_GENERATED.
     Guaranteed not to raise an unhandled 404 error even with legacy or orphaned records.
     """
-    bill_req = get_tenant_bill_request(request, pk)
-    if not bill_req:
-        messages.warning(request, f"Customer Bill Request #{pk} was not found or has already been resolved.")
-        return redirect('billing:bill_request_list')
+    with transaction.atomic():
+        bill_req = get_tenant_bill_request(request, pk, for_update=True)
+        if not bill_req:
+            messages.warning(request, f"Customer Bill Request #{pk} was not found or has already been resolved.")
+            return redirect('billing:bill_request_list')
 
-    restaurant = get_current_restaurant(request) or bill_req.restaurant
+        restaurant = get_current_restaurant(request) or bill_req.restaurant
 
-    try:
-        if bill_req.session:
-            invoice, _ = Invoice.objects.get_or_create(
-                session=bill_req.session,
-                defaults={'table': bill_req.table, 'invoice_type': Invoice.InvoiceType.SESSION_BILL, 'restaurant': restaurant}
+        try:
+            if bill_req.session:
+                invoice, _ = Invoice.objects.select_for_update().get_or_create(
+                    session=bill_req.session,
+                    defaults={'table': bill_req.table, 'invoice_type': Invoice.InvoiceType.SESSION_BILL, 'restaurant': restaurant}
+                )
+            elif bill_req.table:
+                invoice, _ = Invoice.objects.select_for_update().get_or_create(
+                    table=bill_req.table,
+                    session=None,
+                    defaults={'invoice_type': Invoice.InvoiceType.SESSION_BILL, 'restaurant': restaurant}
+                )
+            else:
+                invoice = bill_req.invoice or Invoice.objects.create(
+                    invoice_type=Invoice.InvoiceType.SESSION_BILL,
+                    restaurant=restaurant
+                )
+
+            if not invoice.restaurant and restaurant:
+                invoice.restaurant = restaurant
+                invoice.save(update_fields=['restaurant'])
+            invoice.recalculate(save=True)
+
+            bill_req.invoice = invoice
+            bill_req.total_amount = invoice.total_amount
+            bill_req.paid_amount = invoice.total_paid
+            bill_req.balance_due = invoice.balance_due
+            bill_req.status = BillRequest.Status.BILL_GENERATED
+            bill_req.save(update_fields=['invoice', 'total_amount', 'paid_amount', 'balance_due', 'status'])
+
+            target_title = (
+                bill_req.session.session_name if bill_req.session
+                else (f"Table {bill_req.table.table_number}" if bill_req.table else "Customer")
             )
-        elif bill_req.table:
-            invoice, _ = Invoice.objects.get_or_create(
-                table=bill_req.table,
-                session=None,
-                defaults={'invoice_type': Invoice.InvoiceType.SESSION_BILL, 'restaurant': restaurant}
-            )
-        else:
-            invoice = bill_req.invoice or Invoice.objects.create(
-                invoice_type=Invoice.InvoiceType.SESSION_BILL,
-                restaurant=restaurant
-            )
-
-        if not invoice.restaurant and restaurant:
-            invoice.restaurant = restaurant
-            invoice.save(update_fields=['restaurant'])
-        invoice.recalculate(save=True)
-
-        bill_req.invoice = invoice
-        bill_req.total_amount = invoice.total_amount
-        bill_req.paid_amount = invoice.total_paid
-        bill_req.balance_due = invoice.balance_due
-        bill_req.status = BillRequest.Status.BILL_GENERATED
-        bill_req.save(update_fields=['invoice', 'total_amount', 'paid_amount', 'balance_due', 'status'])
-
-        target_title = (
-            bill_req.session.session_name if bill_req.session
-            else (f"Table {bill_req.table.table_number}" if bill_req.table else "Customer")
-        )
-        messages.success(request, f"Invoice {invoice.invoice_number} generated for {target_title}!")
-        return redirect('billing:invoice_detail', invoice_id=invoice.id)
-    except Exception as exc:
-        messages.error(request, f"Unable to generate bill for request #{pk}: {exc}")
-        return redirect('billing:bill_request_list')
+            messages.success(request, f"Invoice {invoice.invoice_number} generated for {target_title}!")
+            return redirect('billing:invoice_detail', invoice_id=invoice.id)
+        except Exception as exc:
+            messages.error(request, f"Unable to generate bill for request #{pk}: {exc}")
+            return redirect('billing:bill_request_list')
 
 
 @login_required

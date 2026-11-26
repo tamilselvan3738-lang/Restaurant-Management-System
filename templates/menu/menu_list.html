@@ -292,6 +292,10 @@
     {% endfor %}
 </div>
 
+{% if page_obj %}
+    {% include 'includes/pagination.html' %}
+{% endif %}
+
 <!-- Delete Menu Item Confirmation Modal -->
 <div class="modal fade" id="deleteItemModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

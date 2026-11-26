@@ -37,3 +37,9 @@ urlpatterns = [
 urlpatterns += [
     re_path(r'^media/(?P<path>.*)$', serve_media_with_fallback),
 ]
+
+# Centralized Branded Error Handlers (Supporting HTML & API/AJAX JSON formats)
+handler400 = 'restaurant_management.views_errors.custom_bad_request_view'
+handler403 = 'restaurant_management.views_errors.custom_permission_denied_view'
+handler404 = 'restaurant_management.views_errors.custom_page_not_found_view'
+handler500 = 'restaurant_management.views_errors.custom_server_error_view'

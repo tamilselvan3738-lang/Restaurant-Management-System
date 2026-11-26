@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from accounts.models import Restaurant
 from .models import RestaurantConfig, AdminReport, SystemSetting, AccountStatusAuditLog
+from restaurant_management.file_security import validate_image_file
 
 User = get_user_model()
 
@@ -189,11 +190,7 @@ class AdminCreationForm(UserCreationForm):
     def clean_restaurant_logo(self):
         logo = self.cleaned_data.get('restaurant_logo')
         if logo:
-            if logo.size > 5 * 1024 * 1024:
-                raise forms.ValidationError("Logo image file size must not exceed 5MB.")
-            ext = os.path.splitext(logo.name)[1].lower()
-            if ext not in ['.png', '.jpg', '.jpeg', '.webp', '.svg']:
-                raise forms.ValidationError("Unsupported file format. Please upload PNG, JPG, JPEG, WEBP or SVG.")
+            validate_image_file(logo, max_size_mb=5)
         return logo
 
     def clean(self):
@@ -379,11 +376,7 @@ class AdminEditForm(forms.ModelForm):
     def clean_restaurant_logo(self):
         logo = self.cleaned_data.get('restaurant_logo')
         if logo:
-            if logo.size > 5 * 1024 * 1024:
-                raise forms.ValidationError("Logo image file size must not exceed 5MB.")
-            ext = os.path.splitext(logo.name)[1].lower()
-            if ext not in ['.png', '.jpg', '.jpeg', '.webp', '.svg']:
-                raise forms.ValidationError("Unsupported file format. Please upload PNG, JPG, JPEG, WEBP or SVG.")
+            validate_image_file(logo, max_size_mb=5)
         return logo
 
     def save(self, commit=True):
