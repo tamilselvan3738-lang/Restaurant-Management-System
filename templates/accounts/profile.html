@@ -4,6 +4,18 @@
 
 {% block extra_css %}
 <style>
+.rest-logo-icon-btn {
+    transition: all 0.15s ease-in-out;
+}
+.rest-logo-icon-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--bs-primary) !important;
+}
+.rest-logo-icon-btn.active {
+    border-color: var(--bs-primary) !important;
+    background-color: rgba(var(--bs-primary-rgb), 0.15) !important;
+    box-shadow: 0 0 0 2px rgba(var(--bs-primary-rgb), 0.25);
+}
 @media (max-width: 576px) {
     .profile-action-footer {
         flex-direction: column !important;
@@ -250,6 +262,133 @@
                             <div class="form-text small text-muted">Supports JPG, PNG, WEBP images.</div>
                         </div>
 
+                        {% if user.role == 'ADMIN' or user.is_superuser or user.is_super_or_admin or user.is_admin %}
+                        {% if CURRENT_RESTAURANT or user.restaurant %}
+                        <!-- Restaurant Branding & Logo Section (Admin Only) -->
+                        <div class="mb-4 pt-3 border-top" id="restaurantLogoSection">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between mb-2 gap-2">
+                                <label class="form-label fw-bold small text-body mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-shop text-primary fs-6"></i>
+                                    <span>Restaurant Logo & Branding</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.68rem;">Admin Access</span>
+                                </label>
+                                <span class="text-muted small" style="font-size: 0.75rem;">
+                                    Shown in sidebar, topbar, guest menus & receipts
+                                </span>
+                            </div>
+
+                            <div class="p-3 rounded-3 border bg-body-tertiary">
+                                <div class="row align-items-center g-3">
+                                    <div class="col-auto">
+                                        <!-- Clickable Logo Preview Box -->
+                                        <div id="restLogoPreviewContainer" 
+                                             class="border rounded-3 p-2 bg-white text-center position-relative shadow-sm" 
+                                             style="width: 86px; height: 86px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease-in-out;" 
+                                             title="Single-click to browse and choose logo"
+                                             onclick="triggerRestLogoUpload()">
+                                            {% if RESTAURANT_LOGO_URL or user.restaurant.logo_url %}
+                                                <img id="restLogoPreview" 
+                                                     src="{{ RESTAURANT_LOGO_URL|default:user.restaurant.logo_url }}" 
+                                                     data-initial="{{ RESTAURANT_LOGO_URL|default:user.restaurant.logo_url }}" 
+                                                     alt="Restaurant Logo" 
+                                                     style="max-width: 100%; max-height: 100%; object-fit: contain;" 
+                                                     onerror="this.onerror=null; this.src='/static/images/default_restaurant_logo.svg';">
+                                                <div id="restLogoPlaceholder" class="text-muted d-none">
+                                                    <i class="bi {{ form.restaurant_logo_icon.value|default:RESTAURANT_LOGO_ICON|default:'bi-fire' }} fs-1 text-primary" id="restPreviewIconDisplay"></i>
+                                                </div>
+                                            {% else %}
+                                                <img id="restLogoPreview" src="" data-initial="" alt="Restaurant Logo" class="d-none" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                                <div id="restLogoPlaceholder" class="text-muted">
+                                                    <i class="bi {{ form.restaurant_logo_icon.value|default:RESTAURANT_LOGO_ICON|default:'bi-fire' }} fs-1 text-primary" id="restPreviewIconDisplay"></i>
+                                                    <div style="font-size: 0.65rem;" id="restLogoPlaceholderText">Brand Icon</div>
+                                                </div>
+                                            {% endif %}
+                                            <span class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center" 
+                                                  style="width: 22px; height: 22px; font-size: 0.7rem; transform: translate(15%, 15%); pointer-events: none;" 
+                                                  title="Click to choose logo">
+                                                <i class="bi bi-camera-fill"></i>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col">
+                                        {{ form.restaurant_logo }}
+                                        <div class="d-flex flex-wrap align-items-center justify-content-between mt-2 gap-2">
+                                            <span id="restFileInfoText" class="text-muted small">
+                                                {% if RESTAURANT_LOGO_URL or user.restaurant.logo_url %}
+                                                    Current logo active. <a href="javascript:void(0)" onclick="triggerRestLogoUpload()" class="text-primary text-decoration-none fw-semibold">Click here to change</a>.
+                                                {% else %}
+                                                    <a href="javascript:void(0)" onclick="triggerRestLogoUpload()" class="text-primary text-decoration-none fw-semibold"><i class="bi bi-folder2-open me-1"></i>Click here</a> to upload PNG, JPG, WEBP or SVG (Max 5MB).
+                                                {% endif %}
+                                            </span>
+                                            <div class="d-flex align-items-center gap-2">
+                                                {% if RESTAURANT_LOGO_URL or user.restaurant.logo_url %}
+                                                    <div class="form-check mb-0">
+                                                        <input class="form-check-input" type="checkbox" name="remove_restaurant_logo" id="remove_restaurant_logo" value="1" onchange="toggleRemoveRestLogo(this)">
+                                                        <label class="form-check-label small text-danger fw-semibold" for="remove_restaurant_logo">
+                                                            <i class="bi bi-trash3 me-1"></i> Remove logo
+                                                        </label>
+                                                    </div>
+                                                {% endif %}
+                                                <button type="button" id="clearRestLogoBtn" class="btn btn-sm btn-outline-secondary d-none" onclick="clearRestLogoInput()">
+                                                    <i class="bi bi-x-circle me-1"></i> Reset
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% if form.restaurant_logo.errors %}
+                                            <div class="text-danger small mt-1">{{ form.restaurant_logo.errors|striptags }}</div>
+                                        {% endif %}
+
+                                        <!-- Brand Emblem Icon Selector -->
+                                        <div class="mt-3 pt-2.5 border-top">
+                                            <label class="form-label fw-semibold small d-flex justify-content-between align-items-center mb-1.5">
+                                                <span><i class="bi bi-palette me-1 text-primary"></i> Brand Emblem Icon (Navigation Badge & Header Emblem)</span>
+                                                <span class="text-muted" style="font-size: 0.72rem;">Shown when no custom logo is uploaded</span>
+                                            </label>
+                                            {{ form.restaurant_logo_icon }}
+                                            <div class="d-flex flex-wrap gap-1.5 pt-1" id="restLogoIconPicker">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rest-logo-icon-btn p-1.5 rounded-2 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-icon="bi-fire" title="Flame / Grill" onclick="selectRestBrandIcon('bi-fire')">
+                                                    <i class="bi bi-fire fs-5 text-warning"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rest-logo-icon-btn p-1.5 rounded-2 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-icon="bi-shop" title="Bistro / Restaurant" onclick="selectRestBrandIcon('bi-shop')">
+                                                    <i class="bi bi-shop fs-5 text-primary"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rest-logo-icon-btn p-1.5 rounded-2 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-icon="bi-cup-hot" title="Cafe / Coffee" onclick="selectRestBrandIcon('bi-cup-hot')">
+                                                    <i class="bi bi-cup-hot fs-5 text-danger"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rest-logo-icon-btn p-1.5 rounded-2 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-icon="bi-egg-fried" title="Diner / Breakfast" onclick="selectRestBrandIcon('bi-egg-fried')">
+                                                    <i class="bi bi-egg-fried fs-5 text-warning"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rest-logo-icon-btn p-1.5 rounded-2 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-icon="bi-star-fill" title="Fine Dining / Star" onclick="selectRestBrandIcon('bi-star-fill')">
+                                                    <i class="bi bi-star-fill fs-5 text-warning"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rest-logo-icon-btn p-1.5 rounded-2 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-icon="bi-award" title="Gourmet / Award" onclick="selectRestBrandIcon('bi-award')">
+                                                    <i class="bi bi-award fs-5 text-success"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rest-logo-icon-btn p-1.5 rounded-2 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-icon="bi-gem" title="Premium Lounge" onclick="selectRestBrandIcon('bi-gem')">
+                                                    <i class="bi bi-gem fs-5 text-primary"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rest-logo-icon-btn p-1.5 rounded-2 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-icon="bi-heart-fill" title="Hospitality / Love" onclick="selectRestBrandIcon('bi-heart-fill')">
+                                                    <i class="bi bi-heart-fill fs-5 text-danger"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rest-logo-icon-btn p-1.5 rounded-2 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-icon="bi-lightning-charge-fill" title="Express / Fast Food" onclick="selectRestBrandIcon('bi-lightning-charge-fill')">
+                                                    <i class="bi bi-lightning-charge-fill fs-5 text-warning"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rest-logo-icon-btn p-1.5 rounded-2 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-icon="bi-flower1" title="Vegan / Organic" onclick="selectRestBrandIcon('bi-flower1')">
+                                                    <i class="bi bi-flower1 fs-5 text-success"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary rest-logo-icon-btn p-1.5 rounded-2 d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" data-icon="bi-globe" title="Global Cuisine" onclick="selectRestBrandIcon('bi-globe')">
+                                                    <i class="bi bi-globe fs-5 text-info"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+
                         <!-- Submit Button -->
                         <div class="pt-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-3 profile-action-footer">
                             <div class="text-muted small d-flex align-items-center gap-2 flex-grow-1" style="min-width: 250px;">
@@ -321,7 +460,14 @@
                     {% endif %}
                     <div class="d-flex justify-content-between py-2 border-bottom">
                         <span class="text-muted">Restaurant</span>
-                        <span class="fw-semibold">{{ user.restaurant.name|default:"Main Branch" }}</span>
+                        <span class="fw-semibold d-inline-flex align-items-center gap-1.5">
+                            {% if RESTAURANT_LOGO_URL or user.restaurant.logo_url %}
+                                <img src="{{ RESTAURANT_LOGO_URL|default:user.restaurant.logo_url }}" alt="Logo" class="rounded-1" style="width: 20px; height: 20px; object-fit: contain;">
+                            {% else %}
+                                <i class="bi {{ RESTAURANT_LOGO_ICON|default:'bi-fire' }} text-warning"></i>
+                            {% endif %}
+                            <span>{{ user.restaurant.name|default:RESTAURANT_NAME|default:"Main Branch" }}</span>
+                        </span>
                     </div>
                     <div class="d-flex justify-content-between py-2 border-bottom">
                         <span class="text-muted">Role</span>
@@ -358,6 +504,77 @@
 </div>
 
 <script>
+    {% if user.role == 'ADMIN' or user.is_superuser or user.is_super_or_admin or user.is_admin %}
+    function triggerRestLogoUpload() {
+        const input = document.getElementById('restLogoInput');
+        if (input) input.click();
+    }
+
+    function selectRestBrandIcon(iconClass) {
+        const iconInput = document.getElementById('restLogoIconInput');
+        if (iconInput) {
+            iconInput.value = iconClass;
+        }
+        document.querySelectorAll('.rest-logo-icon-btn').forEach(function(btn) {
+            if (btn.getAttribute('data-icon') === iconClass) {
+                btn.classList.add('active', 'border-primary', 'bg-primary-subtle');
+            } else {
+                btn.classList.remove('active', 'border-primary', 'bg-primary-subtle');
+            }
+        });
+        const previewIcon = document.getElementById('restPreviewIconDisplay');
+        if (previewIcon) {
+            previewIcon.className = 'bi ' + iconClass + ' fs-1 text-primary';
+        }
+    }
+
+    function clearRestLogoInput() {
+        const input = document.getElementById('restLogoInput');
+        const preview = document.getElementById('restLogoPreview');
+        const placeholder = document.getElementById('restLogoPlaceholder');
+        const clearBtn = document.getElementById('clearRestLogoBtn');
+        const fileInfo = document.getElementById('restFileInfoText');
+
+        if (input) input.value = '';
+        if (clearBtn) clearBtn.classList.add('d-none');
+
+        const initialSrc = preview ? preview.getAttribute('data-initial') : '';
+        if (initialSrc) {
+            if (preview) {
+                preview.src = initialSrc;
+                preview.classList.remove('d-none');
+            }
+            if (placeholder) placeholder.classList.add('d-none');
+            if (fileInfo) fileInfo.innerHTML = 'Current logo active. <a href="javascript:void(0)" onclick="triggerRestLogoUpload()" class="text-primary text-decoration-none fw-semibold">Click here to change</a>.';
+        } else {
+            if (preview) {
+                preview.src = '';
+                preview.classList.add('d-none');
+            }
+            if (placeholder) placeholder.classList.remove('d-none');
+            if (fileInfo) fileInfo.innerHTML = '<a href="javascript:void(0)" onclick="triggerRestLogoUpload()" class="text-primary text-decoration-none fw-semibold"><i class="bi bi-folder2-open me-1"></i>Click here</a> to upload PNG, JPG, WEBP or SVG (Max 5MB).';
+        }
+    }
+
+    function toggleRemoveRestLogo(checkbox) {
+        const preview = document.getElementById('restLogoPreview');
+        const placeholder = document.getElementById('restLogoPlaceholder');
+        const input = document.getElementById('restLogoInput');
+        const clearBtn = document.getElementById('clearRestLogoBtn');
+        const fileInfo = document.getElementById('restFileInfoText');
+
+        if (checkbox.checked) {
+            if (input) input.value = '';
+            if (clearBtn) clearBtn.classList.add('d-none');
+            if (preview) preview.classList.add('d-none');
+            if (placeholder) placeholder.classList.remove('d-none');
+            if (fileInfo) fileInfo.innerHTML = '<span class="text-danger fw-semibold"><i class="bi bi-exclamation-triangle me-1"></i>Logo will be removed upon saving. The selected brand icon will be used.</span>';
+        } else {
+            clearRestLogoInput();
+        }
+    }
+    {% endif %}
+
     document.addEventListener('DOMContentLoaded', function() {
         const fileInput = document.getElementById('id_profile_picture');
         const topImg = document.getElementById('topAvatarImg');
@@ -409,6 +626,45 @@
                 }
             });
         }
+
+        {% if user.role == 'ADMIN' or user.is_superuser or user.is_super_or_admin or user.is_admin %}
+        const restLogoInput = document.getElementById('restLogoInput');
+        if (restLogoInput) {
+            restLogoInput.addEventListener('change', function(e) {
+                const file = e.target.files && e.target.files[0];
+                if (file) {
+                    const preview = document.getElementById('restLogoPreview');
+                    const placeholder = document.getElementById('restLogoPlaceholder');
+                    const clearBtn = document.getElementById('clearRestLogoBtn');
+                    const fileInfo = document.getElementById('restFileInfoText');
+                    const removeCheck = document.getElementById('remove_restaurant_logo');
+
+                    if (removeCheck) removeCheck.checked = false;
+
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        if (preview) {
+                            preview.src = evt.target.result;
+                            preview.classList.remove('d-none');
+                        }
+                        if (placeholder) placeholder.classList.add('d-none');
+                    };
+                    reader.readAsDataURL(file);
+
+                    if (clearBtn) clearBtn.classList.remove('d-none');
+                    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+                    if (fileInfo) fileInfo.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Selected: ${file.name} (${sizeMb} MB)</span>`;
+                }
+            });
+        }
+
+        // Initialize active brand emblem icon
+        const iconInput = document.getElementById('restLogoIconInput');
+        if (iconInput) {
+            const currentIcon = iconInput.value || 'bi-fire';
+            selectRestBrandIcon(currentIcon);
+        }
+        {% endif %}
     });
 </script>
 {% endblock %}

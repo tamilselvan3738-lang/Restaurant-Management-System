@@ -1,4 +1,6 @@
+import os
 import re
+import base64
 from django import forms
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -466,6 +468,23 @@ class StaffUpdateForm(forms.ModelForm):
 
 
 class UserProfileForm(forms.ModelForm):
+    restaurant_logo = forms.FileField(
+        required=False,
+        label="Restaurant / Company Logo",
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'id': 'restLogoInput',
+            'accept': 'image/png, image/jpeg, image/webp, image/svg+xml'
+        })
+    )
+    restaurant_logo_icon = forms.CharField(
+        max_length=50,
+        required=False,
+        initial='bi-fire',
+        label="Brand Icon",
+        widget=forms.HiddenInput(attrs={'id': 'restLogoIconInput'})
+    )
+
     class Meta:
         model = User
         fields = (
@@ -498,6 +517,30 @@ class UserProfileForm(forms.ModelForm):
             'emergency_contact_phone': 'Emergency Contact Phone',
             'profile_picture': 'Profile Photo',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        user = self.instance
+        is_admin_user = user and (user.role == User.Role.ADMIN or user.is_superuser or getattr(user, 'is_super_or_admin', False))
+        if is_admin_user:
+            rest = getattr(user, 'restaurant', None)
+            if not rest and user.pk:
+                rest = Restaurant.objects.filter(users=user).first()
+            if rest and 'restaurant_logo_icon' in self.fields:
+                self.fields['restaurant_logo_icon'].initial = rest.logo_icon or 'bi-fire'
+        else:
+            self.fields.pop('restaurant_logo', None)
+            self.fields.pop('restaurant_logo_icon', None)
+
+    def clean_restaurant_logo(self):
+        logo = self.cleaned_data.get('restaurant_logo')
+        if logo:
+            if logo.size > 5 * 1024 * 1024:
+                raise forms.ValidationError("Logo image file size must not exceed 5MB.")
+            ext = os.path.splitext(logo.name)[1].lower()
+            if ext not in ['.png', '.jpg', '.jpeg', '.webp', '.svg']:
+                raise forms.ValidationError("Unsupported file format. Please upload PNG, JPG, JPEG, WEBP or SVG.")
+        return logo
 
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').strip().lower()

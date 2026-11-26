@@ -1,6 +1,6 @@
 from django.test import TestCase, Client
 from django.urls import reverse
-from accounts.models import User
+from accounts.models import User, Restaurant
 
 class ThemeToggleFunctionalityTests(TestCase):
     def setUp(self):
@@ -291,6 +291,76 @@ class UserProfileUpdateFunctionalityTests(TestCase):
             'address': 'Some address',
         })
         self.assertContains(res, 'already in use by another account')
+
+    def test_admin_profile_renders_restaurant_logo_and_brand_icon_options(self):
+        rest = Restaurant.objects.create(name='Admin Test Rest', logo_icon='bi-cup-hot')
+        self.admin.restaurant = rest
+        self.admin.save()
+
+        self.client.force_login(self.admin)
+        res = self.client.get(reverse('accounts:profile'))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'restaurantLogoSection')
+        self.assertContains(res, 'restLogoInput')
+        self.assertContains(res, 'restLogoIconPicker')
+        self.assertContains(res, 'Restaurant Logo & Branding')
+
+    def test_non_admin_does_not_see_restaurant_logo_options(self):
+        self.client.force_login(self.cashier)
+        res = self.client.get(reverse('accounts:profile'))
+        self.assertEqual(res.status_code, 200)
+        self.assertNotContains(res, 'restaurantLogoSection')
+        self.assertNotContains(res, 'restLogoInput')
+
+    def test_admin_can_update_restaurant_logo_and_brand_icon_on_profile(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        rest = Restaurant.objects.create(name='Logo Test Bistro', logo_icon='bi-fire')
+        self.admin.restaurant = rest
+        self.admin.save()
+
+        svg_content = b'<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="orange"/></svg>'
+        logo_file = SimpleUploadedFile("bistro_logo.svg", svg_content, content_type="image/svg+xml")
+
+        self.client.force_login(self.admin)
+        res = self.client.post(reverse('accounts:profile'), {
+            'update_profile': '1',
+            'first_name': self.admin.first_name,
+            'last_name': self.admin.last_name,
+            'email': self.admin.email,
+            'phone_number': self.admin.phone_number,
+            'address': self.admin.address,
+            'restaurant_logo': logo_file,
+            'restaurant_logo_icon': 'bi-shop',
+        }, follow=True)
+
+        self.assertEqual(res.status_code, 200)
+        rest.refresh_from_db()
+        self.assertEqual(rest.logo_icon, 'bi-shop')
+        self.assertTrue(bool(rest.logo_base64))
+        self.assertTrue(rest.logo_base64.startswith('data:image/svg+xml;base64,'))
+
+    def test_admin_can_remove_restaurant_logo_on_profile(self):
+        rest = Restaurant.objects.create(name='Logo Remove Bistro', logo_icon='bi-cup-hot', logo_base64='data:image/png;base64,abc')
+        self.admin.restaurant = rest
+        self.admin.save()
+
+        self.client.force_login(self.admin)
+        res = self.client.post(reverse('accounts:profile'), {
+            'update_profile': '1',
+            'first_name': self.admin.first_name,
+            'last_name': self.admin.last_name,
+            'email': self.admin.email,
+            'phone_number': self.admin.phone_number,
+            'address': self.admin.address,
+            'restaurant_logo_icon': 'bi-egg-fried',
+            'remove_restaurant_logo': '1',
+        }, follow=True)
+
+        self.assertEqual(res.status_code, 200)
+        rest.refresh_from_db()
+        self.assertEqual(rest.logo_icon, 'bi-egg-fried')
+        self.assertFalse(bool(rest.logo))
+        self.assertEqual(rest.logo_base64, '')
 
 
 class AdminWiseUniqueUsernameTests(TestCase):

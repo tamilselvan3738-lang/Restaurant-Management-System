@@ -1,3 +1,5 @@
+import os
+import base64
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -5,6 +7,8 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from .models import Restaurant
+from .tenant_utils import get_current_restaurant
 from .forms import CustomLoginForm, StaffCreationForm, StaffUpdateForm, UserProfileForm
 from .decorators import role_required
 
@@ -106,7 +110,54 @@ def user_profile(request):
                         instance.profile_picture = None
                 instance.save()
                 form.save_m2m()
-                messages.success(request, "Your personal information has been updated successfully.")
+
+                # If admin user, handle restaurant logo & brand emblem icon updates
+                is_admin_user = user.is_superuser or user.role == User.Role.ADMIN or getattr(user, 'is_super_or_admin', False)
+                if is_admin_user:
+                    restaurant = getattr(user, 'restaurant', None) or get_current_restaurant(request)
+                    if not restaurant and user.pk:
+                        restaurant = Restaurant.objects.filter(users=user).first()
+
+                    if restaurant:
+                        rest_logo = form.cleaned_data.get('restaurant_logo')
+                        rest_logo_icon = form.cleaned_data.get('restaurant_logo_icon')
+                        remove_rest_logo = request.POST.get('remove_restaurant_logo') == '1'
+                        rest_changed = False
+
+                        if remove_rest_logo:
+                            if restaurant.logo:
+                                try:
+                                    if restaurant.logo.storage.exists(restaurant.logo.name):
+                                        restaurant.logo.delete(save=False)
+                                except Exception:
+                                    pass
+                                restaurant.logo = None
+                            restaurant.logo_base64 = ''
+                            rest_changed = True
+                        elif rest_logo:
+                            restaurant.logo = rest_logo
+                            try:
+                                rest_logo.seek(0)
+                                logo_bytes = rest_logo.read()
+                                rest_logo.seek(0)
+                                ext = os.path.splitext(rest_logo.name)[1].lower()
+                                mime = 'image/svg+xml' if ext == '.svg' else ('image/png' if ext == '.png' else ('image/webp' if ext == '.webp' else 'image/jpeg'))
+                                restaurant.logo_base64 = f"data:{mime};base64,{base64.b64encode(logo_bytes).decode('ascii')}"
+                            except Exception:
+                                pass
+                            rest_changed = True
+
+                        if rest_logo_icon and rest_logo_icon != restaurant.logo_icon:
+                            restaurant.logo_icon = rest_logo_icon
+                            rest_changed = True
+
+                        if rest_changed:
+                            restaurant.save()
+                            if not user.restaurant:
+                                user.restaurant = restaurant
+                                user.save(update_fields=['restaurant'])
+
+                messages.success(request, "Your personal information and restaurant branding have been updated successfully.")
                 return redirect('accounts:profile')
             else:
                 messages.error(request, "Please correct the errors in the form below.")

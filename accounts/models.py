@@ -422,6 +422,10 @@ class User(AbstractUser):
         return self.is_superuser
 
     @property
+    def is_admin(self):
+        return self.is_superuser or self.role == self.Role.ADMIN
+
+    @property
     def is_super_or_admin(self):
         return self.is_superuser or self.role == self.Role.ADMIN
 
