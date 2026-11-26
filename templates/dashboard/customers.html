@@ -11,6 +11,19 @@
         margin-bottom: 0.25rem;
     }
 }
+.dishes-list-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+.dishes-list-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.dishes-list-scroll::-webkit-scrollbar-thumb {
+    background: rgba(140, 155, 175, 0.35);
+    border-radius: 4px;
+}
+.dishes-list-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(140, 155, 175, 0.6);
+}
 </style>
 {% endblock %}
 
@@ -163,41 +176,41 @@
 
                 <!-- Order Details Box (Order #, Table, Payment Method & Dishes List) -->
                 <div class="rounded-3 border bg-light bg-opacity-75 mb-3" style="padding: 12px 14px;">
-                    <!-- Row 1: Order # & Payment Method -->
-                    <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
-                        <span class="small fw-bold text-dark font-monospace text-truncate">
-                            <i class="bi bi-receipt text-primary me-1"></i>{{ customer.latest_order.order_number }}
+                    <!-- Row 1: Order # & Payment Method (Never truncates invoice number) -->
+                    <div class="d-flex justify-content-between align-items-center mb-2 gap-1.5 flex-nowrap" style="min-height: 24px;">
+                        <span class="fw-bold text-dark font-monospace text-nowrap d-inline-flex align-items-center flex-shrink-0" style="font-size: 0.76rem; letter-spacing: -0.2px;">
+                            <i class="bi bi-receipt text-primary me-1 flex-shrink-0"></i>{{ customer.latest_order.order_number }}
                         </span>
                         {% if customer.latest_order.payment_method == 'CASH' %}
-                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 flex-shrink-0 d-inline-flex align-items-center" style="font-size: 0.68rem; font-weight: 600;">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 flex-shrink-0 d-inline-flex align-items-center text-nowrap" style="font-size: 0.66rem; font-weight: 600;">
                             <i class="bi bi-cash me-1"></i> Pay by Cash
                         </span>
                         {% elif customer.latest_order.payment_method == 'UPI' %}
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 flex-shrink-0 d-inline-flex align-items-center" style="font-size: 0.68rem; font-weight: 600;">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-0.5 flex-shrink-0 d-inline-flex align-items-center text-nowrap" style="font-size: 0.66rem; font-weight: 600;">
                             <i class="bi bi-qr-code-scan me-1"></i> Pay by UPI
                         </span>
                         {% else %}
-                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1 flex-shrink-0 d-inline-flex align-items-center" style="font-size: 0.68rem;">
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-0.5 flex-shrink-0 d-inline-flex align-items-center text-nowrap" style="font-size: 0.66rem; font-weight: 600;">
                             <i class="bi bi-clock me-1"></i> Pending Payment
                         </span>
                         {% endif %}
                     </div>
 
                     <!-- Row 2: Table # & Order Total -->
-                    <div class="small text-muted mb-2 d-flex justify-content-between align-items-center gap-2" style="font-size: 0.78rem;">
+                    <div class="small text-muted mb-2 d-flex justify-content-between align-items-center gap-2" style="font-size: 0.78rem; min-height: 22px;">
                         <span><i class="bi bi-grid-3x3-gap me-1 text-secondary"></i>Table: <strong class="text-dark">{{ customer.latest_order.table_number }}</strong></span>
                         <span class="fw-bold text-success fs-6 flex-shrink-0">{{ RESTAURANT_CURRENCY }}{{ customer.latest_order.total_amount|floatformat:2 }}</span>
                     </div>
 
-                    <!-- Ordered Dishes -->
+                    <!-- Ordered Dishes (Fixed height container for 100% horizontal row alignment) -->
                     <div class="border-top pt-2">
                         <div class="d-flex justify-content-between align-items-center mb-1 text-uppercase text-muted fw-bold" style="font-size: 0.66rem; letter-spacing: 0.5px;">
                             <span>Dishes Ordered:</span>
                             <span class="badge bg-light text-dark border px-2 py-0.5" style="font-size: 0.66rem;">{{ customer.latest_order.items_count }} item{{ customer.latest_order.items_count|pluralize }}</span>
                         </div>
-                        <ul class="list-unstyled mb-0" style="font-size: 0.74rem;">
+                        <ul class="list-unstyled mb-0 dishes-list-scroll" style="font-size: 0.74rem; height: 52px; overflow-y: auto; scrollbar-width: thin;">
                             {% for it in customer.latest_order.items %}
-                            <li class="d-flex align-items-center justify-content-between py-1" style="min-height: 22px;">
+                            <li class="d-flex align-items-center justify-content-between py-0.5" style="min-height: 24px;">
                                 <div class="d-flex align-items-center min-w-0 flex-grow-1 me-2">
                                     <span class="rounded-circle bg-primary me-2 flex-shrink-0" style="width: 5px; height: 5px;"></span>
                                     <span class="text-truncate text-dark" title="{{ it.name }}">{{ it.name }}</span>
@@ -208,7 +221,9 @@
                                 </div>
                             </li>
                             {% empty %}
-                            <li class="text-muted py-1 small">No dishes details found.</li>
+                            <li class="text-muted py-1 small d-flex align-items-center justify-content-center h-100 fst-italic" style="font-size: 0.74rem;">
+                                No dishes details found.
+                            </li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -217,7 +232,7 @@
                 <!-- Metrics Box: Lifetime Total Orders & Spend -->
                 <div class="row g-2 mb-3 text-center">
                     <div class="col-6">
-                        <div class="p-2 rounded bg-white border">
+                        <div class="p-2 rounded bg-white border h-100 d-flex flex-column justify-content-center">
                             <div class="text-muted small" style="font-size: 0.70rem;">Lifetime Orders</div>
                             <div class="fw-bold fs-6 text-dark mt-0.5">
                                 <i class="bi bi-bag-check me-1 text-primary"></i>{{ customer.order_count }}
@@ -225,7 +240,7 @@
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="p-2 rounded bg-white border">
+                        <div class="p-2 rounded bg-white border h-100 d-flex flex-column justify-content-center">
                             <div class="text-muted small" style="font-size: 0.70rem;">Lifetime Spend</div>
                             <div class="fw-bold fs-6 text-dark mt-0.5">
                                 <i class="bi bi-wallet2 me-1 text-success"></i>{{ RESTAURANT_CURRENCY }}{{ customer.total_spent|floatformat:2 }}
@@ -236,7 +251,7 @@
 
                 <!-- Info: Phone -->
                 <div class="small mb-3 text-muted">
-                    <div class="d-flex align-items-center gap-2 text-truncate">
+                    <div class="d-flex align-items-center gap-2 text-truncate" style="min-height: 20px;">
                         <i class="bi bi-telephone text-primary flex-shrink-0"></i>
                         {% if customer.phone and customer.phone != 'Not provided' %}
                         <span class="text-dark fw-medium text-truncate">{{ customer.phone }}</span>
