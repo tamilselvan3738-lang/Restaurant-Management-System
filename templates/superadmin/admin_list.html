@@ -300,73 +300,84 @@
                 {% endif %}
 
                 <!-- Card Bottom Footer (Date Joined & Action Buttons) -->
-                <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between">
-                    <div class="text-secondary small fw-medium">
-                        <i class="bi bi-calendar3 me-1.5 text-primary"></i> Joined {{ admin_user.date_joined|date:"M d, Y" }}
+                <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="text-secondary small fw-medium text-nowrap">
+                        <i class="bi bi-calendar3 me-1 text-primary"></i> Joined {{ admin_user.date_joined|date:"M d, Y" }}
                     </div>
                     
-                    <div class="btn-group">
-                        <a href="{% url 'superadmin:admin_edit' admin_user.id %}" class="btn btn-sm btn-outline-secondary fw-semibold">
+                    {% if user.is_superuser %}
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
+                        <!-- 1. Edit Option -->
+                        <a href="{% url 'superadmin:admin_edit' admin_user.id %}" class="btn btn-sm btn-outline-secondary fw-semibold px-2.5 py-1" title="Edit Admin">
                             <i class="bi bi-pencil me-1"></i> Edit
                         </a>
-                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                            <span class="visually-hidden">Actions</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                            <li>
-                                <a class="dropdown-item" href="{% url 'superadmin:admin_edit' admin_user.id %}">
-                                    <i class="bi bi-pencil me-2"></i> Edit Account
-                                </a>
-                            </li>
-                            {% if admin_user.restaurant %}
-                            <li>
-                                <a class="dropdown-item text-primary" href="{% url 'superadmin:admin_employees' admin_user.id %}">
-                                    <i class="bi bi-people me-2"></i> View Staff Members ({{ admin_user.total_employees_count }})
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item text-primary" href="{% url 'superadmin:view_as_restaurant' admin_user.restaurant.id %}">
-                                    <i class="bi bi-eye me-2"></i> View as Restaurant
-                                </a>
-                            </li>
-                            {% endif %}
-                            <li>
-                                <a class="dropdown-item" href="{% url 'superadmin:admin_reset_password' admin_user.id %}">
-                                    <i class="bi bi-key me-2"></i> Reset Password
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            {% if admin_user.is_suspended %}
-                                <li>
-                                    <form method="post" action="{% url 'superadmin:admin_toggle_status' admin_user.id %}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="unsuspend">
-                                        <button type="submit" class="dropdown-item text-success"><i class="bi bi-shield-check me-2"></i> Remove Suspension</button>
-                                    </form>
-                                </li>
-                            {% else %}
-                                <li>
-                                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#suspendModal{{ admin_user.id }}">
-                                        <i class="bi bi-slash-circle me-2"></i> Suspend Admin
-                                    </button>
-                                </li>
-                            {% endif %}
 
-                            {% if admin_user.is_active %}
+                        <!-- 2. Suspend / Unsuspend Option -->
+                        {% if admin_user.is_suspended %}
+                            <form method="post" action="{% url 'superadmin:admin_toggle_status' admin_user.id %}" class="d-inline m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="unsuspend">
+                                <button type="submit" class="btn btn-sm btn-outline-success fw-semibold px-2.5 py-1" title="Remove Suspension">
+                                    <i class="bi bi-shield-check me-1"></i> Unsuspend
+                                </button>
+                            </form>
+                        {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-warning fw-semibold px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#suspendModal{{ admin_user.id }}" title="Suspend Admin">
+                                <i class="bi bi-slash-circle me-1"></i> Suspend
+                            </button>
+                        {% endif %}
+
+                        <!-- 3. Delete Option (Permanently deletes admin and all associated employees) -->
+                        <button type="button" class="btn btn-sm btn-outline-danger fw-semibold px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#deleteModal{{ admin_user.id }}" title="Permanently Delete Admin & Staff">
+                            <i class="bi bi-trash3 me-1"></i> Delete
+                        </button>
+
+                        <!-- Additional Actions Dropdown -->
+                        <div class="dropdown d-inline-block">
+                            <button type="button" class="btn btn-sm btn-outline-secondary px-2 py-1" data-bs-toggle="dropdown" aria-expanded="false" title="More Options">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                 <li>
-                                    <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deactivateModal{{ admin_user.id }}">
-                                        <i class="bi bi-person-x me-2"></i> Deactivate Admin
-                                    </button>
+                                    <a class="dropdown-item" href="{% url 'superadmin:admin_edit' admin_user.id %}">
+                                        <i class="bi bi-pencil me-2"></i> Edit Account
+                                    </a>
                                 </li>
-                            {% else %}
+                                {% if admin_user.restaurant %}
                                 <li>
-                                    <button type="button" class="dropdown-item text-success" data-bs-toggle="modal" data-bs-target="#reactivateModal{{ admin_user.id }}">
-                                        <i class="bi bi-person-check me-2"></i> Activate Admin
-                                    </button>
+                                    <a class="dropdown-item text-primary" href="{% url 'superadmin:admin_employees' admin_user.id %}">
+                                        <i class="bi bi-people me-2"></i> View Staff Members ({{ admin_user.total_employees_count }})
+                                    </a>
                                 </li>
-                            {% endif %}
-                        </ul>
+                                <li>
+                                    <a class="dropdown-item text-primary" href="{% url 'superadmin:view_as_restaurant' admin_user.restaurant.id %}">
+                                        <i class="bi bi-eye me-2"></i> View as Restaurant
+                                    </a>
+                                </li>
+                                {% endif %}
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'superadmin:admin_reset_password' admin_user.id %}">
+                                        <i class="bi bi-key me-2"></i> Reset Password
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% if admin_user.is_active %}
+                                    <li>
+                                        <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deactivateModal{{ admin_user.id }}">
+                                            <i class="bi bi-person-x me-2"></i> Deactivate Admin
+                                        </button>
+                                    </li>
+                                {% else %}
+                                    <li>
+                                        <button type="button" class="dropdown-item text-success" data-bs-toggle="modal" data-bs-target="#reactivateModal{{ admin_user.id }}">
+                                            <i class="bi bi-person-check me-2"></i> Activate Admin
+                                        </button>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </div>
                     </div>
+                    {% endif %}
                 </div>
 
             </div>
@@ -498,6 +509,89 @@
                 <div class="modal-footer border-top bg-light">
                     <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-success px-4 fw-semibold">Confirm Activation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal with Permanent Cascade Removal of Admin & Employees -->
+<div class="modal fade text-start" id="deleteModal{{ admin_user.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ admin_user.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" action="{% url 'superadmin:admin_delete' admin_user.id %}">
+                {% csrf_token %}
+                <div class="modal-header border-bottom bg-danger text-white">
+                    <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2" id="deleteModalLabel{{ admin_user.id }}">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Permanently Delete Administrator
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Critical Warning Alert -->
+                    <div class="alert alert-danger border-danger-subtle d-flex align-items-start gap-2.5 mb-3">
+                        <i class="bi bi-shield-x fs-3 text-danger flex-shrink-0 mt-1"></i>
+                        <div>
+                            <div class="fw-bold text-danger fs-6 mb-1">Permanent & Irreversible Action</div>
+                            <div class="small text-danger-emphasis">
+                                Deleting this administrator will <strong>permanently purge</strong> their account and <strong>all employee/staff accounts</strong> created by or associated with this administrator.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Target Account Summary Card -->
+                    <div class="p-3 rounded-3 border bg-body-tertiary mb-3">
+                        <div class="text-uppercase text-body-secondary fw-bold small mb-2" style="font-size: 0.72rem; letter-spacing: 0.05em;">Target Administrator Account</div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="avatar-sm rounded-circle bg-danger-subtle text-danger fw-bold d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                {{ admin_user.username|slice:":2"|upper }}
+                            </div>
+                            <div>
+                                <div class="fw-bold text-body">{{ admin_user.get_full_name|default:admin_user.username }}</div>
+                                <div class="text-muted small">@{{ admin_user.username }} &bull; {{ admin_user.email }}</div>
+                            </div>
+                        </div>
+                        {% if admin_user.restaurant %}
+                        <div class="pt-2 border-top d-flex align-items-center justify-content-between text-body small">
+                            <span class="text-muted"><i class="bi bi-building me-1"></i>Restaurant:</span>
+                            <span class="fw-semibold">{{ admin_user.restaurant.name }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Cascade Employee Purge Summary Box -->
+                    <div class="p-3 rounded-3 border border-danger-subtle bg-danger-subtle bg-opacity-25 mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold text-danger small text-uppercase" style="letter-spacing: 0.05em;">
+                                <i class="bi bi-people-fill me-1"></i> Associated Employees to be Deleted
+                            </span>
+                            <span class="badge bg-danger text-white rounded-pill px-2.5 py-1 fw-bold fs-6">
+                                {{ admin_user.total_employees_count }} staff account{{ admin_user.total_employees_count|pluralize }}
+                            </span>
+                        </div>
+                        {% if admin_user.total_employees_count > 0 %}
+                            <p class="small text-danger-emphasis mb-2">
+                                All <strong>{{ admin_user.total_employees_count }}</strong> employee accounts registered under this administrator's restaurant/team (including Active and Inactive members) will be <strong>permanently removed</strong> from the database.
+                            </p>
+                            <div class="p-2 rounded-2 bg-body border border-danger-subtle small text-muted">
+                                <i class="bi bi-info-circle text-danger me-1"></i> Active staff sessions will be immediately terminated, preventing any further logins.
+                            </div>
+                        {% else %}
+                            <p class="small text-muted mb-0">
+                                <i class="bi bi-info-circle me-1"></i> No associated employee accounts found for this administrator. Only the administrator account will be deleted.
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <p class="text-secondary small mb-0">
+                        Please confirm that you want to delete <strong>{{ admin_user.username }}</strong>{% if admin_user.total_employees_count > 0 %} and all associated <strong>{{ admin_user.total_employees_count }}</strong> employee accounts{% endif %}. This action cannot be reversed.
+                    </p>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm">
+                        <i class="bi bi-trash3-fill"></i> Permanently Delete Admin & Staff
+                    </button>
                 </div>
             </form>
         </div>

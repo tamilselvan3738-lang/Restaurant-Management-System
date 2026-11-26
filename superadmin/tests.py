@@ -418,3 +418,99 @@ class SuperAdminAddAdminAndCascadeDeactivationTests(TestCase):
         self.client.force_login(active_emp)
         res_suspended = self.client.get(reverse('orders:list'))
         self.assertRedirects(res_suspended, reverse('accounts:login'))
+
+
+class AdminDeletePermanentCascadeTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.superadmin = User.objects.create_superuser(
+            username='super_boss',
+            email='super@bistro.com',
+            password='SuperPassword123!',
+            first_name='Super',
+            last_name='Admin'
+        )
+        self.restaurant = Restaurant.objects.create(
+            name='Gourmet Garden',
+            code='REST-9999',
+            status=Restaurant.RestaurantStatus.ACTIVE
+        )
+        self.admin = User.objects.create_user(
+            username='garden_admin',
+            email='admin@gourmetgarden.com',
+            password='AdminPassword123!',
+            role=User.Role.ADMIN,
+            restaurant=self.restaurant
+        )
+        self.waiter = User.objects.create_user(
+            username='garden_waiter',
+            email='waiter@gourmetgarden.com',
+            password='StaffPassword123!',
+            role=User.Role.WAITER,
+            restaurant=self.restaurant,
+            created_by=self.admin
+        )
+        self.chef = User.objects.create_user(
+            username='garden_chef',
+            email='chef@gourmetgarden.com',
+            password='StaffPassword123!',
+            role=User.Role.CHEF,
+            restaurant=self.restaurant,
+            created_by=self.admin
+        )
+        self.other_admin = User.objects.create_user(
+            username='other_admin',
+            email='other@domain.com',
+            password='OtherPassword123!',
+            role=User.Role.ADMIN
+        )
+
+    def test_superadmin_deletes_admin_and_permanently_cascades_to_all_employees(self):
+        self.client.force_login(self.superadmin)
+        delete_url = reverse('superadmin:admin_delete', args=[self.admin.id])
+
+        # Execute permanent deletion
+        response = self.client.post(delete_url, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        # 1. Admin must be permanently deleted
+        self.assertFalse(User.objects.filter(id=self.admin.id).exists())
+
+        # 2. All associated employees created by or assigned to this admin/restaurant must be permanently deleted
+        self.assertFalse(User.objects.filter(id=self.waiter.id).exists())
+        self.assertFalse(User.objects.filter(id=self.chef.id).exists())
+
+        # 3. Unrelated accounts must remain untouched
+        self.assertTrue(User.objects.filter(id=self.other_admin.id).exists())
+        self.assertTrue(User.objects.filter(id=self.superadmin.id).exists())
+
+    def test_admin_delete_with_zero_employees_succeeds(self):
+        self.client.force_login(self.superadmin)
+        delete_url = reverse('superadmin:admin_delete', args=[self.other_admin.id])
+
+        response = self.client.post(delete_url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(id=self.other_admin.id).exists())
+
+    def test_superadmin_cannot_be_deleted(self):
+        self.client.force_login(self.superadmin)
+        # get_object_or_404 has is_superuser=False, so trying to delete a superuser raises 404
+        delete_url = reverse('superadmin:admin_delete', args=[self.superadmin.id])
+        response = self.client.post(delete_url)
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(User.objects.filter(id=self.superadmin.id).exists())
+
+    def test_non_superadmin_cannot_delete_admin(self):
+        regular_user = User.objects.create_user(
+            username='regular_joe',
+            password='JoePassword123!',
+            role=User.Role.WAITER
+        )
+        self.client.force_login(regular_user)
+        delete_url = reverse('superadmin:admin_delete', args=[self.admin.id])
+        response = self.client.post(delete_url)
+        # Redirected to login by super_admin_required
+        self.assertRedirects(response, f"{reverse('accounts:login')}?next={delete_url}", fetch_redirect_response=False)
+        # Both admin and staff should still exist
+        self.assertTrue(User.objects.filter(id=self.admin.id).exists())
+        self.assertTrue(User.objects.filter(id=self.waiter.id).exists())

@@ -167,7 +167,12 @@ def index(request):
         active_restaurants = Restaurant.objects.filter(status=Restaurant.RestaurantStatus.ACTIVE).count()
         suspended_restaurants = Restaurant.objects.filter(status=Restaurant.RestaurantStatus.SUSPENDED).count()
 
-        recent_admins = all_admins[:10]
+        recent_admins = list(all_admins[:10])
+        for a in recent_admins:
+            emp_q = Q(created_by=a)
+            if a.restaurant:
+                emp_q |= Q(restaurant=a.restaurant)
+            a.total_employees_count = User.objects.filter(emp_q).exclude(pk=a.pk).exclude(is_superuser=True).distinct().count()
         recent_restaurants = Restaurant.objects.order_by('-created_at')[:6]
 
         total_employees = User.objects.exclude(

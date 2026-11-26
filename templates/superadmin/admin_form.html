@@ -413,9 +413,16 @@
                     {% endif %}
 
                     <div class="mt-4 pt-3 border-top d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2">
-                        <a href="{% url 'superadmin:admin_list' %}" class="btn btn-outline-secondary w-100 w-sm-auto text-center">
-                            Cancel
-                        </a>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{% url 'superadmin:admin_list' %}" class="btn btn-outline-secondary w-100 w-sm-auto text-center">
+                                Cancel
+                            </a>
+                            {% if admin_user and user.is_superuser %}
+                            <button type="button" class="btn btn-outline-danger w-100 w-sm-auto text-center" data-bs-toggle="modal" data-bs-target="#deleteAdminModal">
+                                <i class="bi bi-trash3 me-1"></i> Delete Administrator
+                            </button>
+                            {% endif %}
+                        </div>
                         <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm d-inline-flex align-items-center justify-content-center gap-2 w-100 w-sm-auto" id="saveAdminSubmitBtn">
                             <i class="bi bi-check2-circle"></i> <span>Save Administrator</span>
                         </button>
@@ -425,6 +432,50 @@
         </div>
     </div>
 </div>
+
+{% if admin_user and user.is_superuser %}
+<!-- Edit Form Delete Modal -->
+<div class="modal fade text-start" id="deleteAdminModal" tabindex="-1" aria-labelledby="deleteAdminModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" action="{% url 'superadmin:admin_delete' admin_user.id %}">
+                {% csrf_token %}
+                <div class="modal-header border-bottom bg-danger text-white">
+                    <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2" id="deleteAdminModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Permanently Delete Administrator
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger border-danger-subtle d-flex align-items-start gap-2.5 mb-3">
+                        <i class="bi bi-shield-x fs-3 text-danger flex-shrink-0 mt-1"></i>
+                        <div>
+                            <div class="fw-bold text-danger fs-6 mb-1">Permanent & Irreversible Action</div>
+                            <div class="small text-danger-emphasis">
+                                Deleting this administrator will permanently purge their account and all employee accounts created by or associated with this administrator.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-3 border bg-body-tertiary mb-3">
+                        <div class="fw-bold text-body">{{ admin_user.get_full_name|default:admin_user.username }}</div>
+                        <div class="text-muted small">@{{ admin_user.username }} &bull; {{ admin_user.email }}</div>
+                        {% if admin_user.restaurant %}
+                        <div class="text-body small mt-1"><i class="bi bi-building me-1"></i>Restaurant: <strong>{{ admin_user.restaurant.name }}</strong></div>
+                        {% endif %}
+                    </div>
+                    <p class="text-secondary small mb-0">Are you sure you want to permanently delete <strong>{{ admin_user.username }}</strong> and all associated staff accounts?</p>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm">
+                        <i class="bi bi-trash3-fill"></i> Permanently Delete Admin & Staff
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <style>
 #logoPreviewContainer:hover {

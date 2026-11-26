@@ -201,11 +201,28 @@
                         <div class="text-muted small" style="font-size: 0.7rem;">{{ admin.date_joined|timesince }} ago</div>
                     </td>
                     <td class="text-end pe-3">
-                        <div class="btn-group btn-group-sm">
-                            <a href="{% url 'superadmin:admin_edit' admin.id %}" class="btn btn-outline-secondary btn-sm" title="Edit Admin">
+                        <div class="d-inline-flex align-items-center gap-1">
+                            <a href="{% url 'superadmin:admin_edit' admin.id %}" class="btn btn-outline-secondary btn-sm px-2 py-0.5" title="Edit Admin">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <a href="{% url 'superadmin:admin_reset_password' admin.id %}" class="btn btn-outline-secondary btn-sm" title="Reset Password">
+                            {% if admin.is_suspended %}
+                                <form method="post" action="{% url 'superadmin:admin_toggle_status' admin.id %}" class="d-inline m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="unsuspend">
+                                    <input type="hidden" name="next" value="{{ request.path }}">
+                                    <button type="submit" class="btn btn-outline-success btn-sm px-2 py-0.5" title="Remove Suspension">
+                                        <i class="bi bi-shield-check"></i>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <button type="button" class="btn btn-outline-warning btn-sm px-2 py-0.5" data-bs-toggle="modal" data-bs-target="#dashSuspendModal{{ admin.id }}" title="Suspend Admin">
+                                    <i class="bi bi-slash-circle"></i>
+                                </button>
+                            {% endif %}
+                            <button type="button" class="btn btn-outline-danger btn-sm px-2 py-0.5" data-bs-toggle="modal" data-bs-target="#dashDeleteModal{{ admin.id }}" title="Permanently Delete Admin & Staff">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                            <a href="{% url 'superadmin:admin_reset_password' admin.id %}" class="btn btn-outline-secondary btn-sm px-2 py-0.5" title="Reset Password">
                                 <i class="bi bi-key"></i>
                             </a>
                         </div>
@@ -229,6 +246,87 @@
         </table>
     </div>
 </div>
+
+{% for admin in recent_admins %}
+<!-- Dashboard Suspend Modal -->
+<div class="modal fade text-start" id="dashSuspendModal{{ admin.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'superadmin:admin_toggle_status' admin.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="suspend">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="bi bi-slash-circle me-1"></i> Suspend Admin: {{ admin.username }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">Suspended administrators will be blocked from logging into the portal immediately.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Reason for Suspension</label>
+                        <textarea name="reason" class="form-control" rows="3" placeholder="Provide explanation or policy violation reason..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Confirm Suspension</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard Delete Modal -->
+<div class="modal fade text-start" id="dashDeleteModal{{ admin.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="post" action="{% url 'superadmin:admin_delete' admin.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <div class="modal-header border-bottom bg-danger text-white">
+                    <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Permanently Delete Administrator
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger border-danger-subtle d-flex align-items-start gap-2.5 mb-3">
+                        <i class="bi bi-shield-x fs-3 text-danger flex-shrink-0 mt-1"></i>
+                        <div>
+                            <div class="fw-bold text-danger fs-6 mb-1">Permanent & Irreversible Action</div>
+                            <div class="small text-danger-emphasis">
+                                Deleting this administrator will permanently purge their account and all associated employee accounts.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-3 border bg-body-tertiary mb-3">
+                        <div class="fw-bold text-body">{{ admin.get_full_name|default:admin.username }}</div>
+                        <div class="text-muted small">@{{ admin.username }} &bull; {{ admin.email }}</div>
+                        {% if admin.restaurant %}
+                        <div class="text-body small mt-1"><i class="bi bi-building me-1"></i>Restaurant: <strong>{{ admin.restaurant.name }}</strong></div>
+                        {% endif %}
+                    </div>
+                    <div class="p-3 rounded-3 border border-danger-subtle bg-danger-subtle bg-opacity-25 mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="fw-bold text-danger small"><i class="bi bi-people-fill me-1"></i> Associated Employees to be Deleted:</span>
+                            <span class="badge bg-danger text-white rounded-pill">{{ admin.total_employees_count|default:0 }}</span>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-0">Are you sure you want to permanently delete <strong>{{ admin.username }}</strong> and all their employee accounts?</p>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-sm">
+                        <i class="bi bi-trash3-fill"></i> Permanently Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
 <!-- Secondary Row: Registered Restaurants Quick Overview & Shortcuts -->
 <div class="row g-3 mb-4">

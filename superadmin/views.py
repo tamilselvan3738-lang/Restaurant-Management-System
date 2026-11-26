@@ -81,22 +81,19 @@ def admin_list(request):
     # Convert to list and compute per-admin staff statistics & cascade impact
     admins_list = list(page_obj)
     for a in admins_list:
+        emp_q = Q(created_by=a)
         if a.restaurant:
-            emp_qs = User.objects.filter(restaurant=a.restaurant).exclude(pk=a.pk).exclude(is_superuser=True)
-            a.total_employees_count = emp_qs.count()
-            a.active_employees_count = emp_qs.filter(is_active=True).count()
-            a.inactive_employees_count = emp_qs.filter(is_active=False).count()
+            emp_q |= Q(restaurant=a.restaurant)
+        emp_qs = User.objects.filter(emp_q).exclude(pk=a.pk).exclude(is_superuser=True).distinct()
+        a.total_employees_count = emp_qs.count()
+        a.active_employees_count = emp_qs.filter(is_active=True).count()
+        a.inactive_employees_count = emp_qs.filter(is_active=False).count()
 
-            latest_cascade = AccountStatusAuditLog.objects.filter(
-                target_user=a,
-                action__in=[AccountStatusAuditLog.Action.CASCADE_DEACTIVATE, AccountStatusAuditLog.Action.ADMIN_DEACTIVATE]
-            ).order_by('-created_at').first()
-            a.affected_employees_count = latest_cascade.affected_count if latest_cascade else a.inactive_employees_count
-        else:
-            a.total_employees_count = 0
-            a.active_employees_count = 0
-            a.inactive_employees_count = 0
-            a.affected_employees_count = 0
+        latest_cascade = AccountStatusAuditLog.objects.filter(
+            target_user=a,
+            action__in=[AccountStatusAuditLog.Action.CASCADE_DEACTIVATE, AccountStatusAuditLog.Action.ADMIN_DEACTIVATE]
+        ).order_by('-created_at').first()
+        a.affected_employees_count = latest_cascade.affected_count if latest_cascade else a.inactive_employees_count
 
     # Recent Audit Logs for quick reference modal
     recent_audit_logs = AccountStatusAuditLog.objects.select_related(
@@ -328,6 +325,70 @@ def admin_toggle_status(request, user_id):
             request,
             f"Admin {admin_user.username} has been reactivated successfully. Employee accounts remain inactive for security and require individual review/reactivation."
         )
+
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url and next_url.startswith('/'):
+        return redirect(next_url)
+    return redirect('superadmin:admin_list')
+
+
+@super_admin_required
+def admin_delete(request, user_id):
+    """
+    Permanently delete an Administrator account and all employees created by
+    or associated with this Administrator / restaurant.
+    """
+    admin_user = get_object_or_404(User, id=user_id, is_superuser=False)
+
+    if admin_user.is_superuser or admin_user == request.user:
+        messages.error(request, "Super Administrator accounts cannot be deleted.")
+        return redirect('superadmin:admin_list')
+
+    if request.method == 'POST':
+        admin_name = admin_user.get_full_name() or admin_user.username
+        admin_username = admin_user.username
+        restaurant = admin_user.restaurant
+
+        # Identify all employee accounts created by this admin or belonging to their restaurant
+        q_filter = Q(created_by=admin_user)
+        if restaurant:
+            q_filter |= Q(restaurant=restaurant)
+
+        employees_to_delete = User.objects.filter(q_filter).exclude(pk=admin_user.pk).exclude(is_superuser=True).distinct()
+
+        emp_count = employees_to_delete.count()
+        emp_ids = list(employees_to_delete.values_list('id', flat=True))
+        all_user_ids = emp_ids + [admin_user.id]
+
+        try:
+            with transaction.atomic():
+                # 1. Invalidate active sessions for both the admin and all deleted employees
+                invalidate_user_sessions(all_user_ids)
+
+                # 2. Permanently delete all associated employee accounts
+                employees_to_delete.delete()
+
+                # 3. Permanently delete the admin user
+                admin_user.delete()
+
+            messages.success(
+                request,
+                f"Administrator '{admin_name}' (@{admin_username}) and {emp_count} associated employee account(s) have been permanently deleted."
+            )
+            logger.info(
+                "Superadmin %s permanently deleted admin %s and %d associated employees.",
+                request.user.username,
+                admin_username,
+                emp_count
+            )
+        except Exception as e:
+            logger.exception("Failed to permanently delete admin %s: %s", admin_username, e)
+            messages.error(request, f"Error permanently deleting administrator: {str(e)}")
+
+        next_url = request.POST.get('next') or request.GET.get('next')
+        if next_url and next_url.startswith('/'):
+            return redirect(next_url)
+        return redirect('superadmin:admin_list')
 
     return redirect('superadmin:admin_list')
 

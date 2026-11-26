@@ -9,6 +9,7 @@ urlpatterns = [
     path('admins/add/', views.admin_create, name='admin_create'),
     path('admins/<int:user_id>/edit/', views.admin_edit, name='admin_edit'),
     path('admins/<int:user_id>/status/', views.admin_toggle_status, name='admin_toggle_status'),
+    path('admins/<int:user_id>/delete/', views.admin_delete, name='admin_delete'),
     path('admins/<int:user_id>/reset-password/', views.admin_reset_password, name='admin_reset_password'),
     path('admins/<int:user_id>/employees/', views.admin_employees, name='admin_employees'),
     path('employees/<int:user_id>/status/', views.employee_toggle_status, name='employee_toggle_status'),
