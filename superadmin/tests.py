@@ -480,9 +480,45 @@ class AdminDeletePermanentCascadeTests(TestCase):
         self.assertFalse(User.objects.filter(id=self.waiter.id).exists())
         self.assertFalse(User.objects.filter(id=self.chef.id).exists())
 
-        # 3. Unrelated accounts must remain untouched
+        # 3. Orphan restaurant with no other admins must also be permanently deleted
+        self.assertFalse(Restaurant.objects.filter(id=self.restaurant.id).exists())
+
+        # 4. Unrelated accounts must remain untouched
         self.assertTrue(User.objects.filter(id=self.other_admin.id).exists())
         self.assertTrue(User.objects.filter(id=self.superadmin.id).exists())
+
+    def test_superadmin_suspends_and_unsuspends_admin_and_restaurant_updates_dashboard(self):
+        self.client.force_login(self.superadmin)
+        status_url = reverse('superadmin:admin_toggle_status', args=[self.admin.id])
+
+        # Suspend admin
+        resp = self.client.post(status_url, {'action': 'suspend', 'reason': 'Audit review'}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+
+        self.admin.refresh_from_db()
+        self.restaurant.refresh_from_db()
+        self.assertTrue(self.admin.is_suspended)
+        self.assertEqual(self.restaurant.status, Restaurant.RestaurantStatus.SUSPENDED)
+
+        # Dashboard metrics check
+        dash_resp = self.client.get(reverse('dashboard:index'))
+        self.assertEqual(dash_resp.status_code, 200)
+        self.assertGreaterEqual(dash_resp.context['suspended_admins'], 1)
+        self.assertGreaterEqual(dash_resp.context['suspended_restaurants'], 1)
+
+        # Unsuspend admin
+        resp2 = self.client.post(status_url, {'action': 'unsuspend'}, follow=True)
+        self.assertEqual(resp2.status_code, 200)
+
+        self.admin.refresh_from_db()
+        self.restaurant.refresh_from_db()
+        self.assertFalse(self.admin.is_suspended)
+        self.assertEqual(self.restaurant.status, Restaurant.RestaurantStatus.ACTIVE)
+
+        # Dashboard metrics check after unsuspend
+        dash_resp2 = self.client.get(reverse('dashboard:index'))
+        self.assertEqual(dash_resp2.status_code, 200)
+        self.assertEqual(dash_resp2.context['suspended_admins'], 0)
 
     def test_admin_delete_with_zero_employees_succeeds(self):
         self.client.force_login(self.superadmin)

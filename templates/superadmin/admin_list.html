@@ -213,7 +213,14 @@
                                 <img src="/static/images/default_restaurant_logo.svg" alt="{{ admin_user.restaurant.name }}" style="width: 38px; height: 38px; object-fit: contain; border-radius: 8px; border: 1px solid var(--bs-border-color, #dee2e6); background: #fff; padding: 2px; flex-shrink: 0;">
                             {% endif %}
                             <div class="overflow-hidden">
-                                <div class="fw-bold text-body fs-6 text-truncate">{{ admin_user.restaurant.name }}</div>
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                    <span class="fw-bold text-body fs-6 text-truncate">{{ admin_user.restaurant.name }}</span>
+                                    {% if admin_user.restaurant.status == 'SUSPENDED' %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-0.5 px-2" style="font-size: 0.68rem;"><i class="bi bi-slash-circle me-1"></i>Suspended</span>
+                                    {% elif admin_user.restaurant.status == 'INACTIVE' %}
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-0.5 px-2" style="font-size: 0.68rem;"><i class="bi bi-dash-circle me-1"></i>Inactive</span>
+                                    {% endif %}
+                                </div>
                                 {% if admin_user.restaurant.phone %}
                                     <div class="text-secondary small fw-medium text-truncate"><i class="bi bi-telephone text-primary me-1"></i>{{ admin_user.restaurant.phone }}</div>
                                 {% elif admin_user.restaurant.email %}
@@ -317,6 +324,7 @@
                             <form method="post" action="{% url 'superadmin:admin_toggle_status' admin_user.id %}" class="d-inline m-0">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="unsuspend">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                 <button type="submit" class="btn btn-sm btn-outline-success fw-semibold px-2.5 py-1" title="Remove Suspension">
                                     <i class="bi bi-shield-check me-1"></i> Unsuspend
                                 </button>
@@ -416,6 +424,7 @@
             <form method="post" action="{% url 'superadmin:admin_toggle_status' admin_user.id %}">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="suspend">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold text-danger" id="suspendModalLabel{{ admin_user.id }}">
                         <i class="bi bi-slash-circle me-1"></i> Suspend Admin: {{ admin_user.username }}
@@ -521,6 +530,7 @@
         <div class="modal-content border-0 shadow-lg">
             <form method="post" action="{% url 'superadmin:admin_delete' admin_user.id %}">
                 {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <div class="modal-header border-bottom bg-danger text-white">
                     <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2" id="deleteModalLabel{{ admin_user.id }}">
                         <i class="bi bi-exclamation-triangle-fill"></i> Permanently Delete Administrator

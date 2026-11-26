@@ -127,7 +127,7 @@
 
 <!-- Created Administrators Table Card -->
 <div class="card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
-    <div class="card-header bg-body py-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 border-bottom">
+    <div class="card-header bg-body py-3 px-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 border-bottom">
         <div>
             <h6 class="fw-bold mb-0 text-body">
                 <i class="bi bi-shield-person text-primary me-2"></i> Created Restaurant Administrators
@@ -144,86 +144,92 @@
         </div>
     </div>
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light text-secondary text-uppercase small" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+        <table class="table table-hover align-middle mb-0 w-100" style="table-layout: fixed; font-size: 0.82rem;">
+            <thead class="table-light text-secondary text-uppercase small" style="font-size: 0.7rem; letter-spacing: 0.04em;">
                 <tr>
-                    <th class="ps-3 py-3">Administrator</th>
-                    <th>Assigned Restaurant</th>
-                    <th>Role & Level</th>
-                    <th>Email & Contact</th>
-                    <th>Status</th>
-                    <th>Date Created</th>
-                    <th class="text-end pe-3">Actions</th>
+                    <th class="ps-3 py-2.5 text-nowrap align-middle" style="width: 20%;">Administrator</th>
+                    <th class="py-2.5 text-nowrap align-middle" style="width: 15%;">Assigned Restaurant</th>
+                    <th class="py-2.5 text-nowrap align-middle text-center" style="width: 13%;">Role</th>
+                    <th class="py-2.5 text-nowrap align-middle" style="width: 16%;">Email & Contact</th>
+                    <th class="py-2.5 text-nowrap align-middle text-center" style="width: 9%;">Status</th>
+                    <th class="py-2.5 text-nowrap align-middle" style="width: 12%;">Date Created</th>
+                    <th class="py-2.5 text-nowrap align-middle text-end pe-2" style="width: 15%;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for admin in recent_admins %}
                 <tr>
-                    <td class="ps-3 py-2.5">
-                        <div class="d-flex align-items-center gap-2.5">
-                            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold shadow-xs flex-shrink-0" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                    <td class="ps-3 py-2 align-middle">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold shadow-xs flex-shrink-0" style="width: 28px; height: 28px; font-size: 0.75rem;">
                                 {{ admin.first_name|default:admin.username|slice:":1"|upper }}
                             </div>
-                            <div>
-                                <div class="fw-bold text-body">{{ admin.first_name|default:admin.username }} {{ admin.last_name }}</div>
-                                <div class="text-muted small" style="font-size: 0.72rem;">@{{ admin.username }} {% if admin.employee_id %}&bull; [{{ admin.employee_id }}]{% endif %}</div>
+                            <div class="overflow-hidden">
+                                <div class="fw-bold text-body text-truncate" style="font-size: 0.8rem;">{{ admin.first_name|default:admin.username }} {{ admin.last_name }}</div>
+                                <div class="text-muted text-truncate" style="font-size: 0.67rem;">@{{ admin.username }}{% if admin.employee_id %} &bull; [{{ admin.employee_id }}]{% endif %}</div>
                             </div>
                         </div>
                     </td>
-                    <td>
+                    <td class="py-2 align-middle">
                         {% if admin.restaurant %}
-                        <div class="fw-semibold text-body">{{ admin.restaurant.name }}</div>
-                        <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">{{ admin.restaurant.code }}</span>
+                        <div class="fw-semibold text-body text-truncate" style="font-size: 0.8rem;">{{ admin.restaurant.name }}</div>
+                        {% if admin.restaurant.status == 'SUSPENDED' %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-1.5 py-0.5" style="font-size: 0.62rem;"><i class="bi bi-slash-circle me-1"></i>Suspended</span>
+                        {% elif admin.restaurant.status == 'INACTIVE' %}
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-1.5 py-0.5" style="font-size: 0.62rem;"><i class="bi bi-dash-circle me-1"></i>Inactive</span>
                         {% else %}
-                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-0.5 small">Unassigned</span>
+                        <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-1.5 py-0.5" style="font-size: 0.62rem;">{{ admin.restaurant.code }}</span>
+                        {% endif %}
+                        {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-1.5 py-0.5" style="font-size: 0.62rem;">Unassigned</span>
                         {% endif %}
                     </td>
-                    <td>
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small">
-                            {{ admin.get_role_display }}
+                    <td class="py-2 align-middle text-center text-nowrap">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+                            {% if admin.role == 'ADMIN' %}Admin / Owner{% elif admin.role == 'MANAGER' %}Manager{% else %}{{ admin.get_role_display }}{% endif %}
                         </span>
                     </td>
-                    <td>
-                        <div class="text-body small">{{ admin.email|default:"No email" }}</div>
-                        <div class="text-muted small" style="font-size: 0.72rem;">{{ admin.phone_number|default:"No phone" }}</div>
+                    <td class="py-2 align-middle">
+                        <div class="text-body text-truncate" style="font-size: 0.76rem;">{{ admin.email|default:"No email" }}</div>
+                        <div class="text-muted text-truncate" style="font-size: 0.66rem;">{{ admin.phone_number|default:"No phone" }}</div>
                     </td>
-                    <td>
+                    <td class="py-2 align-middle text-center text-nowrap">
                         {% if admin.is_suspended %}
-                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5 small">Suspended</span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 0.66rem;"><i class="bi bi-slash-circle me-1"></i>Suspended</span>
                         {% elif admin.is_active %}
-                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 small">Active</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 0.66rem;"><i class="bi bi-check-circle me-1"></i>Active</span>
                         {% else %}
-                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-0.5 small">Inactive</span>
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 0.66rem;"><i class="bi bi-dash-circle me-1"></i>Inactive</span>
                         {% endif %}
                     </td>
-                    <td>
-                        <span class="text-body small">{{ admin.date_joined|date:"M d, Y" }}</span>
-                        <div class="text-muted small" style="font-size: 0.7rem;">{{ admin.date_joined|timesince }} ago</div>
+                    <td class="py-2 align-middle text-nowrap">
+                        <div class="text-body fw-semibold" style="font-size: 0.76rem;">{{ admin.date_joined|date:"M d, Y" }}</div>
+                        <div class="text-muted" style="font-size: 0.66rem;">{{ admin.date_joined|date:"h:i A" }}</div>
                     </td>
-                    <td class="text-end pe-3">
-                        <div class="d-inline-flex align-items-center gap-1">
-                            <a href="{% url 'superadmin:admin_edit' admin.id %}" class="btn btn-outline-secondary btn-sm px-2 py-0.5" title="Edit Admin">
-                                <i class="bi bi-pencil"></i>
+                    <td class="py-2 align-middle text-end pe-2 text-nowrap">
+                        <div class="d-inline-flex align-items-center justify-content-end" style="gap: 3px;">
+                            <a href="{% url 'superadmin:admin_edit' admin.id %}" class="btn btn-outline-secondary btn-sm" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px;" title="Edit Admin">
+                                <i class="bi bi-pencil" style="font-size: 0.72rem;"></i>
                             </a>
                             {% if admin.is_suspended %}
-                                <form method="post" action="{% url 'superadmin:admin_toggle_status' admin.id %}" class="d-inline m-0">
+                                <form method="post" action="{% url 'superadmin:admin_toggle_status' admin.id %}" class="d-inline m-0 p-0">
                                     {% csrf_token %}
                                     <input type="hidden" name="action" value="unsuspend">
                                     <input type="hidden" name="next" value="{{ request.path }}">
-                                    <button type="submit" class="btn btn-outline-success btn-sm px-2 py-0.5" title="Remove Suspension">
-                                        <i class="bi bi-shield-check"></i>
+                                    <button type="submit" class="btn btn-outline-success btn-sm" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px;" title="Remove Suspension">
+                                        <i class="bi bi-shield-check" style="font-size: 0.72rem;"></i>
                                     </button>
                                 </form>
                             {% else %}
-                                <button type="button" class="btn btn-outline-warning btn-sm px-2 py-0.5" data-bs-toggle="modal" data-bs-target="#dashSuspendModal{{ admin.id }}" title="Suspend Admin">
-                                    <i class="bi bi-slash-circle"></i>
+                                <button type="button" class="btn btn-outline-warning btn-sm" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px;" data-bs-toggle="modal" data-bs-target="#dashSuspendModal{{ admin.id }}" title="Suspend Admin">
+                                    <i class="bi bi-slash-circle" style="font-size: 0.72rem;"></i>
                                 </button>
                             {% endif %}
-                            <button type="button" class="btn btn-outline-danger btn-sm px-2 py-0.5" data-bs-toggle="modal" data-bs-target="#dashDeleteModal{{ admin.id }}" title="Permanently Delete Admin & Staff">
-                                <i class="bi bi-trash3"></i>
+                            <button type="button" class="btn btn-outline-danger btn-sm" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px;" data-bs-toggle="modal" data-bs-target="#dashDeleteModal{{ admin.id }}" title="Permanently Delete Admin & Staff">
+                                <i class="bi bi-trash3" style="font-size: 0.72rem;"></i>
                             </button>
-                            <a href="{% url 'superadmin:admin_reset_password' admin.id %}" class="btn btn-outline-secondary btn-sm px-2 py-0.5" title="Reset Password">
-                                <i class="bi bi-key"></i>
+                            <a href="{% url 'superadmin:admin_reset_password' admin.id %}" class="btn btn-outline-secondary btn-sm" style="width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px;" title="Reset Password">
+                                <i class="bi bi-key" style="font-size: 0.72rem;"></i>
                             </a>
                         </div>
                     </td>

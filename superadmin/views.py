@@ -17,9 +17,9 @@ import logging
 
 from accounts.models import User, Restaurant
 from accounts.forms import UserProfileForm
-from tables.models import DiningTable, CustomerSession
+from tables.models import DiningTable, CustomerSession, ServiceRequest
 from orders.models import Order
-from billing.models import Payment, Invoice
+from billing.models import Payment, Invoice, BillRequest
 from .models import RestaurantConfig, AdminReport, SystemSetting, AccountStatusAuditLog
 from .forms import (
     AdminCreationForm, AdminEditForm,
@@ -231,28 +231,52 @@ def admin_toggle_status(request, user_id):
         admin_user.is_suspended = True
         admin_user.suspension_reason = reason or 'Suspended by Super Admin'
         admin_user.save(update_fields=['is_suspended', 'suspension_reason'])
+
+        restaurant = admin_user.restaurant
+        affected_staff_ids = []
+        if restaurant:
+            restaurant.status = Restaurant.RestaurantStatus.SUSPENDED
+            restaurant.save(update_fields=['status'])
+            affected_staff_ids = list(User.objects.filter(restaurant=restaurant).values_list('id', flat=True))
+
+        all_suspended_ids = list(set([admin_user.id] + affected_staff_ids))
+        invalidate_user_sessions(all_suspended_ids)
+
         AccountStatusAuditLog.objects.create(
             target_user=admin_user,
-            restaurant=admin_user.restaurant,
+            restaurant=restaurant,
             action=AccountStatusAuditLog.Action.ADMIN_SUSPEND,
             performed_by=request.user,
+            affected_count=len(affected_staff_ids),
+            affected_employee_ids=affected_staff_ids,
             reason=admin_user.suspension_reason
         )
-        invalidate_user_sessions([admin_user.id])
-        messages.warning(request, f"Admin '{admin_user.username}' has been suspended.")
+        if restaurant:
+            messages.warning(request, f"Admin '{admin_user.username}' and restaurant '{restaurant.name}' have been suspended.")
+        else:
+            messages.warning(request, f"Admin '{admin_user.username}' has been suspended.")
 
     elif action == 'unsuspend':
         admin_user.is_suspended = False
         admin_user.suspension_reason = ''
         admin_user.save(update_fields=['is_suspended', 'suspension_reason'])
+
+        restaurant = admin_user.restaurant
+        if restaurant:
+            restaurant.status = Restaurant.RestaurantStatus.ACTIVE
+            restaurant.save(update_fields=['status'])
+
         AccountStatusAuditLog.objects.create(
             target_user=admin_user,
-            restaurant=admin_user.restaurant,
+            restaurant=restaurant,
             action=AccountStatusAuditLog.Action.ADMIN_UNSUSPEND,
             performed_by=request.user,
             reason="Suspension lifted by Super Admin"
         )
-        messages.success(request, f"Admin '{admin_user.username}' suspension removed.")
+        if restaurant:
+            messages.success(request, f"Admin '{admin_user.username}' and restaurant '{restaurant.name}' suspension removed. Status restored to Active.")
+        else:
+            messages.success(request, f"Admin '{admin_user.username}' suspension removed.")
 
     elif action == 'deactivate':
         with transaction.atomic():
@@ -371,14 +395,40 @@ def admin_delete(request, user_id):
                 # 3. Permanently delete the admin user
                 admin_user.delete()
 
-            messages.success(
-                request,
-                f"Administrator '{admin_name}' (@{admin_username}) and {emp_count} associated employee account(s) have been permanently deleted."
-            )
+                # 4. If this restaurant has no other administrators, clean up and delete the restaurant
+                restaurant_deleted = False
+                rest_name = ""
+                if restaurant:
+                    has_other_admins = User.objects.filter(
+                        restaurant=restaurant,
+                        role__in=[User.Role.ADMIN, User.Role.MANAGER]
+                    ).exclude(is_superuser=True).exists()
+
+                    if not has_other_admins:
+                        # Clean up associated tables and requests to prevent orphan rows
+                        DiningTable.objects.filter(restaurant=restaurant).delete()
+                        BillRequest.objects.filter(restaurant=restaurant).delete()
+                        ServiceRequest.objects.filter(restaurant=restaurant).delete()
+                        rest_name = restaurant.name
+                        restaurant.delete()
+                        restaurant_deleted = True
+
+            if restaurant_deleted:
+                messages.success(
+                    request,
+                    f"Administrator '{admin_name}' (@{admin_username}), restaurant '{rest_name}', and {emp_count} associated employee account(s) have been permanently deleted."
+                )
+            else:
+                messages.success(
+                    request,
+                    f"Administrator '{admin_name}' (@{admin_username}) and {emp_count} associated employee account(s) have been permanently deleted."
+                )
             logger.info(
-                "Superadmin %s permanently deleted admin %s and %d associated employees.",
+                "Superadmin %s permanently deleted admin %s, restaurant %s (deleted=%s), and %d associated employees.",
                 request.user.username,
                 admin_username,
+                restaurant.name if restaurant else "N/A",
+                restaurant_deleted,
                 emp_count
             )
         except Exception as e:
